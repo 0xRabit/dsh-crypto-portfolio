@@ -1,48 +1,56 @@
-# dsh-portfolio-tracker
+# dsh-crypto-portfolio
 
-Crypto portfolio tracker (BTC / EVM / Solana / Hyperliquid L1 / CEX Binance-Bybit-Backpack)
-packaged as a DSH (Cordis) plugin.
+Crypto portfolio tracker as a [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) plugin.
 
-**Privacy**: this package contains NO private wallets, API keys or balances.
-`tracker/config.py` ships with an empty wallet list; `portfolio_sources.json` /
-`portfolio_wallets.json` are seeded on first run from `templates/` (public
-example addresses, empty keys). Your personal configs stay in user-local JSON
-files that are excluded from the published bundle.
+Tracks wallets across **BTC / EVM / Solana / Hyperliquid L1 / CEX (Binance · Bybit · Backpack)** with
+multi-provider API failover, per-day snapshots and trend charts — a self-contained web dashboard
+launched from a Cordis plugin.
 
-## Requirements
+## Features
 
-- Python 3.9+ with `requests` (`pip3 install -r requirements.txt`); `pynacl`
-  is bundled in `vendor/`.
-- DSH CLI (`dsh`) for plugin installation.
+- **Wallets**: BTC (P2SH/P2TR), EVM (DeBank, all chains), Solana (public RPC: SOL + SPL + native staked SOL),
+  Hyperliquid L1 (official API: staked HYPE + spot), CEX accounts (read-only keys, named `<exchange>_read`).
+- **Configurable sources**: all API URLs/keys live in per-profile JSON configs (`profiles/<name>/`).
+  Each source supports multiple providers with **automatic failover** (last working provider is remembered).
+- **Multi-profile**: each named profile has its own sources, wallets, blacklist and snapshot history.
+  The `default` profile ships with public example wallets (vitalik.eth, genesis BTC, public SOL) and empty keys.
+- **Dashboard**: global filters (category BTC/EVM/Solana/CEX, wallet, chain), wallet-share pie chart,
+  per-day trend chart, chain distribution, token table with one-click blacklist, i18n (EN/中文, default EN).
+- **Snapshots**: every refresh saves the last result of the day (SQLite); history builds trend charts.
 
-## Local test (without DSH)
+## Privacy
+
+This package contains **no private wallets, API keys or balances**. Private configs are user-local
+(`profiles/<name>/`, git-ignored) and never part of this repository. The plugin seeds `profiles/default`
+from `templates/` (public addresses, empty keys) on first run.
+
+## Install
+
+Requirements: Python 3.9+ (`requests`; `pynacl` is bundled in `vendor/`).
 
 ```sh
-cd dist/dsh-portfolio-tracker
-python3 run.py --init-template --port 8090   # seeds public template configs
-# open http://127.0.0.1:8090
-```
-
-## Install as a DSH plugin
-
-```sh
-# from a source checkout: pnpm dsh plugin --profile demo add ./dist/dsh-portfolio-tracker
-dsh plugin --profile demo add ./dist/dsh-portfolio-tracker
+# from a DSH source checkout
+dsh plugin --profile demo add /path/to/dsh-crypto-portfolio
 dsh --profile demo
+# dashboard at http://127.0.0.1:8080 (PORTFOLIO_PORT to override)
 ```
 
-The dashboard runs at http://127.0.0.1:8080 (override with
-`PORTFOLIO_PORT` env or the plugin `config.port`).
-
-## Publish
-
-No GitHub account is required — DSH bundles are npm packages:
+Or run standalone (no DSH):
 
 ```sh
-cd dist/dsh-portfolio-tracker
-npm publish          # needs an npm account; publish to npmjs or a private registry
-# or keep it local/private: dsh plugin --profile demo add <path> works without any publish
+python3 run.py --init-template --port 8080   # seeds profiles/default from public templates
 ```
 
-The `dsh.bundle` manifest + `cordis.patch.yml` make `dsh plugin add` register
-the plugin automatically. See DSH docs: `docs/user/develop/basic/publish.md`.
+## Layout
+
+```
+profiles/default/   sources.json + wallets.json (public template, auto-seeded)
+templates/          public example configs (no secrets)
+tracker/            backend fetchers (debank/btc/solana/hyperliquid/cex/prices)
+static/             web dashboard (vanilla JS, no external deps)
+run.py / fetch.py   web server / CLI snapshot
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
