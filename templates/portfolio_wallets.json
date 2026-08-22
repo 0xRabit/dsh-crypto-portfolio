@@ -1,0 +1,26 @@
+[
+  {
+    "name": "vitalik.eth",
+    "type": "evm",
+    "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    "note": "public example: Vitalik Buterin (Ethereum)"
+  },
+  {
+    "name": "vitalik-2",
+    "type": "evm",
+    "address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B",
+    "note": "public example: Vitalik Buterin (secondary address)"
+  },
+  {
+    "name": "satoshi-genesis",
+    "type": "btc",
+    "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+    "note": "public example: Bitcoin genesis address (Satoshi)"
+  },
+  {
+    "name": "sol-public-example",
+    "type": "sol",
+    "address": "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+    "note": "public example: well-known Solana address"
+  }
+]

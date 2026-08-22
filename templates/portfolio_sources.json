@@ -1,0 +1,49 @@
+{
+  "debank": {
+    "enabled": true,
+    "key": "",
+    "base_url": "https://pro-openapi.debank.com",
+    "chain_list_url": "https://api.debank.com/chain/list"
+  },
+  "btc": {
+    "enabled": true,
+    "providers": [
+      { "name": "blockchain.info", "type": "batch", "url": "https://blockchain.info/balance", "enabled": true },
+      { "name": "mempool.space", "type": "per_address", "url": "https://mempool.space/api/address/{addr}", "enabled": true }
+    ]
+  },
+  "prices": {
+    "enabled": true,
+    "providers": [
+      { "name": "coingecko", "type": "batch", "url": "https://api.coingecko.com/api/v3/simple/price", "key": "", "enabled": true },
+      { "name": "binance", "type": "batch", "url": "https://api.binance.com/api/v3/ticker/price", "enabled": true },
+      { "name": "coinbase", "type": "per_pair", "url": "https://api.coinbase.com/v2/prices/{pair}-USD/spot", "enabled": true },
+      { "name": "okx", "type": "per_pair", "url": "https://www.okx.com/api/v5/market/ticker", "enabled": true }
+    ]
+  },
+  "solana": {
+    "enabled": true,
+    "rpc": [
+      { "name": "mainnet-beta", "url": "https://api.mainnet-beta.solana.com", "enabled": true },
+      { "name": "ankr-public", "url": "https://rpc.ankr.com/solana", "enabled": true }
+    ],
+    "spl_prices": {
+      "providers": [
+        { "name": "dexscreener", "type": "batch", "url": "https://api.dexscreener.com/latest/dex/tokens/{mints}", "enabled": true },
+        { "name": "coingecko", "type": "per_mint", "url": "https://api.coingecko.com/api/v3/simple/token_price/solana", "key": "", "enabled": true }
+      ]
+    },
+    "birdeye": { "enabled": false, "key": "", "url": "https://public-api.birdeye.so/defi/wallet_tokens" }
+  },
+  "hyperliquid": {
+    "enabled": true,
+    "providers": [
+      { "name": "api.hyperliquid.xyz", "url": "https://api.hyperliquid.xyz/info", "enabled": true },
+      { "name": "hyperliquid-api.mainnet", "url": "https://hyperliquid-api.mainnet.hyperliquid.xyz/info", "enabled": true }
+    ]
+  },
+  "cex": {
+    "enabled": true,
+    "accounts": []
+  }
+}
