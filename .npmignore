@@ -1,0 +1,14 @@
+# Private / sensitive files — NEVER shipped in the published plugin.
+portfolio*.json
+portfolio.db
+*.db
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.git/
+.gitignore
+docs/
+scripts/
+dsh-plugin/
+*.log

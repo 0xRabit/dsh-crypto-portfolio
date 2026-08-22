@@ -1,0 +1,14 @@
+# private / sensitive - NEVER committed
+profiles/
+/portfolio_sources.json
+/portfolio_wallets.json
+/portfolio_blacklist.json
+portfolio.db
+*.db
+dist/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+*.log
