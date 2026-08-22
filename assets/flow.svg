@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 330" font-family="-apple-system,Segoe UI,sans-serif">
+  <rect width="920" height="330" fill="#0d1117"/>
+  <text x="460" y="30" fill="#e6edf3" font-size="16" font-weight="bold" text-anchor="middle">How daily snapshots become trend charts</text>
+
+  <rect x="40" y="60" width="220" height="80" rx="10" fill="#1c2230" stroke="#f0b95c"/>
+  <text x="150" y="88" fill="#f0b95c" font-size="14" font-weight="bold" text-anchor="middle">1 · Click Refresh</text>
+  <text x="150" y="108" fill="#8b98a9" font-size="11" text-anchor="middle">fetch every wallet</text>
+  <text x="150" y="124" fill="#8b98a9" font-size="11" text-anchor="middle">(EVM + BTC + SOL + CEX)</text>
+
+  <line x1="260" y1="100" x2="330" y2="100" stroke="#f0b95c" stroke-width="2"/>
+  <polygon points="328,94 340,100 328,106" fill="#f0b95c"/>
+
+  <rect x="340" y="60" width="240" height="80" rx="10" fill="#1c2230" stroke="#58a6ff"/>
+  <text x="460" y="88" fill="#7ab0f5" font-size="14" font-weight="bold" text-anchor="middle">2 · Save snapshot</text>
+  <text x="460" y="108" fill="#8b98a9" font-size="11" text-anchor="middle">"last result of the day" → SQLite</text>
+  <text x="460" y="124" fill="#8b98a9" font-size="11" text-anchor="middle">(same-day refreshes overwrite)</text>
+
+  <line x1="580" y1="100" x2="650" y2="100" stroke="#58a6ff" stroke-width="2"/>
+  <polygon points="648,94 660,100 648,106" fill="#58a6ff"/>
+
+  <rect x="660" y="60" width="220" height="80" rx="10" fill="#1c2230" stroke="#7ee787"/>
+  <text x="770" y="88" fill="#7ee787" font-size="14" font-weight="bold" text-anchor="middle">3 · Repeat daily</text>
+  <text x="770" y="108" fill="#8b98a9" font-size="11" text-anchor="middle">one snapshot per day</text>
+  <text x="770" y="124" fill="#8b98a9" font-size="11" text-anchor="middle">builds your personal history</text>
+
+  <!-- trend chart illustration -->
+  <rect x="210" y="180" width="500" height="120" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="460" y="202" fill="#8b98a9" font-size="12" text-anchor="middle">Portfolio Trend (USD)</text>
+  <!-- axes -->
+  <line x1="250" y1="275" x2="680" y2="275" stroke="#3a4658" stroke-width="2"/>
+  <line x1="250" y1="215" x2="250" y2="275" stroke="#3a4658" stroke-width="2"/>
+  <!-- line -->
+  <polyline points="250,262 310,255 370,258 430,240 490,228 550,232 610,215 670,222"
+            fill="none" stroke="#58a6ff" stroke-width="3"/>
+  <!-- dots -->
+  <circle cx="250" cy="262" r="4" fill="#58a6ff"/><circle cx="310" cy="255" r="4" fill="#58a6ff"/>
+  <circle cx="370" cy="258" r="4" fill="#58a6ff"/><circle cx="430" cy="240" r="4" fill="#58a6ff"/>
+  <circle cx="490" cy="228" r="4" fill="#58a6ff"/><circle cx="550" cy="232" r="4" fill="#58a6ff"/>
+  <circle cx="610" cy="215" r="4" fill="#58a6ff"/><circle cx="670" cy="222" r="4" fill="#58a6ff"/>
+  <text x="250" y="292" fill="#8b98a9" font-size="10" text-anchor="middle">D1</text>
+  <text x="430" y="292" fill="#8b98a9" font-size="10" text-anchor="middle">D4</text>
+  <text x="610" y="292" fill="#8b98a9" font-size="10" text-anchor="middle">D8</text>
+  <text x="460" y="318" fill="#8b98a9" font-size="11" text-anchor="middle">each dot = one day's last snapshot · hover for values · toggle wallets</text>
+</svg>

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" font-family="-apple-system,Segoe UI,sans-serif">
+  <rect width="920" height="560" fill="#0d1117"/>
+  <text x="460" y="30" fill="#e6edf3" font-size="17" font-weight="bold" text-anchor="middle">dsh-crypto-portfolio — Architecture</text>
+
+  <!-- DSH -->
+  <rect x="30" y="55" width="250" height="58" rx="10" fill="#16233d" stroke="#58a6ff"/>
+  <text x="155" y="78" fill="#7ab0f5" font-size="14" font-weight="bold" text-anchor="middle">DeepSeek Harness (DSH)</text>
+  <text x="155" y="98" fill="#8b98a9" font-size="11" text-anchor="middle">Cordis lifecycle</text>
+
+  <!-- plugin -->
+  <rect x="330" y="55" width="270" height="76" rx="10" fill="#1c2230" stroke="#f0b95c"/>
+  <text x="465" y="78" fill="#f0b95c" font-size="14" font-weight="bold" text-anchor="middle">dsh-crypto-portfolio (plugin)</text>
+  <text x="465" y="96" fill="#8b98a9" font-size="11" text-anchor="middle">apply(ctx): seed profiles/default</text>
+  <text x="465" y="112" fill="#8b98a9" font-size="11" text-anchor="middle">spawn dashboard · dispose: stop</text>
+
+  <line x1="280" y1="84" x2="326" y2="84" stroke="#58a6ff" stroke-width="2"/>
+  <polygon points="324,78 336,84 324,90" fill="#58a6ff"/>
+
+  <!-- dashboard -->
+  <rect x="660" y="55" width="230" height="76" rx="10" fill="#1c2230" stroke="#7ee787"/>
+  <text x="775" y="78" fill="#7ee787" font-size="14" font-weight="bold" text-anchor="middle">Dashboard (web)</text>
+  <text x="775" y="96" fill="#8b98a9" font-size="11" text-anchor="middle">Python stdlib HTTP + vanilla JS</text>
+  <text x="775" y="112" fill="#8b98a9" font-size="11" text-anchor="middle">JSON API · global filters · i18n</text>
+  <line x1="600" y1="84" x2="656" y2="84" stroke="#7ee787" stroke-width="2"/>
+  <polygon points="654,78 666,84 654,90" fill="#7ee787"/>
+
+  <!-- fetcher bar -->
+  <text x="460" y="175" fill="#8b98a9" font-size="12" text-anchor="middle">Fetchers — every source = multi-provider with automatic failover</text>
+
+  <rect x="30" y="195" width="200" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="130" y="220" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">EVM · DeBank</text>
+  <text x="130" y="240" fill="#8b98a9" font-size="11" text-anchor="middle">73 chains, all protocols</text>
+
+  <rect x="250" y="195" width="200" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="350" y="220" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">BTC</text>
+  <text x="350" y="240" fill="#8b98a9" font-size="11" text-anchor="middle">blockchain.info → mempool.space</text>
+
+  <rect x="470" y="195" width="200" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="570" y="220" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">Solana RPC</text>
+  <text x="570" y="240" fill="#8b98a9" font-size="11" text-anchor="middle">SOL + SPL + native staked</text>
+
+  <rect x="690" y="195" width="200" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="790" y="220" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">Hyperliquid L1</text>
+  <text x="790" y="240" fill="#8b98a9" font-size="11" text-anchor="middle">staked HYPE + spot (official)</text>
+
+  <rect x="30" y="285" width="300" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="180" y="310" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">CEX · Binance / Bybit / Backpack</text>
+  <text x="180" y="330" fill="#8b98a9" font-size="11" text-anchor="middle">read-only keys · funding/earn/staked</text>
+
+  <rect x="350" y="285" width="300" height="70" rx="10" fill="#161b22" stroke="#3a4658"/>
+  <text x="500" y="310" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">Prices</text>
+  <text x="500" y="330" fill="#8b98a9" font-size="11" text-anchor="middle">CoinGecko → Coinbase → OKX …</text>
+
+  <rect x="670" y="285" width="220" height="70" rx="10" fill="#161b22" stroke="#d2a8ff"/>
+  <text x="780" y="310" fill="#d2a8ff" font-size="13" font-weight="bold" text-anchor="middle">Token blacklist</text>
+  <text x="780" y="330" fill="#8b98a9" font-size="11" text-anchor="middle">phishing filter, one-click</text>
+
+  <!-- storage + trend -->
+  <rect x="210" y="400" width="250" height="70" rx="10" fill="#16233d" stroke="#58a6ff"/>
+  <text x="335" y="425" fill="#7ab0f5" font-size="13" font-weight="bold" text-anchor="middle">SQLite snapshots</text>
+  <text x="335" y="445" fill="#8b98a9" font-size="11" text-anchor="middle">per profile · last snapshot of each day</text>
+
+  <rect x="510" y="400" width="220" height="70" rx="10" fill="#1c2230" stroke="#7ee787"/>
+  <text x="620" y="425" fill="#7ee787" font-size="13" font-weight="bold" text-anchor="middle">Trend charts</text>
+  <text x="620" y="445" fill="#8b98a9" font-size="11" text-anchor="middle">total / per-wallet / per-chain</text>
+
+  <line x1="335" y1="470" x2="560" y2="470" stroke="#58a6ff" stroke-width="2"/>
+  <polygon points="558,464 570,470 558,476" fill="#58a6ff"/>
+  <text x="447" y="495" fill="#8b98a9" font-size="11" text-anchor="middle">daily snapshots accumulate → trends</text>
+
+  <!-- arrows from fetchers to storage -->
+  <line x1="335" y1="355" x2="335" y2="396" stroke="#3a4658" stroke-width="2"/>
+  <line x1="620" y1="355" x2="620" y2="396" stroke="#3a4658" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="705" y="372" fill="#8b98a9" font-size="11">dashboard reads</text>
+</svg>
