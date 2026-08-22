@@ -1,0 +1,25 @@
+{
+  "name": "dsh-crypto-portfolio",
+  "version": "0.1.0",
+  "description": "Crypto portfolio tracker (BTC/EVM/Solana/Hyperliquid/CEX) as a DSH plugin. All private keys/wallets live in user-local JSON configs, never in this package.",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "tracker",
+    "static",
+    "run.py",
+    "fetch.py",
+    "templates",
+    "vendor",
+    "requirements.txt",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT"
+}
