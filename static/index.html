@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crypto Portfolio Tracker</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="logo">◈</span> <span data-i18n="brand">Crypto Portfolio Tracker</span>
+  </div>
+  <div class="header-actions">
+    <button id="btnLang" class="btn-ghost" title="switch language">中文</button>
+    <label class="pf-switch"><span class="fb-label" data-i18n="profileActive">Profile</span>
+      <select id="profileSelect" data-i18n-title="profileSwitchTitle"></select></label>
+    <select id="dateSelect" data-i18n-title="viewDateTitle"></select>
+    <button id="btnRefresh" data-i18n="btnRefresh">Refresh</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="pageDashboard" data-i18n="tabDashboard">Dashboard</button>
+  <button class="tab" data-tab="pageSettings" data-i18n="tabSettings">Settings</button>
+</nav>
+
+<div id="progress" class="progress hidden">
+  <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
+  <div id="progressMsg">Refreshing…</div>
+</div>
+
+<div class="filterbar" id="filterbar">
+  <span class="fb-label" data-i18n="fbCategory">Category</span>
+  <select id="filterCategory">
+    <option value="all" data-i18n="fbAll">All</option>
+    <option value="btc" data-i18n="fbBtc">BTC</option>
+    <option value="evm" data-i18n="fbEvm">EVM</option>
+    <option value="sol" data-i18n="fbSol">Solana</option>
+    <option value="cex" data-i18n="fbCex">CEX</option>
+  </select>
+  <span class="fb-label" data-i18n="fbWallet">Wallet</span>
+  <select id="filterWallet"><option value="">—</option></select>
+  <span class="fb-label" data-i18n="fbChain">Chain</span>
+  <select id="filterChain"><option value="">—</option></select>
+</div>
+
+<!-- ================= Dashboard ================= -->
+<div class="page" id="pageDashboard">
+  <main>
+    <section class="top-row">
+      <div class="panel top-half">
+        <div class="panel-title" data-i18n="assetTitle">Total Assets (USD) · Wallet Share</div>
+        <div class="asset-inline">
+          <div class="asset-left">
+            <div id="totalUsd" class="big">--</div>
+            <div id="totalChange" class="change"></div>
+            <div id="lastUpdated" class="sub"></div>
+          </div>
+          <div class="pie-box">
+            <canvas id="walletPie"></canvas>
+            <div id="pieTip" class="chart-tip hidden"></div>
+          </div>
+        </div>
+        <div id="pieLegend" class="pie-legend"></div>
+      </div>
+
+      <div class="panel top-half">
+        <div class="panel-title"><span data-i18n="walletsTitle">Wallets</span> <span class="hint" id="walletCount"></span></div>
+        <div class="wallet-grid" id="walletCards"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" data-i18n="trendTitle">Portfolio Trend <span class="hint">(last snapshot of each day · USD)</span></div>
+      <div class="chart-wrap">
+        <canvas id="trendChart"></canvas>
+        <div id="chartTip" class="chart-tip hidden"></div>
+      </div>
+      <div id="seriesToggle" class="series-toggle"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" data-i18n="chainTitle">Chain Distribution (USD)</div>
+      <div id="chainBars"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span>
+      </div>
+      <div class="toolbar">
+        <input id="search" type="search" data-i18n-placeholder="searchPh" placeholder="Search token / name / wallet / address…">
+        <label class="chk"><input type="checkbox" id="hideZero" checked> <span data-i18n="hideZero">Hide USD≈0</span></label>
+        <span id="tokenCount" class="hint"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="tokenTable">
+          <thead>
+            <tr>
+              <th data-key="symbol" data-i18n="thSymbol">Token</th>
+              <th data-key="name" data-i18n="thName">Name</th>
+              <th data-key="chain" data-i18n="thChain">Chain</th>
+              <th data-key="wallet" data-i18n="thWallet">Wallet</th>
+              <th data-key="amount" class="num" data-i18n="thAmount">Amount</th>
+              <th data-key="price" class="num" data-i18n="thPrice">Price (USD)</th>
+              <th data-key="usd" class="num" data-i18n="thUsd">Balance (USD)</th>
+              <th class="op" data-i18n="thOp">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tokenBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack (CEX), CoinGecko/DexScreener/OKX (prices). Refresh saves the last snapshot of the day and builds trend charts.</footer>
+  </main>
+</div>
+
+<!-- ================= Settings ================= -->
+<div class="page hidden" id="pageSettings">
+  <main>
+    <section class="panel">
+      <div class="panel-title" data-i18n="profilesTitle">Profiles (named configs)</div>
+      <p class="bl-desc" data-i18n="profilesDesc">Each profile is an independent config: sources (APIs + keys), wallets, blacklist and its own snapshot history. The default profile is the public template (public wallets, empty keys); your private wallets/keys belong to a named profile of your choice.</p>
+      <div id="profileList" class="bl-list"></div>
+      <p class="bl-desc" data-i18n="pfSwitchHint">Switch profiles from the dropdown in the top-right corner.</p>
+      <div class="bl-form">
+        <input id="pfNewName" data-i18n-placeholder="pfNamePh" placeholder="Profile name">
+        <button id="btnPfCreateTpl" class="btn-ghost" data-i18n="pfCreateTpl">Create from public template</button>
+        <button id="btnPfCopy" class="btn-ghost" data-i18n="pfCopy">Duplicate current</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="walletMgmtTitle">Wallet Management</span>
+        <span class="hint" id="walletFile"></span>
+      </div>
+      <p class="bl-desc" data-i18n="walletMgmtDesc">Adding/removing wallets only affects future fetches; already stored historical snapshots are never touched. CEX accounts are named &lt;exchange&gt;_read to show they are read-only keys.</p>
+      <div id="walletList" class="bl-list"></div>
+      <div class="bl-form">
+        <input id="wlName" data-i18n-placeholder="wlNamePh" placeholder="Name (e.g. evm-new)">
+        <select id="wlType">
+          <option value="evm" data-i18n="wlTypeEvm">EVM (DeBank + Hyperliquid)</option>
+          <option value="btc" data-i18n="wlTypeBtc">BTC</option>
+          <option value="sol" data-i18n="wlTypeSol">Solana</option>
+        </select>
+        <input id="wlAddress" data-i18n-placeholder="wlAddrPh" placeholder="Address" style="flex:2">
+        <button id="btnAddWallet" data-i18n="btnAddWallet">+ Add Wallet</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" data-i18n="srcTitle">Data Source Configuration
+        <span class="hint" id="sourcesFile"></span>
+      </div>
+      <p class="bl-desc" data-i18n="srcDesc">All APIs (URL + keys) are configured here: each source can have multiple providers, tried in order with automatic failover to the next working one. Save to apply without restart. Env vars DEBANK_API_KEY / BIRDEYE_API_KEY / COINGECKO_API_KEY / SOLANA_RPC have highest priority.</p>
+      <div id="sourcesBody"></div>
+      <div class="toolbar" style="margin-top:12px">
+        <button id="btnSaveSources" data-i18n="btnSaveSrc">Save & Apply</button>
+        <button id="btnExportConfig" class="btn-ghost" data-i18n="btnExport">Export Config</button>
+        <button id="btnImportConfig" class="btn-ghost" data-i18n="btnImport">Import Config</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+        <span id="sourcesMsg" class="hint"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="blTitle">Token Blacklist</span>
+        <span class="hint" id="blacklistFile"></span>
+      </div>
+      <p class="bl-desc" data-i18n="blDesc">Blacklisted tokens are excluded from total assets, wallets, chain distribution and trends (including historical snapshots). Remove entries below to restore.</p>
+      <div id="blacklistEntries" class="bl-list"></div>
+      <div class="bl-form">
+        <input id="blSymbol" data-i18n-placeholder="blSymbolPh" placeholder="Symbol (e.g. ETHG)">
+        <input id="blTokenId" data-i18n-placeholder="blTokenIdPh" placeholder="Contract/mint address (exact, optional)">
+        <input id="blName" data-i18n-placeholder="blNamePh" placeholder="Name substring (optional)">
+        <input id="blChain" data-i18n-placeholder="blChainPh" placeholder="Chain (optional, e.g. eth / sol / hyperliquid)">
+        <button id="btnAddBlacklist" data-i18n="btnAddBl">+ Add Blacklist</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
