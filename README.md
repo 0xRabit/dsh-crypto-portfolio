@@ -1,17 +1,21 @@
 # dsh-crypto-portfolio
 
+English | [中文](README.zh.md)
+
 Crypto portfolio tracker as a [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) plugin.
 
 Tracks wallets across **BTC / EVM / Solana / Hyperliquid L1 / CEX (Binance · Bybit · Backpack)** with
 multi-provider API failover, per-day snapshots and trend charts — a self-contained web dashboard
 launched from a Cordis plugin.
 
+![Dashboard](assets/screenshot.png)
+
 ## Features
 
 - **Wallets**: BTC (P2SH/P2TR), EVM (DeBank, all chains), Solana (public RPC: SOL + SPL + native staked SOL),
   Hyperliquid L1 (official API: staked HYPE + spot), CEX accounts (read-only keys, named `<exchange>_read`).
 - **Configurable sources**: all API URLs/keys live in per-profile JSON configs (`profiles/<name>/`).
-  Each source supports multiple providers with **automatic failover** (last working provider is remembered).
+  Each source supports multiple providers with **automatic failover** (the last working provider is remembered).
 - **Multi-profile**: each named profile has its own sources, wallets, blacklist and snapshot history.
   The `default` profile ships with public example wallets (vitalik.eth, genesis BTC, public SOL) and empty keys.
 - **Dashboard**: global filters (category BTC/EVM/Solana/CEX, wallet, chain), wallet-share pie chart,
