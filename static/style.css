@@ -215,3 +215,32 @@ footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20
 
 .pf-switch { display: inline-flex; align-items: center; gap: 6px; }
 .pf-switch select { padding: 5px 8px; font-size: 12.5px; max-width: 180px; }
+
+/* ---------- light theme ---------- */
+html[data-theme="light"] {
+  --bg: #f6f8fa; --panel: #ffffff; --panel2: #f0f3f6;
+  --border: #d8dee6; --text: #1f2328; --muted: #57606a;
+  --accent: #0969da;
+}
+html[data-theme="light"] header { background: rgba(255,255,255,.92); }
+html[data-theme="light"] .total-card,
+html[data-theme="light"] .src-block { background: var(--panel); }
+
+/* ---------- brand logo & icons ---------- */
+.brand-logo { width: 22px; height: 22px; vertical-align: -5px; margin-right: 6px; }
+.logo-img { width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 5px; flex: none; }
+.w-name .logo-img { width: 15px; height: 15px; }
+.chain-tag { display: inline-flex; align-items: center; gap: 4px; }
+.paid-badge {
+  font-size: 10px; font-weight: 700; color: #f0b95c;
+  border: 1px solid rgba(240,185,92,.5); border-radius: 10px;
+  padding: 0 6px; margin-left: 6px; letter-spacing: .3px;
+}
+.src-oktime { color: var(--muted); font-size: 11px; margin-left: 8px; }
+.w-card-logo { width: 18px; height: 18px; border-radius: 5px; }
+
+.src-link {
+  color: var(--accent); font-size: 11.5px; text-decoration: none;
+  white-space: nowrap; margin-left: 2px;
+}
+.src-link:hover { text-decoration: underline; }

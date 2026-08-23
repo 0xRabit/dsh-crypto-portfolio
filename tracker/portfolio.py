@@ -12,6 +12,7 @@ from .debank import fetch_evm_wallet
 from .hyperliquid import fetch_hyperliquid_wallet
 from .prices import get_native_prices
 from .solana import birdeye_wallet_prices, fetch_solana_wallet, get_sol_token_prices
+from . import status
 
 _refresh_lock = threading.Lock()
 
@@ -90,6 +91,8 @@ def fetch_all(progress=None):
     btc_usd = native.get("bitcoin")
     sol_usd = native.get("solana")
     tick("prices", 1, 1, "Prices fetched")
+    if native:
+        status.mark_source_ok("prices")
 
     # 2) BTC wallets
     sats = {}
@@ -98,6 +101,7 @@ def fetch_all(progress=None):
         tick("btc", 0, 1, "Fetching BTC balances…")
         sats = fetch_btc_satoshis([w["address"] for w in btc_wallets])
         tick("btc", 1, 1, "BTC balances fetched")
+        status.mark_source_ok("btc")
 
     # 3) EVM wallets (DeBank all chains + Hyperliquid native L1)
     evm_wallets = _wallet_subset("evm")
@@ -111,10 +115,12 @@ def fetch_all(progress=None):
                 hl = fetch_hyperliquid_wallet(w, native.get("hyperliquid"),
                                               native.get("bitcoin"), native.get("ethereum"))
                 ew["tokens"].extend(hl["rows"])
+                status.mark_source_ok("hyperliquid")
             except Exception:  # noqa: BLE001
                 pass
             evm_results.append(ew)
         tick("evm", total_steps, total_steps, "EVM/Hyperliquid fetched")
+        status.mark_source_ok("debank")
 
     # 4) Solana wallets
     sol_wallets = _wallet_subset("sol")
@@ -139,11 +145,16 @@ def fetch_all(progress=None):
         eff_sol_usd = birdeye_sol or sol_usd
         sol_rows_all = _sol_rows(sol_data_list, eff_sol_usd, spl_prices)
         tick("sol", 3, 3, "Solana fetched")
+        status.mark_source_ok("solana")
 
     # 5) CEX accounts (Binance / Bybit / Backpack)
     tick("cex", 0, 1, "Fetching CEX balances (Binance/Bybit/Backpack)…")
     cex_results = fetch_cex_accounts(cex_accounts(), native)
     tick("cex", 1, 1, "CEX fetched")
+    for _r in cex_results:
+        if _r["error"] is None:
+            status.mark_source_ok(f"cex:{_r['account'].get('exchange')}")
+    status.mark_source_ok("cex")
 
     # 6) assemble — every wallet's tokens pass through the blacklist; all totals
     #    (wallet / chain / total) are recomputed from the filtered token rows.
@@ -191,6 +202,7 @@ def fetch_all(progress=None):
         result["total_usd"] = round(result["total_usd"] + wo["total_usd"], 2)
 
     result["wallets"] = wallet_objs
+    status.mark_refresh()
     return result
 
 

@@ -5,14 +5,16 @@ import os
 import re
 import threading
 import urllib.parse
-from datetime import date
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import config, portfolio, storage
 from . import blacklist as bl
 from . import cex
 from . import profiles
+from . import schedule as sched
 from . import sources
+from . import status
 from . import walletstore
 from .debank import chain_names
 from .views import view_of
@@ -117,11 +119,19 @@ class Handler(BaseHTTPRequestHandler):
                     "file": sources.sources_file(),
                     "config": sources.load(),
                     "last_ok": sources.failover_state(),
+                    "status": status.get_status(),
                 })
+                self._reply(code, body, "application/json; charset=utf-8")
+            elif path == "/api/schedule":
+                code, body = _json(sched.get_schedule())
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/config/export":
                 code, body = _json(self._config_export())
                 self._reply(code, body, "application/json; charset=utf-8")
+            elif path == "/api/schedule":
+                enabled = bool((body or {}).get("enabled", False))
+                time_val = str((body or {}).get("time") or "").strip()
+                self._reply_json(sched.set_schedule(enabled, time_val))
             elif path == "/api/profiles":
                 code, body = _json(self._profiles_view())
                 self._reply(code, body, "application/json; charset=utf-8")
@@ -195,6 +205,10 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/config/import":
                 cfg = (body or {}).get("config") or {}
                 self._reply_json(self._config_import(cfg))
+            elif path == "/api/schedule":
+                enabled = bool((body or {}).get("enabled", False))
+                time_val = str((body or {}).get("time") or "").strip()
+                self._reply_json(sched.set_schedule(enabled, time_val))
             elif path == "/api/profiles":
                 action = (body or {}).get("action")
                 name = str((body or {}).get("name") or "").strip()
@@ -356,6 +370,43 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, f.read(), MIME.get(ext, "application/octet-stream"))
 
 
+_scheduler_stop = threading.Event()
+
+
+def _run_scheduled(profile):
+    prev = profiles.active()
+    try:
+        profiles.set_active(profile)
+        with _state_lock:
+            if _refresh_state["running"]:
+                return
+        for attempt in range(3):
+            try:
+                data, _prev = portfolio.refresh_snapshot()
+                sched.mark_run(profile=profile)
+                print(f"[scheduler] {profile}: auto-refresh done (${data.get('total_usd')})", flush=True)
+                return
+            except Exception as e:  # noqa: BLE001
+                print(f"[scheduler] {profile}: attempt {attempt + 1} failed: {e}", flush=True)
+                _scheduler_stop.wait(60)
+    finally:
+        try:
+            profiles.set_active(prev)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _scheduler_loop():
+    while not _scheduler_stop.wait(30):
+        try:
+            now = datetime.now()
+            for p in profiles.list_profiles():
+                if sched.is_due(p, now):
+                    _run_scheduled(p)
+        except Exception as e:  # noqa: BLE001
+            print(f"[scheduler] loop error: {e}", flush=True)
+
+
 def run(port=None, host="127.0.0.1", profile=None):
     port = port or config.DEFAULT_PORT
     profiles.ensure_profiles()
@@ -363,7 +414,10 @@ def run(port=None, host="127.0.0.1", profile=None):
         profiles.set_active(profile)
     sources.ensure_file()
     storage.init_db()
-    print(f"[profiles] active: {profiles.active()}")
+    print(f"[profiles] active: {profiles.active()}", flush=True)
+    scheduler = threading.Thread(target=_scheduler_loop, daemon=True)
+    scheduler.start()
+    print("[scheduler] daily auto-refresh thread started", flush=True)
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"Portfolio Tracker running at http://{host}:{port}")
     print("Open the page and click Refresh to pull all wallet balances.")
@@ -371,4 +425,5 @@ def run(port=None, host="127.0.0.1", profile=None):
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped")
+        _scheduler_stop.set()
         server.shutdown()

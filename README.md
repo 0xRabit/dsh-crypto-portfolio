@@ -45,9 +45,11 @@ Without history there's no peace of mind.
 - **A zero-dependency web dashboard, launched from a real DSH plugin.** No framework, no CDN — Python stdlib + vanilla JS.
 - **Covers BTC / EVM / Solana / Hyperliquid L1 / CEX.** DeBank's 73 chains, BTC P2SH+P2TR, native Solana staking, Hyperliquid's official API (staked HYPE + spot + perp equity), and read-only CEX keys (named `<exchange>_read`).
 - **Global filters.** Category (BTC / EVM / Solana / CEX), wallet and chain dropdowns drive every panel — total, wallet-share pie, trend, chain distribution, token table.
+- **Free + paid data sources, clearly labeled.** EVM uses DeBank with two providers: paid `debank-pro` (badged "PAID", with a registration link) and free keyless `debank-public` fallback; CEX rows always show Binance/Bybit/Backpack with "get API key" links to each exchange. Each source displays when it last succeeded.
 - **Automatic API failover.** Each source has several providers (prices: CoinGecko → Binance → Coinbase → OKX; BTC: blockchain.info → mempool.space; multiple Solana RPCs; Hyperliquid dual endpoints). A dead provider is skipped and the last working one is remembered.
+- **Scheduled daily refresh.** Every profile can auto-refresh at a local time (server-side daemon; closing the browser page does not stop it); per-source last-success timestamps are shown in Settings.
 - **Multi-profile configs.** The `default` profile ships with public template wallets (vitalik.eth, genesis BTC, public SOL) and empty keys; your private wallets and keys live in a separately named profile with its own snapshot history.
-- **i18n**: EN / 中文, English by default.
+- **Themes & i18n**: light/dark theme toggle, EN / 中文 (English by default), chain/exchange logos throughout.
 
 ![Dashboard](assets/screenshot.png)
 

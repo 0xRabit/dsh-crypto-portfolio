@@ -4,14 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
-<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
+<link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body>
 <header>
   <div class="brand">
-    <span class="logo">◈</span> <span data-i18n="brand">Crypto Portfolio Tracker</span>
+    <img src="/static/logos/logo.svg" class="brand-logo" alt="logo"> <span data-i18n="brand">Crypto Portfolio Tracker</span> <span id="versionTag" class="hint"></span>
   </div>
   <div class="header-actions">
+    <button id="btnTheme" class="btn-ghost" title="toggle theme">☾</button>
     <button id="btnLang" class="btn-ghost" title="switch language">中文</button>
     <label class="pf-switch"><span class="fb-label" data-i18n="profileActive">Profile</span>
       <select id="profileSelect" data-i18n-title="profileSwitchTitle"></select></label>
@@ -121,6 +123,18 @@
 <div class="page hidden" id="pageSettings">
   <main>
     <section class="panel">
+      <div class="panel-title" data-i18n="schedTitle">Scheduled Daily Refresh</div>
+      <p class="bl-desc" data-i18n="schedDesc">Automatically refresh this profile at a set local time every day (only if the server is running at that minute).</p>
+      <div class="bl-form">
+        <label class="chk"><input type="checkbox" id="schedEnabled"> <span data-i18n="schedEnable">Enable</span></label>
+        <input type="time" id="schedTime" value="09:00">
+        <button id="btnSaveSchedule" class="btn-ghost" data-i18n="btnSaveSched">Save Schedule</button>
+        <span id="schedMsg" class="hint"></span>
+        <span id="schedLast" class="hint"></span>
+      </div>
+    </section>
+
+    <section class="panel">
       <div class="panel-title" data-i18n="profilesTitle">Profiles (named configs)</div>
       <p class="bl-desc" data-i18n="profilesDesc">Each profile is an independent config: sources (APIs + keys), wallets, blacklist and its own snapshot history. The default profile is the public template (public wallets, empty keys); your private wallets/keys belong to a named profile of your choice.</p>
       <div id="profileList" class="bl-list"></div>
@@ -182,6 +196,6 @@
   </main>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=2"></script>
 </body>
 </html>

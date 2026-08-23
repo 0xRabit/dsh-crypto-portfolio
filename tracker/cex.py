@@ -27,7 +27,15 @@ def cex_accounts():
     cfg = sources.get_source("cex")
     if not cfg.get("enabled", True):
         return []
-    return [a for a in cfg.get("accounts", []) if a.get("enabled", True)]
+    out = []
+    for a in cfg.get("accounts", []):
+        if not a.get("enabled", True):
+            continue
+        # skip rows with no credentials (placeholder CEX entries shown in the UI)
+        if not (a.get("key") or "").strip() and not (a.get("secret") or "").strip():
+            continue
+        out.append(a)
+    return out
 
 
 # --------------------------------------------------------------------------

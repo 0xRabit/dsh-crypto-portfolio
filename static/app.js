@@ -63,6 +63,15 @@ const I18N = {
     useProfile: "Use", activeProfile: "active", deleteProfile: "Delete",
     confirmDelProfile: "Delete this profile? Its snapshots and configs will be removed.",
     profileSwitchFail: "Switch failed: ", profileCreateFail: "Create failed: ", profileDeleteFail: "Delete failed: ",
+    schedTitle: "Scheduled Daily Refresh",
+    schedDesc: "Runs inside the Python server process (not the browser page) - closing the web page does not stop it. Fires at the exact local minute; the server must be running at that time. Saving a schedule resets today's once-per-day marker, so a future time fires the same day.",
+    schedEnable: "Enable", btnSaveSched: "Save Schedule", schedSaved: "Schedule saved", schedLastRun: "Last auto-run: ",
+    paidBadge: "PAID", lastOk: "last ok", never: "never",
+    cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
+    providersHint: "providers (paid first, free fallback)",
+    getKey: "get API key",
+    debankHint: "EVM source = DeBank. Fields: base_url = API endpoint (the paid pro provider needs the pro host); key = AccessKey for the paid provider, leave empty to use the free public API; chain_list_url = DeBank-specific endpoint that lists all supported chains (switch to a mirror if blocked); chains = optional comma-separated chain ids to fetch (e.g. eth,bsc,arb,base), empty = all.",
+    urlPh: "API URL", chainListPh: "chain list API (DeBank-specific)", chainsPh: "optional: eth,bsc,arb,base (default: all)",
     profileActive: "Profile",
     apiKey: "API Key", enabled: "启用", rpcLabel: "RPC 节点", splPricesLabel: "SPL 价格",
     birdeyeLabel: "Birdeye", srcKeyPh: "key（可选）", cexKeyPh: "api key", cexSecretPh: "api secret",
@@ -136,6 +145,15 @@ const I18N = {
     useProfile: "使用", activeProfile: "当前", deleteProfile: "删除",
     confirmDelProfile: "删除该 Profile？其快照与配置将一并删除。",
     profileSwitchFail: "切换失败：", profileCreateFail: "创建失败：", profileDeleteFail: "删除失败：",
+    schedTitle: "定时每日刷新",
+    schedDesc: "定时器运行在 Python 服务进程内（与网页无关）——关闭网页不影响它。在设定分钟的整点触发；那一刻服务必须在运行。保存定时会重置当天的一次性标记：新时间若在今天之后，当天就会执行。",
+    schedEnable: "启用", btnSaveSched: "保存定时", schedSaved: "定时已保存", schedLastRun: "上次自动执行：",
+    paidBadge: "付费", lastOk: "上次成功", never: "从未",
+    cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
+    providersHint: "providers（付费优先，免费兜底）",
+    getKey: "获取 API key",
+    debankHint: "EVM 数据源 = DeBank。字段说明：base_url = API 地址（付费 pro 需要 pro 域名）；key = 付费源的 AccessKey，留空则走免费公开 API；chain_list_url = DeBank 特有的链列表接口（被墙/失效可换镜像）；chains = 可选，逗号分隔要抓取的链（如 eth,bsc,arb,base），留空抓全部。",
+    urlPh: "API URL", chainListPh: "链列表接口（Debank 特有）", chainsPh: "可选：eth,bsc,arb,base（默认全部）",
     profileActive: "Profile",
     apiKey: "API Key", enabled: "启用", rpcLabel: "RPC 节点", splPricesLabel: "SPL 价格",
     birdeyeLabel: "Birdeye", srcKeyPh: "key（可选）", cexKeyPh: "api key", cexSecretPh: "api secret",
@@ -150,8 +168,16 @@ const I18N = {
     avg: "占比",
   },
 };
+let theme = "dark";
+try { theme = localStorage.getItem("pt_theme") || "dark"; } catch (e) { /* ignore */ }
+document.documentElement.setAttribute("data-theme", theme);
+const themeBtnIcon = () => theme === "light" ? "☀" : "☾";
+
 let lang = "en";
 try { lang = localStorage.getItem("pt_lang") || "en"; } catch (e) { /* ignore */ }
+
+const APP_VERSION = "20260822b";
+console.log("[dsh-crypto-portfolio] app v" + APP_VERSION);
 
 const t = (key, ...args) => {
   const d = I18N[lang] || I18N.en;
@@ -160,15 +186,27 @@ const t = (key, ...args) => {
   return v;
 };
 function applyI18n() {
+  const v = document.getElementById("versionTag");
+  if (v) v.textContent = "v" + APP_VERSION;
   document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
   document.title = t("brand");
   $("btnLang").textContent = lang === "zh" ? "EN" : "中文";
+  const tb = document.getElementById("btnTheme");
+  if (tb) tb.textContent = themeBtnIcon();
 }
 
 /* ---------------- helpers ---------------- */
-const $ = (id) => document.getElementById(id);
+const _inert = {
+  addEventListener() {}, appendChild() {}, insertAdjacentHTML() {},
+  querySelectorAll: () => [], setAttribute() {}, getContext: () => _inert,
+  classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
+  style: {}, dataset: {}, options: [], files: [],
+  value: "", textContent: "", innerHTML: "", title: "", href: "", download: "",
+  click() {}, scrollIntoView() {}, focus() {}, remove() {},
+};
+const $ = (id) => document.getElementById(id) || _inert;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
 ));
@@ -294,6 +332,12 @@ async function init() {
 
 function bindEvents() {
   $("btnRefresh").addEventListener("click", refresh);
+  $("btnTheme").addEventListener("click", () => {
+    theme = theme === "light" ? "dark" : "light";
+    try { localStorage.setItem("pt_theme", theme); } catch (e) { /* ignore */ }
+    document.documentElement.setAttribute("data-theme", theme);
+    $("btnTheme").textContent = themeBtnIcon();
+  });
   $("btnLang").addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";
     try { localStorage.setItem("pt_lang", lang); } catch (e) { /* ignore */ }
@@ -337,6 +381,17 @@ function bindEvents() {
     });
   });
   // profiles
+  $("btnSaveSchedule").addEventListener("click", async () => {
+    try {
+      await postJSON("/api/schedule", {
+        enabled: $("schedEnabled").checked,
+        time: $("schedTime").value || "09:00",
+      });
+      $("schedMsg").textContent = "✓ " + t("schedSaved");
+      setTimeout(() => { $("schedMsg").textContent = ""; }, 4000);
+      await renderSchedule();   // refreshes enabled/time/last-run, keeps schedMsg
+    } catch (e) { $("schedMsg").textContent = t("saveFailed") + e.message; }
+  });
   $("btnPfCreateTpl").addEventListener("click", async () => {
     const name = $("pfNewName").value.trim();
     if (!name) { alert(t("pfNamePh")); return; }
@@ -564,8 +619,9 @@ function renderWalletCards() {
   v.wallets.forEach((w) => {
     const card = document.createElement("div");
     card.className = "card";
+    const wlogo = w.type === "btc" ? "btc" : w.type === "sol" ? "sol" : w.type === "cex" ? "evm" : "evm";
     card.innerHTML =
-      '<div class="w-name">' + esc(w.wallet) +
+      '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' + esc(w.wallet) +
         ' <span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span></div>" +
       '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) + "</div>" +
@@ -593,7 +649,7 @@ function renderChainBars() {
     const row = document.createElement("div");
     row.className = "bar-row";
     row.innerHTML =
-      '<div class="bar-label" title="' + esc(chainName(cid)) + '">' + esc(chainName(cid)) + "</div>" +
+      '<div class="bar-label" title="' + esc(chainName(cid)) + '"><img class="logo-img" src="' + chainLogo(cid) + '" alt="">' + esc(chainName(cid)) + "</div>" +
       '<div class="bar-track"><div class="bar-fill" style="width:' + pct.toFixed(1) +
         '%;background:' + PALETTE[i % PALETTE.length] + '"></div></div>' +
       '<div class="bar-val">' + fmtUsd(usd) + " · " + pct.toFixed(1) + "%</div>";
@@ -632,7 +688,7 @@ function renderTable() {
     '<td class="sym">' + (x.logo ? '<img src="' + esc(x.logo) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<span class="dot"></span>')
       + esc(x.symbol) + "</td>" +
     '<td class="muted">' + esc(x.name || "") + "</td>" +
-    '<td><span class="chain-tag">' + esc(chainName(x.chain)) + "</span></td>" +
+    '<td><span class="chain-tag"><img class="logo-img" src="' + chainLogo(x.chain) + '" alt="">' + esc(chainName(x.chain)) + "</span></td>" +
     '<td>' + esc(x.wallet) + "</td>" +
     '<td class="num amount">' + fmtAmount(x.amount) + "</td>" +
     '<td class="num">' + fmtUsd(x.price) + "</td>" +
@@ -1029,17 +1085,42 @@ function setByPath(obj, path, value) {
   cur[parts[parts.length - 1]] = value;
 }
 
-function srcProvidersHTML(basePath, providers) {
-  return '<div class="src-providers">' + providers.map((p, i) =>
-    '<div class="src-prov">' +
-    '<label class="chk"><input type="checkbox" data-path="' + basePath + "." + i + '.enabled"' +
-      (p.enabled !== false ? " checked" : "") + "></label>" +
-    '<input data-path="' + basePath + "." + i + '.name" value="' + esc(p.name) + '" class="src-name" readonly>' +
-    '<input data-path="' + basePath + "." + i + '.url" value="' + esc(p.url || "") + '" class="src-url">' +
-    (p.key !== undefined
-      ? '<input data-path="' + basePath + "." + i + '.key" value="' + esc(p.key || "") + '" class="src-key" placeholder="t("srcKeyPh")">'
-      : "") +
-    "</div>").join("") + "</div>";
+function srcProvidersHTML(basePath, providers, keyPh, links) {
+  const keyPlaceholder = (p) => (typeof keyPh === "function" ? keyPh(p) : keyPh) || t("srcKeyPh");
+  const linkFor = (p) => (links && links[p.name]) || (links && links[p.exchange])
+    ? '<a class="src-link" href="' + esc((links[p.name] || links[p.exchange])) + '" target="_blank" rel="noopener noreferrer">' + t("getKey") + " ↗</a>"
+    : "";
+  return '<div class="src-providers">' + providers.map((p, i) => {
+    const urlField = p.base_url !== undefined ? "base_url" : "url";
+    const urlVal = p.base_url !== undefined ? (p.base_url || "") : (p.url || "");
+    return '<div class="src-prov">' +
+      '<label class="chk"><input type="checkbox" data-path="' + basePath + "." + i + '.enabled"' +
+        (p.enabled !== false ? " checked" : "") + "></label>" +
+      '<input data-path="' + basePath + "." + i + '.name" value="' + esc(p.name) + '" class="src-name" readonly>' +
+      '<input data-path="' + basePath + "." + i + "." + urlField + '" value="' + esc(urlVal) + '" class="src-url" placeholder="' + t("urlPh") + '">' +
+      (p.key !== undefined
+        ? '<input data-path="' + basePath + "." + i + '.key" value="' + esc(p.key || "") + '" class="src-key" placeholder="' + esc(keyPlaceholder(p)) + '">'
+        : "") +
+      (p.paid ? '<span class="paid-badge">' + t("paidBadge") + "</span>" : "") +
+      linkFor(p) +
+      "</div>";
+  }).join("") + "</div>";
+}
+
+const SRC_LINKS = {
+  "debank-pro": "https://open.debank.com",
+  binance: "https://www.binance.com/en/my/settings/api-management",
+  bybit: "https://www.bybit.com/app/user/api-management",
+  backpack: "https://app.backpack.exchange/settings/api-keys",
+};
+
+function chainLogo(cid) {
+  const map = { btc: "btc", eth: "eth", sol: "sol", hyperliquid: "hyperliquid",
+                binance: "binance", bybit: "bybit", backpack: "backpack" };
+  return map[cid] ? '/static/logos/' + map[cid] + '.svg' : '/static/logos/evm.svg';
+}
+function typeLogo(type) {
+  return '/static/logos/' + (type === "btc" ? "btc" : type === "sol" ? "sol" : type === "cex" ? "evm" : "evm") + '.svg';
 }
 
 function srcFieldHTML(path, label, value, placeholder) {
@@ -1052,16 +1133,20 @@ async function renderSources() {
     const d = await api("/api/sources");
     state.sourcesCfg = JSON.parse(JSON.stringify(d.config));
     state.sourcesLastOk = d.last_ok || {};
+    const st = d.status || {};
+    const lastOk = st.last_ok || {};
     $("sourcesFile").textContent = d.file ? d.file.split(/[\\/]/).pop() : "";
     const cfg = state.sourcesCfg;
     const body = $("sourcesBody");
     body.innerHTML = "";
 
-    const blockOf = (key) => {
+    const fmtTime = (iso) => iso ? String(iso).replace("T", " ").slice(0, 16) : t("never");
+    const blockOf = (key, srcKey) => {
       const b = document.createElement("div");
       b.className = "src-block";
       const meta = SRC_META[key] || { en: key, zh: key };
       let lastStr = "";
+      const okTime = fmtTime(lastOk[srcKey || key]);
       if (key === "solana") {
         const parts = [];
         const rk = state.sourcesLastOk["solana_rpc"];
@@ -1078,6 +1163,7 @@ async function renderSources() {
       b.innerHTML = '<div class="src-head"><label class="chk">' +
         '<input type="checkbox" data-path="' + key + '.enabled"' + (cfg[key].enabled !== false ? " checked" : "") + "> " +
         "<b>" + esc(meta[lang] || meta.en) + "</b></label>" +
+        '<span class="hint src-oktime">' + t("lastOk") + ": " + esc(okTime) + "</span>" +
         '<span class="hint src-ok">' + esc(lastStr) + "</span></div>";
       body.appendChild(b);
       return b;
@@ -1086,9 +1172,12 @@ async function renderSources() {
     if (cfg.debank) {
       const b = blockOf("debank");
       b.insertAdjacentHTML("beforeend",
-        srcFieldHTML("debank.key", t("apiKey"), cfg.debank.key) +
-        srcFieldHTML("debank.base_url", "base_url", cfg.debank.base_url) +
-        srcFieldHTML("debank.chain_list_url", "chain_list_url", cfg.debank.chain_list_url));
+        '<div class="src-sub">' + t("providersHint") + "</div>" +
+        srcProvidersHTML("debank.providers", cfg.debank.providers || [], (p) =>
+          p.type === "pro" ? "AccessKey (required)" : "free - no key", SRC_LINKS) +
+        srcFieldHTML("debank.chain_list_url", "chain_list_url", cfg.debank.chain_list_url, t("chainListPh")) +
+        srcFieldHTML("debank.chains", "chains", cfg.debank.chains || "", t("chainsPh")) +
+        '<p class="bl-desc">' + t("debankHint") + "</p>");
     }
     for (const key of ["btc", "prices", "hyperliquid"]) {
       if (!cfg[key]) continue;
@@ -1105,23 +1194,42 @@ async function renderSources() {
         '<div class="src-sub">' + t("birdeyeLabel") + "</div>" +
         '<div class="src-prov">' +
         '<label class="chk"><input type="checkbox" data-path="solana.birdeye.enabled"' +
-          (cfg.solana.birdeye.enabled ? " checked" : "") + "> enabled</label>" +
-        '<input data-path="solana.birdeye.key" value="' + esc(cfg.solana.birdeye.key || "") + '" class="src-key" placeholder="t("srcKeyPh")">' +
+          (cfg.solana.birdeye.enabled ? " checked" : "") + "> " + t("enabled") + "</label>" +
+        '<input data-path="solana.birdeye.key" value="' + esc(cfg.solana.birdeye.key || "") + '" class="src-key" placeholder="' + t("srcKeyPh") + '">' +
         '<input data-path="solana.birdeye.url" value="' + esc(cfg.solana.birdeye.url || "") + '" class="src-url">' +
         "</div>");
     }
     if (cfg.cex) {
       const b = blockOf("cex");
-      (cfg.cex.accounts || []).forEach((a, i) => {
+      // always show the supported exchanges (binance / bybit / backpack); keys default empty.
+      // merged rows are written back into the config so name/exchange persist on save.
+      const byEx = {};
+      (cfg.cex.accounts || []).forEach((a) => { if (a.exchange) byEx[a.exchange] = a; });
+      const defaults = [
+        { exchange: "binance", name: "binance_read" },
+        { exchange: "bybit", name: "bybit_read" },
+        { exchange: "backpack", name: "backpack_read" },
+      ];
+      const extra = (cfg.cex.accounts || []).filter((a) => !defaults.some((d) => d.exchange === a.exchange));
+      const rows = defaults.map((dflt) => byEx[dflt.exchange] ||
+        Object.assign({}, dflt, { key: "", secret: "", enabled: true })).concat(extra);
+      state.sourcesCfg.cex.accounts = rows;
+      cfg.cex.accounts = rows;
+      rows.forEach((a, i) => {
         b.insertAdjacentHTML("beforeend",
-          '<div class="src-sub">' + esc(a.name) + " (" + esc(a.exchange) + ")</div>" +
+          '<div class="src-sub">' + esc(a.name) + " (" + esc(a.exchange) + ")" +
+          ' <span class="hint src-oktime">' + t("lastOk") + ": " + esc(fmtTime(lastOk["cex:" + a.exchange])) + "</span></div>" +
           '<div class="src-prov">' +
           '<label class="chk"><input type="checkbox" data-path="cex.accounts.' + i + '.enabled"' +
             (a.enabled !== false ? " checked" : "") + "></label>" +
           '<input data-path="cex.accounts.' + i + '.key" value="' + esc(a.key || "") + '" class="src-key" placeholder="' + t("cexKeyPh") + '">' +
           '<input data-path="cex.accounts.' + i + '.secret" value="' + esc(a.secret || "") + '" class="src-key" placeholder="' + t("cexSecretPh") + '">' +
+          (SRC_LINKS[a.exchange]
+            ? '<a class="src-link" href="' + esc(SRC_LINKS[a.exchange]) + '" target="_blank" rel="noopener noreferrer">' + t("getKey") + " ↗</a>"
+            : "") +
           "</div>");
       });
+      b.insertAdjacentHTML("beforeend", '<p class="bl-desc">' + t("cexDefaultHint") + "</p>");
     }
 
     body.querySelectorAll("[data-path]").forEach((el) => {
@@ -1158,7 +1266,17 @@ async function renderProfiles() {
   } catch (e) { /* ignore */ }
 }
 
+async function renderSchedule() {
+  try {
+    const d = await api("/api/schedule");
+    $("schedEnabled").checked = !!d.enabled;
+    $("schedTime").value = d.time || "09:00";
+    $("schedLast").textContent = t("schedLastRun") + (d.last_run_date || t("never"));
+  } catch (e) { /* ignore */ }
+}
+
 async function renderSettings() {
+  await renderSchedule();
   await renderProfiles();
   await renderWalletMgmt();
   await renderSources();

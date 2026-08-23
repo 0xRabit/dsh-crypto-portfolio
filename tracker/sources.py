@@ -25,9 +25,13 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DEFAULTS = {
     "debank": {
         "enabled": True,
-        "key": "",
-        "base_url": "https://pro-openapi.debank.com",
         "chain_list_url": "https://api.debank.com/chain/list",
+        "providers": [
+            {"name": "debank-pro", "type": "pro", "key": "",
+             "base_url": "https://pro-openapi.debank.com", "paid": True, "enabled": True},
+            {"name": "debank-public", "type": "public", "key": "",
+             "base_url": "https://api.debank.com", "paid": False, "enabled": True},
+        ],
     },
     "btc": {
         "enabled": True,
@@ -121,15 +125,38 @@ def load(force=False):
                 except Exception:  # noqa: BLE001
                     user = {}
             data = _deep_merge(_DEFAULTS, user)
+            _normalize(data)
             _apply_env(data)
             _cache = {"mtime": mtime, "data": data}
         return _cache["data"]
+
+
+def _normalize(data):
+    """Backward compatibility: old debank {key, base_url} -> pro provider."""
+    db = data.get("debank") or {}
+    if not db.get("providers"):
+        db["providers"] = [
+            {"name": "debank-pro", "type": "pro",
+             "key": db.get("key") or "",
+             "base_url": db.get("base_url") or "https://pro-openapi.debank.com",
+             "paid": True, "enabled": True},
+        ]
+    # if the top-level key holds a value the pro provider lacks, copy it over
+    top_key = db.get("key") or ""
+    if top_key:
+        for p in db.get("providers", []):
+            if p.get("type") == "pro" and not p.get("key"):
+                p["key"] = top_key
 
 
 def _apply_env(data):
     env = os.environ
     if env.get("DEBANK_API_KEY"):
         data["debank"]["key"] = env["DEBANK_API_KEY"].strip()
+        for p in data["debank"].get("providers", []):
+            if p.get("type") == "pro":
+                p["key"] = env["DEBANK_API_KEY"].strip()
+                p["enabled"] = True
     if env.get("BIRDEYE_API_KEY"):
         bd = data["solana"]["birdeye"]
         bd["key"] = env["BIRDEYE_API_KEY"].strip()
