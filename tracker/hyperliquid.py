@@ -39,6 +39,48 @@ def _info(payload, timeout=25):
     return result
 
 
+def _vault_rows(address, wallet_name):
+    """Hyperliquid vault positions (leader vaults the user follows).
+
+    userVaultEquities returns equities in USD; vaultDetails gives the name.
+    Rows are USD-valued (amount = equity, price = 1).
+    """
+    rows = []
+    try:
+        d = _info({"type": "userVaultEquities", "user": address})
+        for v in (d or []):
+            addr = v.get("vaultAddress") or ""
+            equity = float(v.get("equity") or 0)
+            if equity <= 0:
+                continue
+            name = "Vault"
+            try:
+                det = _info({"type": "vaultDetails", "vaultAddress": addr})
+                name = (det or {}).get("name") or name
+            except Exception:  # noqa: BLE001
+                pass
+            sym = _vault_symbol(name)
+            rows.append({
+                "wallet": wallet_name, "chain": CHAIN, "symbol": sym,
+                "name": f"Hyperliquid Vault · {name} ({addr[:6]}…)",
+                "amount": round(equity, 2), "price": 1.0, "usd": round(equity, 6),
+                "logo": "", "token_id": f"hl-vault-{addr}",
+            })
+    except Exception:  # noqa: BLE001
+        pass
+    return rows
+
+
+def _vault_symbol(name):
+    name = (name or "").strip()
+    # "Hyperliquidity Provider (HLP)" -> "HLP"; otherwise first word
+    import re
+    m = re.search(r"\(([A-Z0-9]+)\)", name)
+    if m:
+        return m.group(1)
+    return name.split()[0][:8] if name else "Vault"
+
+
 def _spot_price(coin, hype_price, btc_usd, eth_usd):
     if coin == "HYPE":
         return hype_price or 0.0
@@ -100,6 +142,9 @@ def fetch_hyperliquid_wallet(wallet, hype_price, btc_usd, eth_usd, include_perp=
                 })
         except Exception:  # noqa: BLE001
             pass
+
+    # 4) vault positions (e.g. HLP liquidity vault)
+    rows.extend(_vault_rows(address, wallet["name"]))
 
     return {"wallet": wallet["name"], "chain": CHAIN, "rows": rows,
             "total_usd": round(sum(r["usd"] for r in rows), 2)}

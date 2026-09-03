@@ -21,6 +21,7 @@ header {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px;
+  min-height: 54px; box-sizing: border-box;
   background: rgba(13,17,23,.92); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
 }
@@ -28,7 +29,11 @@ header {
 .brand .logo { color: var(--accent); margin-right: 6px; }
 #activeProfileTag { color: var(--yellow); font-size: 12px; margin-left: 10px; font-weight: 400; }
 
-.tabs { display: flex; gap: 4px; padding: 12px 20px 0; }
+.tabs {
+  position: sticky; top: 54px; z-index: 9;
+  display: flex; gap: 4px; padding: 10px 20px 6px;
+  background: var(--bg);
+}
 .tab {
   background: transparent; color: var(--muted);
   border: 1px solid transparent; border-bottom: none;
@@ -68,7 +73,7 @@ th.op { width: 70px; }
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 12px 20px 0; padding: 8px 14px;
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-  position: sticky; top: 56px; z-index: 9;
+  position: sticky; top: 98px; z-index: 8;
 }
 .fb-label { color: var(--muted); font-size: 12.5px; }
 .filterbar select { padding: 5px 10px; font-size: 12.5px; }
@@ -97,7 +102,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .legend-row {
   display: flex; align-items: center; gap: 8px; font-size: 12.5px;
   padding: 4px 8px; border-radius: 6px; cursor: pointer; width: calc(50% - 7px);
-  box-sizing: border-box;
+  box-sizing: border-box; color: var(--text);
 }
 .legend-row:hover { background: rgba(88,166,255,.08); }
 .lg-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -173,14 +178,15 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 #trendChart { width: 100%; height: 320px; display: block; }
 .chart-tip {
   position: absolute; pointer-events: none; background: rgba(13,17,23,.95);
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  border: 1px solid #2a3242; border-radius: 8px; padding: 8px 10px;
   font-size: 12px; min-width: 160px; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.5);
+  color: #e6edf3;   /* tooltip bg is always dark -> always light text */
 }
-.chart-tip .t-date { color: var(--muted); margin-bottom: 4px; }
+.chart-tip .t-date { color: #8b98a9; margin-bottom: 4px; }
 .chart-tip .t-row { display: flex; justify-content: space-between; gap: 14px; }
 .chart-tip .t-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 .series-toggle { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.series-toggle label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+.series-toggle label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text); cursor: pointer; user-select: none; }
 .series-toggle input { accent-color: var(--accent); }
 
 #chainBars .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; font-size: 12.5px; }

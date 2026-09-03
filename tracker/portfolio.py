@@ -9,6 +9,7 @@ from .blacklist import filter_rows
 from .btc import fetch_btc_satoshis
 from .cex import cex_accounts, fetch_cex_accounts
 from .debank import fetch_evm_wallet
+from .etherscan import fetch_etherscan
 from .hyperliquid import fetch_hyperliquid_wallet
 from .prices import get_native_prices
 from .solana import birdeye_wallet_prices, fetch_solana_wallet, get_sol_token_prices
@@ -148,6 +149,15 @@ def fetch_all(progress=None):
         status.mark_source_ok("solana")
 
     # 5) CEX accounts (Binance / Bybit / Backpack)
+    # Etherscan reference source: native balances, surfaced in Settings, not merged
+    try:
+        esc_detail, _esc_err = fetch_etherscan(evm_wallets, native)
+        if esc_detail:
+            status.mark_source_ok("etherscan")
+            status.set_detail("etherscan_native", esc_detail)
+    except Exception:  # noqa: BLE001
+        pass
+
     tick("cex", 0, 1, "Fetching CEX balances (Binance/Bybit/Backpack)…")
     cex_results = fetch_cex_accounts(cex_accounts(), native)
     tick("cex", 1, 1, "CEX fetched")

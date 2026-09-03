@@ -49,5 +49,11 @@ def mark_refresh(when=None, profile=None):
     _save(d, profile)
 
 
+def set_detail(key, value, profile=None):
+    d = _load(profile)
+    d[key] = value
+    _save(d, profile)
+
+
 def get_status(profile=None):
     return _load(profile)

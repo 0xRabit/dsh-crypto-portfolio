@@ -83,6 +83,11 @@ _DEFAULTS = {
             {"name": "hyperliquid-api.mainnet", "url": "https://hyperliquid-api.mainnet.hyperliquid.xyz/info", "enabled": True},
         ],
     },
+    "etherscan": {
+        "enabled": True,
+        "api_key": "",
+        "chains": ["eth"],
+    },
     "cex": {
         "enabled": True,
         "accounts": [],

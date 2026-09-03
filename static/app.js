@@ -1073,6 +1073,7 @@ const SRC_META = {
   solana: { en: "Solana", zh: "Solana" },
   hyperliquid: { en: "Hyperliquid L1", zh: "Hyperliquid L1" },
   cex: { en: "CEX accounts", zh: "CEX 账户" },
+  etherscan: { en: "Etherscan (EVM explorer, free = Ethereum)", zh: "Etherscan（EVM 浏览器，免费=以太坊）" },
 };
 
 function setByPath(obj, path, value) {
@@ -1230,6 +1231,24 @@ async function renderSources() {
           "</div>");
       });
       b.insertAdjacentHTML("beforeend", '<p class="bl-desc">' + t("cexDefaultHint") + "</p>");
+    }
+
+    if (cfg.etherscan) {
+      const b = blockOf("etherscan");
+      const esc = lastOk["etherscan"] ? fmtTime(lastOk["etherscan"]) : t("never");
+      const readout = (lastOk && st.etherscan_native) ? st.etherscan_native : null;
+      let detailHTML = "";
+      if (readout) {
+        detailHTML = Object.keys(readout).map((wname) => {
+          const tot = readout[wname].reduce((s, r) => s + (r.usd || 0), 0);
+          return '<div class="src-sub">' + esc(wname) + " · " + fmtUsd(tot) +
+            '<span class="src-oktime"> ' + readout[wname].map((r) => esc(r.symbol) + " " + fmtAmount(r.amount)).join(" · ") + "</span></div>";
+        }).join("");
+      }
+      b.insertAdjacentHTML("beforeend",
+        srcFieldHTML("etherscan.api_key", "API Key", cfg.etherscan.api_key, "Etherscan V2 API key") +
+        srcFieldHTML("etherscan.chains", "chains", cfg.etherscan.chains || "eth", t("chainsPh")) +
+        (detailHTML || '<p class="bl-desc">' + t("lastOk") + ": " + esc(esc) + "</p>"));
     }
 
     body.querySelectorAll("[data-path]").forEach((el) => {
