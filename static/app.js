@@ -41,6 +41,8 @@ const I18N = {
     items: (n) => n + " items",
     snapDate: "snapshot",
     recorded: "recorded at",
+    viewExplorer: "View on explorer",
+    deselectHint: "click again to deselect",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
     doneUpdating: "Done, updating view…", saving: "Saving…",
@@ -123,6 +125,8 @@ const I18N = {
     items: (n) => "共 " + n + " 项",
     snapDate: "快照",
     recorded: "记录于",
+    viewExplorer: "在浏览器打开",
+    deselectHint: "再次点击取消选中",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
     doneUpdating: "完成，正在更新视图…", saving: "保存中…",
@@ -498,6 +502,25 @@ function walletInCategory(name, category) {
   return c ? c.type === category : true;
 }
 
+// per-type explorer URL for a wallet's own history/portfolio page
+function walletExplorer(type, address) {
+  if (!address) return "";
+  const a = address.trim();
+  if (type === "btc") {
+    // bitaps accepts both mainnet formats (P2SH / bech32 / P2TR)
+    return "https://bitaps.com/" + encodeURIComponent(a);
+  }
+  if (type === "sol") {
+    return "https://jup.ag/portfolio/" + encodeURIComponent(a);
+  }
+  if (type === "evm") {
+    return "https://debank.com/profile/" + a + "/history";
+  }
+  // cex wallets are exchange labels (binance/bybit/backpack), not chain
+  // addresses — no usable explorer; show no link.
+  return "";
+}
+
 function fillDateSelect(dates) {
   const sel = $("dateSelect");
   sel.innerHTML = "";
@@ -613,22 +636,40 @@ function renderSummary() {
 function renderWalletCards() {
   const wrap = $("walletCards");
   wrap.innerHTML = "";
-  const v = filteredView();
-  if (!v) return;
-  $("walletCount").textContent = "(" + v.wallets.length + ")";
-  v.wallets.forEach((w) => {
+  if (!state.view) return;
+  const f = state.filters;
+  const selected = f.wallet;
+  // Show ALL wallets in the current category (not just the selected one), so
+  // selecting a wallet grays the others instead of hiding them.
+  const list = state.view.wallets.filter((w) =>
+    (f.category === "all" || w.type === f.category));
+  $("walletCount").textContent = "(" + list.length + ")";
+  list.forEach((w) => {
     const card = document.createElement("div");
-    card.className = "card";
+    const isSel = selected === w.wallet;
     const wlogo = w.type === "btc" ? "btc" : w.type === "sol" ? "sol" : w.type === "cex" ? "evm" : "evm";
+    const url = walletExplorer(w.type, w.address);
+    card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
     card.innerHTML =
       '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' + esc(w.wallet) +
         ' <span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span></div>" +
       '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
-      '<div class="w-addr">' + esc(shortAddr(w.address, 10)) + "</div>" +
-      '<div class="w-sub">' + t("items", w.token_count) + "</div>";
+      '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
+        (url ? ' <a class="w-link" href="' + esc(url) + '" target="_blank" rel="noopener" title="' +
+          esc(t("viewExplorer")) + '">↗</a>' : "") + "</div>" +
+      '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>";
+    // explorer link should NOT toggle the filter
+    const link = card.querySelector(".w-link");
+    if (link) link.addEventListener("click", (e) => e.stopPropagation());
     card.addEventListener("click", () => {
-      state.filters.wallet = w.wallet;
-      $("filterWallet").value = w.wallet;
+      // toggle: clicking the already-selected wallet restores all
+      if (state.filters.wallet === w.wallet) {
+        state.filters.wallet = "";
+      } else {
+        state.filters.wallet = w.wallet;
+      }
+      $("filterWallet").value = state.filters.wallet;
+      fillFilterSelects();
       renderAll();
       $("tokenTable").scrollIntoView({ behavior: "smooth", block: "start" });
     });

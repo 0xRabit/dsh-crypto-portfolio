@@ -169,6 +169,11 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .card .w-usd { font-size: 17px; font-weight: 700; margin-top: 5px; }
 .card .w-addr { color: var(--muted); font-size: 11px; margin-top: 4px; word-break: break-all; }
 .card .w-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.dimmed { opacity: .45; }
+.card.dimmed:hover { opacity: .85; }
+.card .w-link { color: var(--accent); text-decoration: none; font-size: 12px; padding: 0 3px; border-radius: 4px; }
+.card .w-link:hover { background: rgba(88,166,255,.12); }
 
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; }
 .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
