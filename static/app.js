@@ -43,6 +43,7 @@ const I18N = {
     recorded: "recorded at",
     viewExplorer: "View on explorer",
     deselectHint: "click again to deselect",
+    copyAddr: "Copy address", copy: "Copy", copied: "Copied ✓",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
     doneUpdating: "Done, updating view…", saving: "Saving…",
@@ -127,6 +128,7 @@ const I18N = {
     recorded: "记录于",
     viewExplorer: "在浏览器打开",
     deselectHint: "再次点击取消选中",
+    copyAddr: "复制地址", copy: "复制", copied: "已复制 ✓",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
     doneUpdating: "完成，正在更新视图…", saving: "保存中…",
@@ -502,25 +504,32 @@ function walletInCategory(name, category) {
   return c ? c.type === category : true;
 }
 
-// per-type explorer details: {url, logo, label} for a wallet's own
-// history/portfolio page. logo = platform wordmark in static/logos/.
-function walletExplorer(type, address) {
-  if (!address) return null;
-  const a = address.trim();
+// per-type explorer details: {url, label, logo} for a wallet's own
+// history/portfolio page. logo = platform wordmark file in static/logos/.
+// For CEX accounts there is no external explorer, so url is null but we still
+// surface the exchange logo.
+function walletExplorer(type, address, name) {
+  const a = (address || "").trim();
   if (type === "btc") {
-    return { url: "https://bitaps.com/" + encodeURIComponent(a),
-             logo: "bitaps", label: "bitaps" };
+    return a ? { url: "https://bitaps.com/" + encodeURIComponent(a),
+                 logo: "bitaps", label: "bitaps" } : null;
   }
   if (type === "sol") {
-    return { url: "https://jup.ag/portfolio/" + encodeURIComponent(a),
-             logo: "jupiter", label: "Jupiter" };
+    return a ? { url: "https://jup.ag/portfolio/" + encodeURIComponent(a),
+                 logo: "jupiter", label: "Jupiter" } : null;
   }
   if (type === "evm") {
-    return { url: "https://debank.com/profile/" + a + "/history",
-             logo: "debank", label: "DeBank" };
+    return a ? { url: "https://debank.com/profile/" + a + "/history",
+                 logo: "debank", label: "DeBank" } : null;
   }
-  // cex wallets are exchange labels (binance/bybit/backpack), not chain
-  // addresses — no usable explorer; show no link.
+  if (type === "cex") {
+    const n = (name || "").toLowerCase();
+    // map wallet name (binance_read / bybit_read / backpack_read) -> platform
+    if (n.includes("binance")) return { url: null, logo: "binance", label: "Binance" };
+    if (n.includes("bybit"))   return { url: null, logo: "bybit", label: "Bybit" };
+    if (n.includes("backpack")) return { url: null, logo: "backpack", label: "Backpack" };
+    return { url: null, logo: "evm", label: "CEX" };
+  }
   return null;
 }
 
@@ -651,17 +660,34 @@ function renderWalletCards() {
     const card = document.createElement("div");
     const isSel = selected === w.wallet;
     const wlogo = w.type === "btc" ? "btc" : w.type === "sol" ? "sol" : w.type === "cex" ? "evm" : "evm";
-    const url = walletExplorer(w.type, w.address);
+    const plat = walletExplorer(w.type, w.address, w.wallet);
     card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
     card.innerHTML =
       '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' + esc(w.wallet) +
         ' <span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span></div>" +
       '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
-        (url ? ' <a class="w-link" href="' + esc(url.url) + '" target="_blank" rel="noopener" title="' +
-          esc(t("viewExplorer")) + '"><img class="logo-img w-logo" src="/static/logos/' + esc(url.logo) +
-          '.svg" alt="">' + esc(url.label) + "</a>" : "") + "</div>" +
-      '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>";
+        ' <button class="w-copy" data-addr="' + esc(w.address) + '" title="' + esc(t("copyAddr")) + '">' +
+          '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+          "<span class=\"copy-txt\">" + esc(t("copy")) + "</span></button>" +
+        (plat && plat.url ? ' <a class="w-link" href="' + esc(plat.url) + '" target="_blank" rel="noopener" title="' +
+          esc(t("viewExplorer")) + '">' + esc(plat.label) + " ↗</a>" : "") + "</div>" +
+      '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>" +
+      (plat ? '<div class="w-plat ' + esc(w.type) + '" title="' + esc(plat.label) + '">' +
+        '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></div>' : "");
+    // copy-to-clipboard
+    const copyBtn = card.querySelector(".w-copy");
+    if (copyBtn) copyBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(copyBtn.dataset.addr);
+        copyBtn.classList.add("done");
+        const txt = copyBtn.querySelector(".copy-txt");
+        const prev = txt.textContent;
+        txt.textContent = t("copied");
+        setTimeout(() => { txt.textContent = prev; copyBtn.classList.remove("done"); }, 1400);
+      } catch (err) { /* ignore */ }
+    });
     // explorer link should NOT toggle the filter
     const link = card.querySelector(".w-link");
     if (link) link.addEventListener("click", (e) => e.stopPropagation());
