@@ -668,29 +668,26 @@ function renderWalletCards() {
       '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
         ' <button class="w-copy" data-addr="' + esc(w.address) + '" title="' + esc(t("copyAddr")) + '">' +
-          '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-          "<span class=\"copy-txt\">" + esc(t("copy")) + "</span></button>" +
-        (plat && plat.url ? ' <a class="w-link" href="' + esc(plat.url) + '" target="_blank" rel="noopener" title="' +
-          esc(t("viewExplorer")) + '">' + esc(plat.label) + " ↗</a>" : "") + "</div>" +
+          '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' +
       '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>" +
-      (plat ? '<div class="w-plat ' + esc(w.type) + '" title="' + esc(plat.label) + '">' +
-        '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></div>' : "");
-    // copy-to-clipboard
+      (plat ? (plat.url
+        ? '<a class="w-plat" href="' + esc(plat.url) + '" target="_blank" rel="noopener" title="' + esc(plat.label) + '">' +
+            '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></a>'
+        : '<div class="w-plat" title="' + esc(plat.label) + '">' +
+            '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></div>') : "");
+    // copy-to-clipboard (icon only; no visible text)
     const copyBtn = card.querySelector(".w-copy");
     if (copyBtn) copyBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
         await navigator.clipboard.writeText(copyBtn.dataset.addr);
         copyBtn.classList.add("done");
-        const txt = copyBtn.querySelector(".copy-txt");
-        const prev = txt.textContent;
-        txt.textContent = t("copied");
-        setTimeout(() => { txt.textContent = prev; copyBtn.classList.remove("done"); }, 1400);
+        setTimeout(() => copyBtn.classList.remove("done"), 1400);
       } catch (err) { /* ignore */ }
     });
-    // explorer link should NOT toggle the filter
-    const link = card.querySelector(".w-link");
-    if (link) link.addEventListener("click", (e) => e.stopPropagation());
+    // platform logo (bottom-right) acts as the explorer link; toggle via card click
+    const platLink = card.querySelector("a.w-plat");
+    if (platLink) platLink.addEventListener("click", (e) => e.stopPropagation());
     card.addEventListener("click", () => {
       // toggle: clicking the already-selected wallet restores all
       if (state.filters.wallet === w.wallet) {
