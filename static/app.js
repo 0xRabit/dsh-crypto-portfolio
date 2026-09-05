@@ -502,23 +502,26 @@ function walletInCategory(name, category) {
   return c ? c.type === category : true;
 }
 
-// per-type explorer URL for a wallet's own history/portfolio page
+// per-type explorer details: {url, logo, label} for a wallet's own
+// history/portfolio page. logo = platform wordmark in static/logos/.
 function walletExplorer(type, address) {
-  if (!address) return "";
+  if (!address) return null;
   const a = address.trim();
   if (type === "btc") {
-    // bitaps accepts both mainnet formats (P2SH / bech32 / P2TR)
-    return "https://bitaps.com/" + encodeURIComponent(a);
+    return { url: "https://bitaps.com/" + encodeURIComponent(a),
+             logo: "bitaps", label: "bitaps" };
   }
   if (type === "sol") {
-    return "https://jup.ag/portfolio/" + encodeURIComponent(a);
+    return { url: "https://jup.ag/portfolio/" + encodeURIComponent(a),
+             logo: "jupiter", label: "Jupiter" };
   }
   if (type === "evm") {
-    return "https://debank.com/profile/" + a + "/history";
+    return { url: "https://debank.com/profile/" + a + "/history",
+             logo: "debank", label: "DeBank" };
   }
   // cex wallets are exchange labels (binance/bybit/backpack), not chain
   // addresses — no usable explorer; show no link.
-  return "";
+  return null;
 }
 
 function fillDateSelect(dates) {
@@ -655,8 +658,9 @@ function renderWalletCards() {
         ' <span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span></div>" +
       '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
-        (url ? ' <a class="w-link" href="' + esc(url) + '" target="_blank" rel="noopener" title="' +
-          esc(t("viewExplorer")) + '">↗</a>' : "") + "</div>" +
+        (url ? ' <a class="w-link" href="' + esc(url.url) + '" target="_blank" rel="noopener" title="' +
+          esc(t("viewExplorer")) + '"><img class="logo-img w-logo" src="/static/logos/' + esc(url.logo) +
+          '.svg" alt="">' + esc(url.label) + "</a>" : "") + "</div>" +
       '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>";
     // explorer link should NOT toggle the filter
     const link = card.querySelector(".w-link");
