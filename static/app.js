@@ -653,8 +653,9 @@ function renderWalletCards() {
   const selected = f.wallet;
   // Show ALL wallets in the current category (not just the selected one), so
   // selecting a wallet grays the others instead of hiding them.
-  const list = state.view.wallets.filter((w) =>
-    (f.category === "all" || w.type === f.category));
+  const list = state.view.wallets
+    .filter((w) => (f.category === "all" || w.type === f.category))
+    .sort((a, b) => (b.total_usd || 0) - (a.total_usd || 0));
   $("walletCount").textContent = "(" + list.length + ")";
   list.forEach((w) => {
     const card = document.createElement("div");
@@ -773,11 +774,12 @@ function renderPie() {
   const v = filteredView();
   const items = (v && v.wallets ? v.wallets : [])
     .map((w, i) => ({ label: w.wallet, value: w.total_usd || 0, color: PALETTE[i % PALETTE.length] }))
-    .filter((it) => it.value > 0);
+    .filter((it) => it.value > 0)
+    .sort((a, b) => b.value - a.value);
   const total = (v && v.total_usd) || 0;
   drawPie($("walletPie"), items, total);
 
-  const sorted = items.slice().sort((a, b) => b.value - a.value);
+  const sorted = items;
   $("pieLegend").innerHTML = sorted.length
     ? sorted.map((it) => {
         const pct = total ? (it.value / total * 100) : 0;
