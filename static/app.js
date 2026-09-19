@@ -5,9 +5,16 @@
 const I18N = {
   en: {
     brand: "Crypto Portfolio Tracker",
+    heroLine: "Free · self-hosted · any chain",
+    heroLineFull: "Free & self-hosted · every chain, every wallet in one view · no account, no tracking — your keys never leave your machine",
+    aboutLine: "Python stdlib + vanilla JS · no framework, no CDN · data sources are configurable per profile",
+    siblingLabel: "Sibling project:",
+    chromeExt: "Chrome extension",
+    sourceCode: "source",
     btnSources: "Sources", btnRefresh: "Refresh", btnLang: "中文",
     viewDateTitle: "View last snapshot of a day",
     fbCategory: "Category", fbAll: "All", fbBtc: "BTC", fbEvm: "EVM", fbSol: "Solana", fbCex: "CEX",
+    fbDoge: "Dogecoin", fbAda: "Cardano",
     fbWallet: "Wallet", fbChain: "Chain", fbWalletAll: "All wallets", fbChainAll: "All chains",
     assetTitle: "Total Assets (USD) · Wallet Share",
     totalAssets: "Total Assets",
@@ -15,6 +22,7 @@ const I18N = {
     walletMgmtTitle: "Wallet Management",
     walletMgmtDesc: "Adding/removing wallets only affects future fetches; already stored historical snapshots are never touched.",
     wlNamePh: "Name (e.g. evm-new)", wlTypeEvm: "EVM (DeBank + Hyperliquid)", wlTypeBtc: "BTC", wlTypeSol: "Solana",
+    wlTypeDoge: "Dogecoin", wlTypeAda: "Cardano",
     wlAddrPh: "Address", btnAddWallet: "+ Add Wallet", delete: "Delete", builtin: "Built-in",
     trendTitle: "Portfolio Trend",
     chainTitle: "Chain Distribution (USD)",
@@ -64,11 +72,16 @@ const I18N = {
     pfNamePh: "Profile name",
     pfCreateTpl: "Create from public template", pfCopy: "Duplicate current",
     useProfile: "Use", activeProfile: "active", deleteProfile: "Delete",
+    renameProfile: "Rename",
+    renamePrompt: "Rename this profile to (config and snapshots move with it):",
+    profileRenameFail: "Rename failed: ",
     confirmDelProfile: "Delete this profile? Its snapshots and configs will be removed.",
     profileSwitchFail: "Switch failed: ", profileCreateFail: "Create failed: ", profileDeleteFail: "Delete failed: ",
     schedTitle: "Scheduled Daily Refresh",
     schedDesc: "Runs inside the Python server process (not the browser page) - closing the web page does not stop it. Fires at the exact local minute; the server must be running at that time. Saving a schedule resets today's once-per-day marker, so a future time fires the same day.",
     schedEnable: "Enable", btnSaveSched: "Save Schedule", schedSaved: "Schedule saved", schedLastRun: "Last auto-run: ",
+    schedOff: "no schedule",
+    pfSchedHint: "Each profile keeps its own daily auto-refresh schedule — click the clock tag on a profile to edit it. The scheduler runs every profile independently.",
     paidBadge: "PAID", lastOk: "last ok", never: "never",
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
     providersHint: "providers (paid first, free fallback)",
@@ -90,9 +103,16 @@ const I18N = {
   },
   zh: {
     brand: "Crypto Portfolio Tracker",
+    heroLine: "免费 · 自托管 · 支持所有链",
+    heroLineFull: "免费 · 自托管 · 所有链、所有钱包一屏总览 · 无需注册、无追踪——私钥永不离开你的机器",
+    aboutLine: "Python 标准库 + 原生 JS · 无框架、无 CDN · 每个 Profile 独立配置数据源",
+    siblingLabel: "兄弟版本：",
+    chromeExt: "Chrome 扩展",
+    sourceCode: "源码",
     btnSources: "数据源", btnRefresh: "刷新数据", btnLang: "EN",
     viewDateTitle: "查看某一天的最后一次快照",
     fbCategory: "分类", fbAll: "全部", fbBtc: "BTC", fbEvm: "EVM", fbSol: "Solana", fbCex: "CEX",
+    fbDoge: "狗狗币", fbAda: "艾达币",
     fbWallet: "钱包", fbChain: "网络", fbWalletAll: "全部钱包", fbChainAll: "全部网络",
     assetTitle: "总资产（USD）· 各钱包占比",
     totalAssets: "总资产",
@@ -100,6 +120,7 @@ const I18N = {
     walletMgmtTitle: "钱包管理",
     walletMgmtDesc: "增加/删除钱包仅影响之后的抓取；已存储的历史快照数据不受影响。",
     wlNamePh: "名称（如 evm-new）", wlTypeEvm: "EVM（DeBank + Hyperliquid）", wlTypeBtc: "BTC", wlTypeSol: "Solana",
+    wlTypeDoge: "狗狗币 DOGE", wlTypeAda: "艾达币 ADA",
     wlAddrPh: "地址", btnAddWallet: "＋ 添加钱包", delete: "删除", builtin: "内置",
     trendTitle: "资产趋势",
     chainTitle: "网络分布（USD）",
@@ -149,11 +170,16 @@ const I18N = {
     pfNamePh: "Profile 名称",
     pfCreateTpl: "从公开模板创建", pfCopy: "复制当前",
     useProfile: "使用", activeProfile: "当前", deleteProfile: "删除",
+    renameProfile: "重命名",
+    renamePrompt: "将该 Profile 重命名为（配置与快照会一并迁移）：",
+    profileRenameFail: "重命名失败：",
     confirmDelProfile: "删除该 Profile？其快照与配置将一并删除。",
     profileSwitchFail: "切换失败：", profileCreateFail: "创建失败：", profileDeleteFail: "删除失败：",
     schedTitle: "定时每日刷新",
     schedDesc: "定时器运行在 Python 服务进程内（与网页无关）——关闭网页不影响它。在设定分钟的整点触发；那一刻服务必须在运行。保存定时会重置当天的一次性标记：新时间若在今天之后，当天就会执行。",
     schedEnable: "启用", btnSaveSched: "保存定时", schedSaved: "定时已保存", schedLastRun: "上次自动执行：",
+    schedOff: "无定时",
+    pfSchedHint: "每个 Profile 各自维护独立的每日定时刷新——点击对应 Profile 上的时钟标签即可编辑。调度器会独立运行每个 Profile 的定时任务。",
     paidBadge: "付费", lastOk: "上次成功", never: "从未",
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
     providersHint: "providers（付费优先，免费兜底）",
@@ -182,7 +208,7 @@ const themeBtnIcon = () => theme === "light" ? "☀" : "☾";
 let lang = "en";
 try { lang = localStorage.getItem("pt_lang") || "en"; } catch (e) { /* ignore */ }
 
-const APP_VERSION = "20260822b";
+const APP_VERSION = "20260919c";
 console.log("[dsh-crypto-portfolio] app v" + APP_VERSION);
 
 const t = (key, ...args) => {
@@ -193,7 +219,7 @@ const t = (key, ...args) => {
 };
 function applyI18n() {
   const v = document.getElementById("versionTag");
-  if (v) v.textContent = "v" + APP_VERSION;
+  if (v) v.textContent = APP_VERSION;   // the "v" prefix lives in the markup
   document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
@@ -250,7 +276,7 @@ function shortAddr(a, n = 10) {
 
 const PALETTE = ["#58a6ff", "#f0b95c", "#7ee787", "#d2a8ff", "#ff7b72", "#56d4dd",
                  "#ffa657", "#bc8cff", "#3fb950", "#e3b341", "#79c0ff", "#f85149"];
-const TYPE_LABEL = { evm: "EVM", btc: "BTC", sol: "SOL", cex: "CEX" };
+const TYPE_LABEL = { evm: "EVM", btc: "BTC", sol: "SOL", cex: "CEX", doge: "DOGE", ada: "ADA" };
 
 /* ---------------- state ---------------- */
 const state = {
@@ -308,9 +334,41 @@ function refreshLanguage() {
   if (!$("pageSettings").classList.contains("hidden")) renderSettings();
 }
 
+/* Settings sections are native <details>; remember which were left open so the
+   page keeps a user's working layout between visits. */
+const SECTION_KEY = "pt_sections";
+function readSectionState() {
+  try { return JSON.parse(localStorage.getItem(SECTION_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function restoreSectionState() {
+  const saved = readSectionState();
+  document.querySelectorAll("details.panel[id]").forEach((d) => {
+    if (Object.prototype.hasOwnProperty.call(saved, d.id)) {
+      d.open = !!saved[d.id];
+    }
+    d.addEventListener("toggle", () => {
+      const s = readSectionState();
+      s[d.id] = d.open;
+      try { localStorage.setItem(SECTION_KEY, JSON.stringify(s)); } catch (e) { /* ignore */ }
+    });
+  });
+}
+
+/* The value-proposition line is part of the top bar, not a dismissible
+   banner — there is nothing to initialise. Any stale "dismissed" flag from the
+   earlier strip implementation is cleared so the line always shows. */
+function initHeroStrip() {
+  try { localStorage.removeItem("pt_hero_dismissed"); } catch (e) { /* ignore */ }
+  const el = $("heroStrip");
+  if (el) el.hidden = false;
+}
+
 async function init() {
   bindEvents();
   applyI18n();
+  restoreSectionState();
+  initHeroStrip();
   try {
     const [cfg, history] = await Promise.all([api("/api/wallets"), api("/api/history?days=0")]);
     state.wallets = cfg.wallets;
@@ -386,18 +444,7 @@ function bindEvents() {
       if (page === "pageSettings") renderSettings();
     });
   });
-  // profiles
-  $("btnSaveSchedule").addEventListener("click", async () => {
-    try {
-      await postJSON("/api/schedule", {
-        enabled: $("schedEnabled").checked,
-        time: $("schedTime").value || "09:00",
-      });
-      $("schedMsg").textContent = "✓ " + t("schedSaved");
-      setTimeout(() => { $("schedMsg").textContent = ""; }, 4000);
-      await renderSchedule();   // refreshes enabled/time/last-run, keeps schedMsg
-    } catch (e) { $("schedMsg").textContent = t("saveFailed") + e.message; }
-  });
+  // profiles (schedule editing is per-profile — handled in the profileList delegate)
   $("btnPfCreateTpl").addEventListener("click", async () => {
     const name = $("pfNewName").value.trim();
     if (!name) { alert(t("pfNamePh")); return; }
@@ -426,9 +473,70 @@ function bindEvents() {
     } catch (err) { alert(t("profileSwitchFail") + err.message); }
   });
   $("profileList").addEventListener("click", async (ev) => {
+    // --- per-profile schedule: toggle its inline editor / save it ---
+    const schedToggle = ev.target.closest("button[data-pf-sched]");
+    if (schedToggle) {
+      const nm = schedToggle.dataset.pfSched;
+      const box = document.querySelector('[data-sched-box="' + CSS.escape(nm) + '"]');
+      if (!box) return;
+      const opening = box.hasAttribute("hidden");
+      box.toggleAttribute("hidden", !opening);
+      schedToggle.classList.toggle("open", opening);
+      if (opening) {
+        // always show the profile's CURRENT stored schedule
+        try {
+          const s = await api("/api/schedule?profile=" + encodeURIComponent(nm));
+          const cb = box.querySelector("[data-sched-enabled]");
+          const tm = box.querySelector("[data-sched-time]");
+          const last = box.querySelector("[data-sched-last]");
+          if (cb) cb.checked = !!s.enabled;
+          if (tm) tm.value = s.time || "09:00";
+          if (last) last.textContent = t("schedLastRun") + (s.last_run_date || t("never"));
+        } catch (e) { /* ignore */ }
+      }
+      return;
+    }
+    const saveBtn = ev.target.closest("button[data-sched-save]");
+    if (saveBtn) {
+      const nm = saveBtn.dataset.schedSave;
+      const box = document.querySelector('[data-sched-box="' + CSS.escape(nm) + '"]');
+      if (!box) return;
+      const msg = box.querySelector("[data-sched-msg]");
+      try {
+        const r = await postJSON("/api/schedule", {
+          profile: nm,
+          enabled: box.querySelector("[data-sched-enabled]").checked,
+          time: box.querySelector("[data-sched-time]").value || "09:00",
+        });
+        if (msg) msg.textContent = t("schedSaved");
+        const last = box.querySelector("[data-sched-last]");
+        if (last) last.textContent = t("schedLastRun") + (r.last_run_date || t("never"));
+        await renderProfiles();          // refresh the clock tag
+        // re-open the editor the user was working in
+        const again = document.querySelector('button[data-pf-sched="' + CSS.escape(nm) + '"]');
+        const box2 = document.querySelector('[data-sched-box="' + CSS.escape(nm) + '"]');
+        if (again && box2) { box2.removeAttribute("hidden"); again.classList.add("open"); }
+      } catch (e) { if (msg) msg.textContent = t("saveFailed") + e.message; }
+      return;
+    }
+    // --- profile row actions ---
     const btn = ev.target.closest("button[data-pf-action]");
     if (!btn) return;
     const name = btn.dataset.pfName;
+    const act = btn.dataset.pfAction;
+    if (act === "rename") {
+      const input = prompt(t("renamePrompt") + "\n\n" + name, name);
+      if (input == null) return;
+      const newName = input.trim();
+      if (!newName || newName === name) return;
+      try {
+        await postJSON("/api/profiles", { action: "rename", name, new_name: newName });
+        await reloadViewData();     // the active profile may have been renamed
+        await renderSettings();
+      } catch (err) { alert(t("profileRenameFail") + err.message); }
+      return;
+    }
+    // default action: delete
     if (!confirm(t("confirmDelProfile"))) return;
     try {
       await postJSON("/api/profiles", { action: "delete", name });
@@ -517,6 +625,16 @@ function walletExplorer(type, address, name) {
   if (type === "sol") {
     return a ? { url: "https://jup.ag/portfolio/" + encodeURIComponent(a),
                  logo: "jupiter", label: "Jupiter" } : null;
+  }
+  if (type === "doge") {
+    // Dogechain explorer address page
+    return a ? { url: "https://dogechain.info/address/" + encodeURIComponent(a),
+                 logo: "doge", label: "Dogechain" } : null;
+  }
+  if (type === "ada") {
+    // Cardanoscan address page
+    return a ? { url: "https://cardanoscan.io/address/" + encodeURIComponent(a),
+                 logo: "ada", label: "Cardanoscan" } : null;
   }
   if (type === "evm") {
     return a ? { url: "https://debank.com/profile/" + a + "/history",
@@ -660,7 +778,7 @@ function renderWalletCards() {
   list.forEach((w) => {
     const card = document.createElement("div");
     const isSel = selected === w.wallet;
-    const wlogo = w.type === "btc" ? "btc" : w.type === "sol" ? "sol" : w.type === "cex" ? "evm" : "evm";
+    const wlogo = typeLogoFile(w.type);
     const plat = walletExplorer(w.type, w.address, w.wallet);
     card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
     card.innerHTML =
@@ -1120,7 +1238,9 @@ async function renderWalletMgmt() {
       const right = w.source === "user"
         ? '<button class="bl-del" data-index="' + w.index + '" title="' + t("delete") + '">✕ ' + t("delete") + "</button>"
         : '<span class="bl-tag config">' + t("builtin") + "</span>";
-      return '<div class="bl-item"><span class="bl-sym">' + esc(w.name) + "</span>" +
+      return '<div class="bl-item">' +
+        '<img class="logo-img bl-logo" src="' + typeLogo(w.type) + '" alt="">' +
+        '<span class="bl-sym">' + esc(w.name) + "</span>" +
         '<span class="bl-tag ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span>" +
         '<span class="bl-meta">' + esc(w.address) + "</span>" + right + "</div>";
     }).join("");
@@ -1139,11 +1259,19 @@ async function renderWalletMgmt() {
 const SRC_META = {
   debank: { en: "EVM (DeBank)", zh: "EVM（DeBank）" },
   btc: { en: "BTC balances", zh: "BTC 余额" },
+  doge: { en: "Dogecoin balances", zh: "狗狗币余额" },
+  ada: { en: "Cardano balances", zh: "艾达币余额" },
   prices: { en: "Native coin prices", zh: "原生币价格" },
   solana: { en: "Solana", zh: "Solana" },
   hyperliquid: { en: "Hyperliquid L1", zh: "Hyperliquid L1" },
   cex: { en: "CEX accounts", zh: "CEX 账户" },
   etherscan: { en: "Etherscan (EVM explorer, free = Ethereum)", zh: "Etherscan（EVM 浏览器，免费=以太坊）" },
+};
+
+// one icon system across the whole app: the same files the dashboard uses
+const SRC_LOGO = {
+  debank: "debank", btc: "btc", doge: "doge", ada: "ada", solana: "sol",
+  hyperliquid: "hyperliquid", prices: "coingecko", cex: "binance", etherscan: "etherscan",
 };
 
 function setByPath(obj, path, value) {
@@ -1187,11 +1315,17 @@ const SRC_LINKS = {
 
 function chainLogo(cid) {
   const map = { btc: "btc", eth: "eth", sol: "sol", hyperliquid: "hyperliquid",
-                binance: "binance", bybit: "bybit", backpack: "backpack" };
+                binance: "binance", bybit: "bybit", backpack: "backpack",
+                doge: "doge", ada: "ada" };
   return map[cid] ? '/static/logos/' + map[cid] + '.svg' : '/static/logos/evm.svg';
 }
+// wallet type -> logo file (evm/cex fall back to the generic evm mark)
+function typeLogoFile(type) {
+  const map = { btc: "btc", sol: "sol", doge: "doge", ada: "ada" };
+  return map[type] || "evm";
+}
 function typeLogo(type) {
-  return '/static/logos/' + (type === "btc" ? "btc" : type === "sol" ? "sol" : type === "cex" ? "evm" : "evm") + '.svg';
+  return '/static/logos/' + typeLogoFile(type) + '.svg';
 }
 
 function srcFieldHTML(path, label, value, placeholder) {
@@ -1231,7 +1365,9 @@ async function renderSources() {
           lastStr = "(" + t("avg") + ": " + ((cfg[key].providers[lk]) || {}).name + ")";
         }
       }
-      b.innerHTML = '<div class="src-head"><label class="chk">' +
+      b.innerHTML = '<div class="src-head">' +
+        '<img class="logo-img src-logo" src="/static/logos/' + esc(SRC_LOGO[key] || "evm") + '.svg" alt="">' +
+        '<label class="chk">' +
         '<input type="checkbox" data-path="' + key + '.enabled"' + (cfg[key].enabled !== false ? " checked" : "") + "> " +
         "<b>" + esc(meta[lang] || meta.en) + "</b></label>" +
         '<span class="hint src-oktime">' + t("lastOk") + ": " + esc(okTime) + "</span>" +
@@ -1250,7 +1386,7 @@ async function renderSources() {
         srcFieldHTML("debank.chains", "chains", cfg.debank.chains || "", t("chainsPh")) +
         '<p class="bl-desc">' + t("debankHint") + "</p>");
     }
-    for (const key of ["btc", "prices", "hyperliquid"]) {
+    for (const key of ["btc", "doge", "ada", "prices", "hyperliquid"]) {
       if (!cfg[key]) continue;
       const b = blockOf(key);
       b.insertAdjacentHTML("beforeend", srcProvidersHTML(key + ".providers", cfg[key].providers || []));
@@ -1288,7 +1424,9 @@ async function renderSources() {
       cfg.cex.accounts = rows;
       rows.forEach((a, i) => {
         b.insertAdjacentHTML("beforeend",
-          '<div class="src-sub">' + esc(a.name) + " (" + esc(a.exchange) + ")" +
+          '<div class="src-sub src-sub-logo">' +
+          '<img class="logo-img" src="' + chainLogo(a.exchange) + '" alt="">' +
+          esc(a.name) + " (" + esc(a.exchange) + ")" +
           ' <span class="hint src-oktime">' + t("lastOk") + ": " + esc(fmtTime(lastOk["cex:" + a.exchange])) + "</span></div>" +
           '<div class="src-prov">' +
           '<label class="chk"><input type="checkbox" data-path="cex.accounts.' + i + '.enabled"' +
@@ -1305,7 +1443,8 @@ async function renderSources() {
 
     if (cfg.etherscan) {
       const b = blockOf("etherscan");
-      const esc = lastOk["etherscan"] ? fmtTime(lastOk["etherscan"]) : t("never");
+      // NOTE: do not name this `esc` — that would shadow the global esc() helper.
+      const escTime = lastOk["etherscan"] ? fmtTime(lastOk["etherscan"]) : t("never");
       const readout = (lastOk && st.etherscan_native) ? st.etherscan_native : null;
       let detailHTML = "";
       if (readout) {
@@ -1318,7 +1457,7 @@ async function renderSources() {
       b.insertAdjacentHTML("beforeend",
         srcFieldHTML("etherscan.api_key", "API Key", cfg.etherscan.api_key, "Etherscan V2 API key") +
         srcFieldHTML("etherscan.chains", "chains", cfg.etherscan.chains || "eth", t("chainsPh")) +
-        (detailHTML || '<p class="bl-desc">' + t("lastOk") + ": " + esc(esc) + "</p>"));
+        (detailHTML || '<p class="bl-desc">' + t("lastOk") + ": " + esc(escTime) + "</p>"));
     }
 
     body.querySelectorAll("[data-path]").forEach((el) => {
@@ -1342,31 +1481,47 @@ async function renderProfiles() {
     sel.innerHTML = d.profiles.map((p) =>
       '<option value="' + esc(p.name) + '"' + (p.is_active ? " selected" : "") + ">" +
       esc(p.name) + (p.is_default ? " (default)" : "") + "</option>").join("");
-    // management list (switch is via dropdown)
+    // management list (switch is via dropdown). Each profile owns its own
+    // schedule, so the clock tag expands an editor for THAT profile.
     const list = $("profileList");
     list.innerHTML = d.profiles.map((p) => {
-      const right = p.is_active
-        ? '<span class="bl-tag user">' + t("activeProfile") + "</span>"
-        : (p.is_default ? "" : '<button class="bl-del" data-pf-action="delete" data-pf-name="' + esc(p.name) + '">✕ ' + t("deleteProfile") + "</button>");
-      return '<div class="bl-item"><span class="bl-sym">' + esc(p.name) + "</span>" +
+      const nm = esc(p.name);
+      const actions = [];
+      if (!p.is_default) {
+        // rename any profile that is not the public template
+        actions.push('<button class="bl-edit" data-pf-action="rename" data-pf-name="' + nm +
+          '" title="' + esc(t("renameProfile")) + '">✎ ' + t("renameProfile") + "</button>");
+      }
+      if (!p.is_active && !p.is_default) {
+        actions.push('<button class="bl-del" data-pf-action="delete" data-pf-name="' + nm +
+          '">✕ ' + t("deleteProfile") + "</button>");
+      }
+      const right = (p.is_active ? '<span class="bl-tag user">' + t("activeProfile") + "</span>" : "") +
+        (actions.length ? '<span class="pf-actions">' + actions.join("") + "</span>" : "");
+      const sc = p.schedule || {};
+      const schedTag = '<button class="pf-sched' + (sc.enabled ? " on" : "") +
+        '" data-pf-sched="' + nm + '" title="' + esc(t("schedTitle")) + '">' +
+        (sc.enabled ? "⏰ " + esc(sc.time || "") : esc(t("schedOff"))) + "</button>";
+      const row = '<div class="bl-item"><span class="bl-sym">' + nm + "</span>" +
         (p.is_default ? '<span class="bl-tag config">' + t("config") + "</span>" : "") +
-        (p.has_db ? '<span class="hint">db</span>' : "") + right + "</div>";
+        (p.has_db ? '<span class="hint">db</span>' : "") + schedTag + right + "</div>";
+      // inline editor, hidden until the clock tag is clicked
+      const editor = '<div class="pf-sched-box" data-sched-box="' + nm + '" hidden>' +
+        '<label class="chk"><input type="checkbox" data-sched-enabled' + (sc.enabled ? " checked" : "") +
+          "> " + t("schedEnable") + "</label>" +
+        '<input type="time" data-sched-time value="' + esc(sc.time || "09:00") + '">' +
+        '<button class="btn-ghost" data-sched-save="' + nm + '">' + t("btnSaveSched") + "</button>" +
+        '<span class="hint" data-sched-msg></span>' +
+        '<span class="hint" data-sched-last>' + esc(t("schedLastRun")) +
+          esc(sc.last_run_date || t("never")) + "</span>" +
+        "</div>";
+      return row + editor;
     }).join("") || '<div class="bl-empty">' + t("emptyList") + "</div>";
   } catch (e) { /* ignore */ }
 }
 
-async function renderSchedule() {
-  try {
-    const d = await api("/api/schedule");
-    $("schedEnabled").checked = !!d.enabled;
-    $("schedTime").value = d.time || "09:00";
-    $("schedLast").textContent = t("schedLastRun") + (d.last_run_date || t("never"));
-  } catch (e) { /* ignore */ }
-}
-
 async function renderSettings() {
-  await renderSchedule();
-  await renderProfiles();
+  await renderProfiles();   // also renders each profile's own schedule editor
   await renderWalletMgmt();
   await renderSources();
   await renderBlacklist();

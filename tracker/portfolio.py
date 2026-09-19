@@ -5,10 +5,12 @@ from datetime import date, datetime
 
 from . import config, storage
 from . import walletstore
+from .ada import fetch_ada_lovelace
 from .blacklist import filter_rows
 from .btc import fetch_btc_satoshis
 from .cex import cex_accounts, fetch_cex_accounts
 from .debank import fetch_evm_wallet
+from .doge import fetch_doge_koinu
 from .etherscan import fetch_etherscan
 from .hyperliquid import fetch_hyperliquid_wallet
 from .prices import get_native_prices
@@ -41,6 +43,27 @@ def _btc_rows(satoshis, btc_usd):
                      "amount": amount, "price": btc_usd or 0, "usd": round(amount * (btc_usd or 0), 6),
                      "logo": "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
                      "token_id": "btc"})
+    return rows
+
+
+def _chain_rows(wtype, unit_sym, coin_name, divisor, balances, usd_price, coin_id, logo):
+    """Generic single-native-coin rows (BTC/DOGE/ADA/…): one row per wallet.
+
+    balances: {address: smallest_unit_balance or None}
+    """
+    rows = []
+    for w in _wallet_subset(wtype):
+        raw = balances.get(w["address"])
+        if raw is None:
+            rows.append({"wallet": w["name"], "chain": wtype, "symbol": unit_sym, "name": coin_name,
+                         "amount": None, "price": usd_price or 0, "usd": 0.0,
+                         "logo": logo, "token_id": coin_id, "error": True})
+            continue
+        amount = raw / divisor
+        rows.append({"wallet": w["name"], "chain": wtype, "symbol": unit_sym, "name": coin_name,
+                     "amount": amount, "price": usd_price or 0,
+                     "usd": round(amount * (usd_price or 0), 6),
+                     "logo": logo, "token_id": coin_id})
     return rows
 
 
@@ -103,6 +126,23 @@ def fetch_all(progress=None):
         sats = fetch_btc_satoshis([w["address"] for w in btc_wallets])
         tick("btc", 1, 1, "BTC balances fetched")
         status.mark_source_ok("btc")
+
+    # 2b) DOGE wallets (BlockCypher) and ADA wallets (Koios)
+    doge_koinu = {}
+    doge_wallets = _wallet_subset("doge")
+    if doge_wallets:
+        tick("doge", 0, 1, "Fetching DOGE balances…")
+        doge_koinu = fetch_doge_koinu([w["address"] for w in doge_wallets])
+        tick("doge", 1, 1, "DOGE balances fetched")
+        status.mark_source_ok("doge")
+
+    ada_lovelace = {}
+    ada_wallets = _wallet_subset("ada")
+    if ada_wallets:
+        tick("ada", 0, 1, "Fetching ADA balances…")
+        ada_lovelace = fetch_ada_lovelace([w["address"] for w in ada_wallets])
+        tick("ada", 1, 1, "ADA balances fetched")
+        status.mark_source_ok("ada")
 
     # 3) EVM wallets (DeBank all chains + Hyperliquid native L1)
     evm_wallets = _wallet_subset("evm")
@@ -169,6 +209,12 @@ def fetch_all(progress=None):
     # 6) assemble — every wallet's tokens pass through the blacklist; all totals
     #    (wallet / chain / total) are recomputed from the filtered token rows.
     btc_rows_all = filter_rows(_btc_rows(sats, btc_usd))
+    doge_rows_all = filter_rows(_chain_rows("doge", "DOGE", "Dogecoin", 1e8, doge_koinu,
+                                            native.get("dogecoin"),
+                                            "doge", "https://assets.coingecko.com/coins/images/5/small/dogecoin.png"))
+    ada_rows_all = filter_rows(_chain_rows("ada", "ADA", "Cardano", 1e6, ada_lovelace,
+                                           native.get("cardano"),
+                                           "ada", "https://assets.coingecko.com/coins/images/975/small/cardano.png"))
     sol_rows_all = filter_rows(sol_rows_all)
 
     wallet_objs = []
@@ -177,6 +223,10 @@ def fetch_all(progress=None):
                "tokens": [], "total_usd": 0.0}
         if w["type"] == "btc":
             obj["tokens"] = [r for r in btc_rows_all if r["wallet"] == w["name"]]
+        elif w["type"] == "doge":
+            obj["tokens"] = [r for r in doge_rows_all if r["wallet"] == w["name"]]
+        elif w["type"] == "ada":
+            obj["tokens"] = [r for r in ada_rows_all if r["wallet"] == w["name"]]
         elif w["type"] == "evm":
             ew = next((e for e in evm_results if e["wallet"] == w["name"]), None)
             if ew:

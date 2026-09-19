@@ -74,6 +74,50 @@ def set_active(name):
         f.write(name)
 
 
+# Interrupted-refresh recovery -------------------------------------------------
+# The scheduler temporarily switches the active profile while it refreshes a
+# profile, then switches back in a `finally`. If the process is killed during
+# that window the `finally` never runs and the user's chosen profile is lost.
+# We persist the intended target so startup can put it back.
+def _restore_file():
+    return os.path.join(PROFILES_DIR, ".active_restore")
+
+
+def mark_restore_target(name):
+    """Remember which profile to return to if we die mid-refresh."""
+    try:
+        os.makedirs(PROFILES_DIR, exist_ok=True)
+        with open(_restore_file(), "w", encoding="utf-8") as f:
+            f.write(str(name or ""))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def clear_restore_target():
+    try:
+        os.remove(_restore_file())
+    except OSError:
+        pass
+
+
+def recover_active():
+    """Startup hook: if a scheduled refresh was interrupted, restore the
+    profile the user had selected. Returns the restored name, or None."""
+    try:
+        with open(_restore_file(), "r", encoding="utf-8") as f:
+            name = f.read().strip()
+    except OSError:
+        return None
+    clear_restore_target()
+    if name and name != active() and exists(name):
+        try:
+            set_active(name)
+            return name
+        except Exception:  # noqa: BLE001
+            return None
+    return None
+
+
 # per-profile file locations -------------------------------------------------
 def sources_file():
     return os.path.join(profile_dir(active()), "sources.json")
@@ -128,6 +172,31 @@ def delete_profile(name):
     if name == active():
         raise ValueError("cannot delete the active profile")
     shutil.rmtree(profile_dir(name), ignore_errors=True)
+
+
+def rename_profile(old, new):
+    """Rename a profile directory.
+
+    The whole directory moves, so the profile's config AND its snapshot DB
+    (portfolio.db) follow the new name. Renaming the active profile updates the
+    active pointer. The public 'default' profile cannot be renamed (it is
+    re-seeded from templates/ on startup).
+    """
+    old = _valid_name(old)
+    new = _valid_name(new)
+    if old == new:
+        return new
+    if old == "default":
+        raise ValueError("cannot rename the default profile")
+    if not exists(old):
+        raise ValueError(f"profile {old!r} does not exist")
+    if exists(new):
+        raise ValueError(f"profile {new!r} already exists")
+    was_active = (active() == old)
+    os.rename(profile_dir(old), profile_dir(new))
+    if was_active:
+        set_active(new)
+    return new
 
 
 def ensure_profiles():

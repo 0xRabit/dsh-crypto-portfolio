@@ -123,15 +123,15 @@ class Handler(BaseHTTPRequestHandler):
                 })
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/schedule":
-                code, body = _json(sched.get_schedule())
+                # per-profile: ?profile=<name> (defaults to the active profile)
+                prof = (qs.get("profile") or [None])[0]
+                if prof and not profiles.exists(prof):
+                    raise ValueError(f"profile {prof!r} does not exist")
+                code, body = _json(sched.get_schedule(prof))
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/config/export":
                 code, body = _json(self._config_export())
                 self._reply(code, body, "application/json; charset=utf-8")
-            elif path == "/api/schedule":
-                enabled = bool((body or {}).get("enabled", False))
-                time_val = str((body or {}).get("time") or "").strip()
-                self._reply_json(sched.set_schedule(enabled, time_val))
             elif path == "/api/profiles":
                 code, body = _json(self._profiles_view())
                 self._reply(code, body, "application/json; charset=utf-8")
@@ -208,7 +208,12 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/schedule":
                 enabled = bool((body or {}).get("enabled", False))
                 time_val = str((body or {}).get("time") or "").strip()
-                self._reply_json(sched.set_schedule(enabled, time_val))
+                # per-profile: an explicit profile lets the UI edit any profile's
+                # schedule, not only the active one
+                prof = str((body or {}).get("profile") or "").strip() or None
+                if prof and not profiles.exists(prof):
+                    raise ValueError(f"profile {prof!r} does not exist")
+                self._reply_json(sched.set_schedule(enabled, time_val, prof))
             elif path == "/api/profiles":
                 action = (body or {}).get("action")
                 name = str((body or {}).get("name") or "").strip()
@@ -223,11 +228,20 @@ class Handler(BaseHTTPRequestHandler):
                         name, from_template=(body or {}).get("from_template", False),
                         copy_from=(body or {}).get("copy_from") or None)
                     self._reply_json(self._profiles_view())
+                elif action == "rename":
+                    new_name = str((body or {}).get("new_name") or "").strip()
+                    if not new_name:
+                        raise ValueError("new_name is required")
+                    renamed_active = (profiles.active() == name)
+                    profiles.rename_profile(name, new_name)
+                    if renamed_active:
+                        self._switch_profile()
+                    self._reply_json(self._profiles_view())
                 elif action == "delete":
                     profiles.delete_profile(name)
                     self._reply_json(self._profiles_view())
                 else:
-                    raise ValueError("action must be switch/create/delete")
+                    raise ValueError("action must be switch/create/rename/delete")
             else:
                 self._reply_json({"error": "not found"}, 404)
         except Exception as e:  # noqa: BLE001
@@ -245,11 +259,17 @@ class Handler(BaseHTTPRequestHandler):
                 "file": walletstore.wallets_file()}
 
     def _profiles_view(self):
-        return {"active": profiles.active(),
-                "profiles": [{"name": n, "is_active": n == profiles.active(),
-                              "is_default": n == "default",
-                              "has_db": os.path.exists(os.path.join(profiles.profile_dir(n), "portfolio.db"))}
-                             for n in profiles.list_profiles()],
+        """Profile list. Each entry carries its own schedule, because the
+        scheduler runs per profile (profiles/<name>/schedule.json)."""
+        out = []
+        for n in profiles.list_profiles():
+            s = sched.get_schedule(n)
+            out.append({"name": n, "is_active": n == profiles.active(),
+                        "is_default": n == "default",
+                        "has_db": os.path.exists(os.path.join(profiles.profile_dir(n), "portfolio.db")),
+                        "schedule": {"enabled": s["enabled"], "time": s["time"],
+                                     "last_run_date": s.get("last_run_date")}})
+        return {"active": profiles.active(), "profiles": out,
                 "dir": profiles.profiles_dir()}
 
     def _switch_profile(self):
@@ -375,6 +395,9 @@ _scheduler_stop = threading.Event()
 
 def _run_scheduled(profile):
     prev = profiles.active()
+    # survive a hard kill mid-refresh: a marker lets the next startup restore
+    # the profile the user actually selected
+    profiles.mark_restore_target(prev)
     try:
         profiles.set_active(profile)
         with _state_lock:
@@ -394,6 +417,7 @@ def _run_scheduled(profile):
             profiles.set_active(prev)
         except Exception:  # noqa: BLE001
             pass
+        profiles.clear_restore_target()
 
 
 def _scheduler_loop():
@@ -410,6 +434,10 @@ def _scheduler_loop():
 def run(port=None, host="127.0.0.1", profile=None):
     port = port or config.DEFAULT_PORT
     profiles.ensure_profiles()
+    # undo a scheduled refresh that was interrupted by a hard kill
+    recovered = profiles.recover_active()
+    if recovered:
+        print(f"[profiles] recovered interrupted refresh; active restored to {recovered}", flush=True)
     if profile:
         profiles.set_active(profile)
     sources.ensure_file()

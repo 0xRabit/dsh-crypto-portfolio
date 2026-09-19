@@ -4,6 +4,8 @@
 
 免费、100% 自托管的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）插件：把**链上与 CEX 资产**统一到一张自包含的 Web 仪表盘上。
 
+![Crypto Portfolio Tracker —— 所有链、所有钱包，一张自托管仪表盘](assets/screenshot.png)
+
 > 非官方项目，由社区成员独立开发和维护，与 DeepSeek 官方无关。
 
 ---
@@ -43,15 +45,14 @@ DeBank 会把一堆假代币也列出来，比如 ETHG 这种**价格被操纵�
 ## 它做了什么
 
 - **一个 DSH 插件，拉起一个零依赖的 Web 仪表盘。** 没有框架、没有 CDN，Python 标准库 + 原生 JS。
-- **覆盖 BTC / EVM / Solana / Hyperliquid L1 / CEX。** DeBank 全 73 条链、BTC 双地址（P2SH + P2TR）、Solana 原生质押、Hyperliquid 官方 API（质押 HYPE + 现货 + 永续权益）、三家交易所只读 key（命名 `<交易所>_read`）。
-- **全局筛选。** 分类（BTC / EVM / Solana / CEX）、钱包、网络三个下拉作用于所有面板——总额、钱包占比饼图、趋势、网络分布、代币表一起联动。
+- **覆盖 BTC / EVM / Solana / 狗狗币 / 艾达币 / Hyperliquid L1 / CEX。** DeBank 全 73 条链、BTC 双地址（P2SH + P2TR）、Solana 原生质押、狗狗币（BlockCypher）、艾达币（Koios，支持 stake 地址）、Hyperliquid 官方 API（质押 HYPE + 现货 + 永续权益 + 金库权益）、三家交易所只读 key（命名 `<交易所>_read`）。
+- **全局筛选。** 分类（BTC / EVM / Solana / 狗狗币 / 艾达币 / CEX）、钱包、网络三个下拉作用于所有面板——总额、钱包占比饼图、趋势、网络分布、代币表一起联动。
 - **免费 + 付费数据源，显著区分。** EVM 走 DeBank 双 provider：付费 `debank-pro`（标注「付费」，带注册链接）与免费免 key 的 `debank-public` 兜底；CEX 三行（Binance/Bybit/Backpack）常驻显示并带各家「获取 API key」链接；每个数据源显示最近一次成功时间。
 - **多 API 源自动切换。** 每个数据源配了多个 provider（价格：CoinGecko → Binance → Coinbase → OKX；BTC：blockchain.info → mempool.space；Solana RPC 多节点；Hyperliquid 双端点），挂了自动切下一个，并记住最近能用的。
 - **定时每日刷新。** 每个 Profile 可设置本地时间自动刷新（服务端守护线程，关闭网页不影响）；设置页显示各数据源最后成功时间。
-- **多 Profile 配置隔离。** `default` Profile 内置公开模板钱包（vitalik.eth、创世 BTC、公开 SOL）与空 key；你的私人钱包和 key 放在独立命名的 Profile 里，拥有各自的快照历史。
+- **多 Profile 配置隔离。** `default` Profile 内置公开模板钱包（vitalik.eth、创世 BTC、公开 SOL、公开 DOGE、公开 ADA）与空 key；你的私人钱包和 key 放在独立命名的 Profile 里，拥有各自的快照历史。每个 Profile 可重命名（快照随之迁移），并各自维护独立的每日定时刷新时间。
 - **主题与多语言。** 深/浅色主题切换、中英双语（默认英文）、全站链与交易所图标。
 
-![仪表盘截图](assets/screenshot.png)
 
 架构长这样——每个方框都是一条真实的数据管线：
 

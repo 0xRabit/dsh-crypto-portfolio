@@ -14,8 +14,9 @@ from . import sources
 from .api import http_get_json
 
 # coingecko_id -> exchange symbol
-NATIVE_IDS = ("bitcoin", "ethereum", "solana", "hyperliquid")
-EXCHANGE_SYMBOLS = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "hyperliquid": "HYPE"}
+NATIVE_IDS = ("bitcoin", "ethereum", "solana", "hyperliquid", "dogecoin", "cardano")
+EXCHANGE_SYMBOLS = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "hyperliquid": "HYPE",
+                    "dogecoin": "DOGE", "cardano": "ADA"}
 
 
 def get_native_prices(ids=NATIVE_IDS):

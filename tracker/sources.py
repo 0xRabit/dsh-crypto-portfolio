@@ -42,6 +42,21 @@ _DEFAULTS = {
              "url": "https://mempool.space/api/address/{addr}", "enabled": True},
         ],
     },
+    "doge": {
+        "enabled": True,
+        "providers": [
+            {"name": "blockcypher", "type": "per_address",
+             "url": "https://api.blockcypher.com/v1/doge/main/addrs/{addr}/balance", "enabled": True},
+        ],
+    },
+    "ada": {
+        "enabled": True,
+        "providers": [
+            {"name": "koios", "type": "batch",
+             "url": "https://api.koios.rest/api/v1/address_info",
+             "stake_url": "https://api.koios.rest/api/v1/account_info", "enabled": True},
+        ],
+    },
     "prices": {
         "enabled": True,
         "providers": [

@@ -11,7 +11,7 @@ import threading
 
 from . import profiles
 
-VALID_TYPES = ("evm", "btc", "sol")
+VALID_TYPES = ("evm", "btc", "sol", "doge", "ada")
 
 _lock = threading.Lock()
 _user_cache = {"mtime": None, "data": None}

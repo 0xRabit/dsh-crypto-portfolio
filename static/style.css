@@ -5,11 +5,27 @@
   --border: #2a3242;
   --text: #e6edf3;
   --muted: #8b98a9;
+  /* single primary ink — accent only for selection, primary action, state */
   --accent: #58a6ff;
-  --green: #3fb950;
-  --red: #f85149;
-  --yellow: #d29922;
+  --accent-weak: rgba(88,166,255,.12);
+  /* text colour for solid-accent surfaces (buttons); flips with the theme so
+     contrast stays >=4.5:1 on both the light and the dark accent */
+  --on-accent: #04121f;
+  /* semantic state vocabulary (Restrained floor: accent is not decorative) */
+  --success: #3fb950;
+  --danger: #f85149;
+  --warning: #d29922;
+  --info: #58a6ff;
+  /* back-compat aliases (existing rules still reference these) */
+  --green: var(--success);
+  --red: var(--danger);
+  --yellow: var(--warning);
+  /* focus ring / selection / scrollbars (browser surfaces themed from palette) */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px rgba(88,166,255,.5);
+  --selection: rgba(88,166,255,.28);
+  --scrollbar: #2a3242;
   --radius: 10px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -17,6 +33,13 @@ body {
   color: var(--text);
   font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
 }
+/* theme browser surfaces from the palette (cheapest "built, not assembled" signal) */
+::selection { background: var(--selection); }
+* { scrollbar-color: var(--scrollbar) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--border); background-clip: content-box; }
 header {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
@@ -34,6 +57,28 @@ header {
   display: flex; gap: 4px; padding: 10px 20px 6px;
   background: var(--bg);
 }
+
+/* ---------- value proposition, inline in the top bar ---------- */
+/* The brand and the controls are fixed-width anchors; only this middle block
+   flexes, so the tagline truncates — never the product name. */
+.brand { flex: none; }
+.header-actions { flex: none; }
+.header-hero {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 12px;
+  font-size: 12px; color: var(--muted);
+}
+.header-hero[hidden] { display: none; }
+.header-hero .hero-logos { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+.header-hero .hero-logos img { width: 19px; height: 19px; border-radius: 5px; display: block; }
+.header-hero .hero-text {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* shed the least important parts first as the bar narrows:
+   logo rail -> the whole tagline (the brand + controls keep their width) */
+@media (max-width: 1240px) { .header-hero .hero-logos { display: none; } }
+@media (max-width: 980px)  { .header-hero { display: none; } }
 .tab {
   background: transparent; color: var(--muted);
   border: 1px solid transparent; border-bottom: none;
@@ -50,13 +95,17 @@ select, input[type="search"], input[type="text"] {
 }
 select:focus, input:focus { border-color: var(--accent); }
 button {
-  background: var(--accent); color: #04121f; border: none; border-radius: 8px;
+  background: var(--accent); color: var(--on-accent); border: none; border-radius: 8px;
   padding: 8px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  transition: background-color .15s, filter .15s;
 }
 button:hover { filter: brightness(1.1); }
-button:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: none; box-shadow: var(--focus-ring);
+}
+button:disabled { opacity: .55; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); padding: 6px 12px; font-size: 12.5px; }
-.btn-ghost:hover { border-color: var(--accent); filter: none; }
+.btn-ghost:hover { border-color: var(--accent); filter: none; background: var(--accent-weak); }
 .bl-btn {
   background: transparent; color: var(--red); border: 1px solid rgba(248,81,73,.35);
   border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer;
@@ -66,7 +115,7 @@ th.op { width: 70px; }
 
 .progress { margin: 12px 20px 0; padding: 10px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
 .progress-bar { height: 6px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
-#progressFill { height: 100%; background: linear-gradient(90deg, var(--accent), #7ee787); transition: width .4s; }
+#progressFill { height: 100%; background: var(--accent); transition: width .4s; }  /* single accent ink, not decoration */
 #progressMsg { margin-top: 6px; color: var(--muted); font-size: 12.5px; }
 
 .filterbar {
@@ -85,13 +134,13 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .btn-title { float: right; margin-top: -3px; }
 .asset-inline { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
 .asset-left { min-width: 150px; flex: none; }
-.asset-left .big { font-size: 28px; font-weight: 800; letter-spacing: .5px; }
-.asset-left .change { margin-top: 6px; font-size: 13.5px; font-weight: 600; }
+.asset-left .big { font-size: 28px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+.asset-left .change { margin-top: 6px; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .asset-left .change.up { color: var(--green); }
 .asset-left .change.down { color: var(--red); }
 .asset-left .sub { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
 
-.wallet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.wallet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
 .wallet-grid .card { padding: 10px 12px; }
 .wallet-grid .card .w-usd { font-size: 15px; }
 .wallet-grid .card .w-addr { font-size: 10.5px; }
@@ -150,6 +199,11 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .bl-tag.user { background: #173a35; color: #4fd1b0; }
 .bl-del { background: transparent; border: none; color: var(--red); cursor: pointer; font-size: 13px; margin-left: auto; padding: 2px 6px; }
 .bl-del:hover { text-decoration: underline; }
+/* profile row actions (rename / delete) grouped at the right edge */
+.pf-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.pf-actions .bl-del { margin-left: 0; }
+.bl-edit { background: transparent; border: none; color: var(--accent); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+.bl-edit:hover { text-decoration: underline; }
 .bl-empty { color: var(--muted); font-size: 12.5px; }
 .bl-form { display: flex; flex-wrap: wrap; gap: 8px; }
 .bl-form input { flex: 1; min-width: 130px; }
@@ -167,7 +221,9 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .badge.btc { background: #4a3517; color: #f0b95c; }
 .badge.sol { background: #173a35; color: #4fd1b0; }
 .badge.cex { background: #3a2055; color: #c79bff; }
-.card .w-usd { font-size: 17px; font-weight: 700; margin-top: 5px; }
+.badge.doge { background: #4a3517; color: #e8c46a; }
+.badge.ada { background: #123a52; color: #6ec8f0; }
+.card .w-usd { font-size: 17px; font-weight: 700; margin-top: 5px; font-variant-numeric: tabular-nums; }
 .card .w-addr { color: var(--muted); font-size: 11px; margin-top: 4px; word-break: break-all; }
 .card .w-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
 .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
@@ -185,9 +241,70 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 a.w-plat { cursor: pointer; }
 a.w-plat:hover { opacity: 1; transform: scale(1.08); transition: transform .12s; }
 
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-4); }
 .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
 .hint { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+
+/* ---------- collapsible settings sections (native <details>) ---------- */
+/* No JS: <details>/<summary> gives disclosure + keyboard support for free.
+   Each section carries its own hue so the page scans as five distinct blocks;
+   hues are re-declared for the light theme to keep contrast. */
+details.panel { padding: 0; --sec-rgb: 139, 152, 169; }
+#secProfiles  { --sec-rgb: 163, 113, 247; }  /* violet - profiles + schedule */
+#secWallets   { --sec-rgb: 88, 166, 255; }   /* blue   - wallets   */
+#secSources   { --sec-rgb: 57, 197, 207; }   /* teal   - sources   */
+#secBlacklist { --sec-rgb: 248, 81, 73; }    /* red    - blacklist */
+
+details.panel > summary {
+  list-style: none;            /* hide the default triangle */
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: var(--sp-3) var(--sp-5);
+  font-size: 15px; font-weight: 700;
+  border-radius: var(--radius);
+  border-left: 4px solid rgb(var(--sec-rgb));
+  background: rgba(var(--sec-rgb), .07);
+  user-select: none;
+}
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary::after {           /* chevron */
+  content: "▸";
+  margin-left: auto;
+  color: rgb(var(--sec-rgb));
+  font-size: 12px;
+  transition: transform .15s ease;
+}
+details.panel[open] > summary { background: rgba(var(--sec-rgb), .13); }
+details.panel[open] > summary::after { transform: rotate(90deg); }
+details.panel > summary:hover { background: rgba(var(--sec-rgb), .18); }
+details.panel > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+details.panel .panel-body { padding: var(--sp-4) var(--sp-5) var(--sp-4); }
+details.panel .panel-body > .panel-title { margin-bottom: 12px; }
+
+/* light theme: darker hues so the tints and rules stay legible on white */
+html[data-theme="light"] #secProfiles  { --sec-rgb: 124, 74, 214; }
+html[data-theme="light"] #secWallets   { --sec-rgb: 9, 105, 218; }
+html[data-theme="light"] #secSources   { --sec-rgb: 17, 122, 138; }
+html[data-theme="light"] #secBlacklist { --sec-rgb: 207, 34, 46; }
+
+/* per-profile schedule: a clock tag that expands that profile's own editor */
+.pf-sched { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.pf-sched.on { color: var(--green); border-color: var(--green); }
+button.pf-sched { background: transparent; cursor: pointer; font-family: inherit; line-height: 1.5; }
+button.pf-sched:hover { border-color: var(--accent); color: var(--accent); }
+button.pf-sched.open { background: var(--accent-weak); border-color: var(--accent); color: var(--accent); }
+.pf-sched-box {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: -2px 0 var(--sp-2); padding: var(--sp-2) var(--sp-3);
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+}
+.pf-sched-box[hidden] { display: none; }
+
+/* ---------- logos used in the settings page (same set as the dashboard) --- */
+.src-head .src-logo { width: 18px; height: 18px; margin-right: 2px; }
+.src-sub-logo { display: flex; align-items: center; gap: 5px; }
+.src-sub-logo .logo-img { margin-right: 0; }
+.bl-item .bl-logo { width: 17px; height: 17px; margin-right: 2px; }
 
 .chart-wrap { position: relative; }
 #trendChart { width: 100%; height: 320px; display: block; }
@@ -232,6 +349,24 @@ td.muted { color: var(--muted); max-width: 220px; overflow: hidden; text-overflo
 
 footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20px 0 8px; line-height: 1.8; }
 
+/* build/about line at the bottom of the settings page */
+.settings-about {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  color: var(--muted); font-size: 12px;
+  padding: var(--sp-3) 0 0; margin-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+.settings-about .about-brand { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
+.settings-about .brand-logo { width: 18px; height: 18px; vertical-align: middle; margin: 0; }
+.settings-about .hint { margin-left: 0; }
+.settings-about .about-sibling {
+  display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding-left: 10px; margin-left: 4px; border-left: 1px solid var(--border);
+}
+.settings-about .about-sibling a { color: var(--accent); text-decoration: none; }
+.settings-about .about-sibling a:hover { text-decoration: underline; }
+.settings-about .about-src { color: var(--muted); font-size: 11.5px; }
+
 .hidden { display: none !important; }
 
 .pf-switch { display: inline-flex; align-items: center; gap: 6px; }
@@ -242,6 +377,13 @@ html[data-theme="light"] {
   --bg: #f6f8fa; --panel: #ffffff; --panel2: #f0f3f6;
   --border: #d8dee6; --text: #1f2328; --muted: #57606a;
   --accent: #0969da;
+  /* the light accent is dark, so solid-accent buttons need light text (5.19:1) */
+  --on-accent: #ffffff;
+  --green: #1a7f37; --red: #cf222e; --yellow: #9a6700;
+  --accent-weak: rgba(9,105,218,.12);
+  --selection: rgba(9,105,218,.22);
+  --scrollbar: #c9d1d9;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px rgba(9,105,218,.45);
 }
 html[data-theme="light"] header { background: rgba(255,255,255,.92); }
 html[data-theme="light"] .total-card,

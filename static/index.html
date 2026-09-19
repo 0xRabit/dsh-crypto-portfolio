@@ -5,12 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=5">
+<link rel="stylesheet" href="/static/style.css?v=21">
 </head>
 <body>
 <header>
   <div class="brand">
-    <img src="/static/logos/logo.svg" class="brand-logo" alt="logo"> <span data-i18n="brand">Crypto Portfolio Tracker</span> <span id="versionTag" class="hint"></span>
+    <img src="/static/logos/logo.svg" class="brand-logo" alt="logo"> <span data-i18n="brand">Crypto Portfolio Tracker</span>
+  </div>
+  <!-- value proposition lives in the top bar itself (no separate strip).
+       The logo rail says what the tracker reads; the line truncates first. -->
+  <div class="header-hero" id="heroStrip">
+    <span class="hero-logos">
+      <img src="/static/logos/btc.svg" alt="Bitcoin">
+      <img src="/static/logos/eth.svg" alt="Ethereum">
+      <img src="/static/logos/sol.svg" alt="Solana">
+      <img src="/static/logos/doge.svg" alt="Dogecoin">
+      <img src="/static/logos/ada.svg" alt="Cardano">
+      <img src="/static/logos/hyperliquid.svg" alt="Hyperliquid">
+      <img src="/static/logos/binance.svg" alt="Binance">
+      <img src="/static/logos/bybit.svg" alt="Bybit">
+      <img src="/static/logos/backpack.svg" alt="Backpack">
+    </span>
+    <span class="hero-text" id="heroText" data-i18n="heroLine" data-i18n-title="heroLineFull" title="Free &amp; self-hosted · every chain, every wallet in one view · no account, no tracking — your keys never leave your machine">Free · self-hosted · any chain</span>
   </div>
   <div class="header-actions">
     <button id="btnTheme" class="btn-ghost" title="toggle theme">☾</button>
@@ -39,6 +55,8 @@
     <option value="btc" data-i18n="fbBtc">BTC</option>
     <option value="evm" data-i18n="fbEvm">EVM</option>
     <option value="sol" data-i18n="fbSol">Solana</option>
+    <option value="doge" data-i18n="fbDoge">Dogecoin</option>
+    <option value="ada" data-i18n="fbAda">Cardano</option>
     <option value="cex" data-i18n="fbCex">CEX</option>
   </select>
   <span class="fb-label" data-i18n="fbWallet">Wallet</span>
@@ -122,20 +140,9 @@
 <!-- ================= Settings ================= -->
 <div class="page hidden" id="pageSettings">
   <main>
-    <section class="panel">
-      <div class="panel-title" data-i18n="schedTitle">Scheduled Daily Refresh</div>
-      <p class="bl-desc" data-i18n="schedDesc">Automatically refresh this profile at a set local time every day (only if the server is running at that minute).</p>
-      <div class="bl-form">
-        <label class="chk"><input type="checkbox" id="schedEnabled"> <span data-i18n="schedEnable">Enable</span></label>
-        <input type="time" id="schedTime" value="09:00">
-        <button id="btnSaveSchedule" class="btn-ghost" data-i18n="btnSaveSched">Save Schedule</button>
-        <span id="schedMsg" class="hint"></span>
-        <span id="schedLast" class="hint"></span>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-title" data-i18n="profilesTitle">Profiles (named configs)</div>
+    <details class="panel" id="secProfiles" open>
+      <summary class="panel-title" data-i18n="profilesTitle">Profiles (named configs)</summary>
+      <div class="panel-body">
       <p class="bl-desc" data-i18n="profilesDesc">Each profile is an independent config: sources (APIs + keys), wallets, blacklist and its own snapshot history. The default profile is the public template (public wallets, empty keys); your private wallets/keys belong to a named profile of your choice.</p>
       <div id="profileList" class="bl-list"></div>
       <p class="bl-desc" data-i18n="pfSwitchHint">Switch profiles from the dropdown in the top-right corner.</p>
@@ -144,12 +151,15 @@
         <button id="btnPfCreateTpl" class="btn-ghost" data-i18n="pfCreateTpl">Create from public template</button>
         <button id="btnPfCopy" class="btn-ghost" data-i18n="pfCopy">Duplicate current</button>
       </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-title"><span data-i18n="walletMgmtTitle">Wallet Management</span>
-        <span class="hint" id="walletFile"></span>
+      <p class="bl-desc" data-i18n="pfSchedHint">Each profile keeps its own daily auto-refresh schedule — click the clock tag on a profile to edit it. The scheduler runs every profile independently.</p>
       </div>
+    </details>
+
+    <details class="panel" id="secWallets">
+      <summary class="panel-title"><span data-i18n="walletMgmtTitle">Wallet Management</span>
+        <span class="hint" id="walletFile"></span>
+      </summary>
+      <div class="panel-body">
       <p class="bl-desc" data-i18n="walletMgmtDesc">Adding/removing wallets only affects future fetches; already stored historical snapshots are never touched. CEX accounts are named &lt;exchange&gt;_read to show they are read-only keys.</p>
       <div id="walletList" class="bl-list"></div>
       <div class="bl-form">
@@ -158,16 +168,20 @@
           <option value="evm" data-i18n="wlTypeEvm">EVM (DeBank + Hyperliquid)</option>
           <option value="btc" data-i18n="wlTypeBtc">BTC</option>
           <option value="sol" data-i18n="wlTypeSol">Solana</option>
+          <option value="doge" data-i18n="wlTypeDoge">Dogecoin</option>
+          <option value="ada" data-i18n="wlTypeAda">Cardano</option>
         </select>
         <input id="wlAddress" data-i18n-placeholder="wlAddrPh" placeholder="Address" style="flex:2">
         <button id="btnAddWallet" data-i18n="btnAddWallet">+ Add Wallet</button>
       </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-title" data-i18n="srcTitle">Data Source Configuration
-        <span class="hint" id="sourcesFile"></span>
       </div>
+    </details>
+
+    <details class="panel" id="secSources">
+      <summary class="panel-title"><span data-i18n="srcTitle">Data Source Configuration</span>
+        <span class="hint" id="sourcesFile"></span>
+      </summary>
+      <div class="panel-body">
       <p class="bl-desc" data-i18n="srcDesc">All APIs (URL + keys) are configured here: each source can have multiple providers, tried in order with automatic failover to the next working one. Save to apply without restart. Env vars DEBANK_API_KEY / BIRDEYE_API_KEY / COINGECKO_API_KEY / SOLANA_RPC have highest priority.</p>
       <div id="sourcesBody"></div>
       <div class="toolbar" style="margin-top:12px">
@@ -177,12 +191,14 @@
         <input type="file" id="importFile" accept=".json" style="display:none">
         <span id="sourcesMsg" class="hint"></span>
       </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-title"><span data-i18n="blTitle">Token Blacklist</span>
-        <span class="hint" id="blacklistFile"></span>
       </div>
+    </details>
+
+    <details class="panel" id="secBlacklist">
+      <summary class="panel-title"><span data-i18n="blTitle">Token Blacklist</span>
+        <span class="hint" id="blacklistFile"></span>
+      </summary>
+      <div class="panel-body">
       <p class="bl-desc" data-i18n="blDesc">Blacklisted tokens are excluded from total assets, wallets, chain distribution and trends (including historical snapshots). Remove entries below to restore.</p>
       <div id="blacklistEntries" class="bl-list"></div>
       <div class="bl-form">
@@ -192,10 +208,25 @@
         <input id="blChain" data-i18n-placeholder="blChainPh" placeholder="Chain (optional, e.g. eth / sol / hyperliquid)">
         <button id="btnAddBlacklist" data-i18n="btnAddBl">+ Add Blacklist</button>
       </div>
-    </section>
+      </div>
+    </details>
+
+    <!-- build / about line: where the version number lives now -->
+    <footer class="settings-about">
+      <span class="about-brand"><img src="/static/logos/logo.svg" class="brand-logo" alt=""> <span data-i18n="brand">Crypto Portfolio Tracker</span></span>
+      <span class="hint">v<span id="versionTag"></span></span>
+      <span class="hint" data-i18n="aboutLine">Python stdlib + vanilla JS · no framework, no CDN · sources are configurable per profile</span>
+      <span class="about-sibling">
+        <span data-i18n="siblingLabel">Sibling project</span>
+        <a href="https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin"
+           target="_blank" rel="noopener noreferrer">SmartFolio <span data-i18n="chromeExt">Chrome extension</span> ↗</a>
+        <a class="about-src" href="https://github.com/0xRabit/SmartFolio"
+           target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">source</a>
+      </span>
+    </footer>
   </main>
 </div>
 
-<script src="/static/app.js?v=3"></script>
+<script src="/static/app.js?v=15"></script>
 </body>
 </html>
