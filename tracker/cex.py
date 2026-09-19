@@ -130,7 +130,13 @@ def _bybit_balances(acc):
 
 
 def _backpack_balances(acc):
-    import nacl.signing  # vendored dependency (pynacl)
+    try:
+        import nacl.signing  # provided by pynacl (see requirements.txt)
+    except ImportError as e:  # noqa: BLE001
+        raise RuntimeError(
+            "Backpack needs the pynacl package for Ed25519 request signing. "
+            "Install it with: pip3 install -r requirements.txt"
+        ) from e
     priv = base64.b64decode(str(acc["secret"]).strip())
     pub = base64.b64decode(str(acc["key"]).strip())
     sk = nacl.signing.SigningKey(priv)

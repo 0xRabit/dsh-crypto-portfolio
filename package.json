@@ -1,7 +1,7 @@
 {
   "name": "dsh-crypto-portfolio",
   "version": "0.1.0",
-  "description": "Crypto portfolio tracker (BTC/EVM/Solana/Hyperliquid/CEX) as a DSH plugin. All private keys/wallets live in user-local JSON configs, never in this package.",
+  "description": "Self-hosted crypto portfolio dashboard as a DSH plugin: Bitcoin, EVM (73 chains), Solana, Dogecoin, Cardano, Hyperliquid L1 and read-only CEX accounts in one view. Zero-dependency web UI (Python stdlib + vanilla JS).",
   "type": "module",
   "main": "index.js",
   "files": [
@@ -12,14 +12,42 @@
     "run.py",
     "fetch.py",
     "templates",
-    "vendor",
     "requirements.txt",
+    "CHANGELOG.md",
     "README.md"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "deepseek-harness",
+    "crypto",
+    "portfolio",
+    "tracker",
+    "dashboard",
+    "self-hosted",
+    "bitcoin",
+    "ethereum",
+    "evm",
+    "solana",
+    "dogecoin",
+    "cardano",
+    "hyperliquid",
+    "debank",
+    "binance",
+    "bybit"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xRabit/dsh-crypto-portfolio.git"
   },
   "license": "MIT"
 }

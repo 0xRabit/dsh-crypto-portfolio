@@ -4,6 +4,13 @@ English | [中文](README.zh.md)
 
 A free, 100% self-hosted [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) plugin that unifies your **on-chain and CEX assets** into one self-contained web dashboard.
 
+**Requires** `dsh` `0.1.1-rc.2` (Node `^22.19 || >=24`) · Python 3.9+ · `pip3 install requests pynacl`
+
+```sh
+dsh plugin --profile demo add dsh-crypto-portfolio   # npm
+dsh --profile demo                                    # dashboard at http://127.0.0.1:8080
+```
+
 ![Crypto Portfolio Tracker — every chain, every wallet, one self-hosted dashboard](assets/screenshot.png)
 
 > Unofficial project, independently developed and maintained by community members.
@@ -72,16 +79,71 @@ This repository contains **no private keys, no private wallets, no balances** �
 
 ## Install
 
-Requirements: Python 3.9+ (`requests`; `pynacl` is bundled in `vendor/`).
+### Requirements
+
+- **`dsh` `0.1.1-rc.2`** (or a compatible release within the same pre-release line)
+  and **Node `^22.19.0 || >=24.0.0`** — the range DSH itself declares.
+- **Python 3.9+** with two pip packages:
+
+  ```sh
+  pip3 install requests pynacl
+  ```
+
+  These are ordinary runtime dependencies, not vendored, so `pip` can pick the
+  build that matches your platform.
+
+### From npm (recommended)
+
+Installs prebuilt code and needs **no build permission**:
 
 ```sh
-# from a DSH source checkout
-dsh plugin --profile demo add /path/to/dsh-crypto-portfolio
+dsh plugin --profile demo add dsh-crypto-portfolio
 dsh --profile demo
-# dashboard at http://127.0.0.1:8080 (PORTFOLIO_PORT to override)
 ```
 
-Or run standalone (no DSH):
+### From a tarball (offline / air-gapped)
+
+```sh
+pnpm pack                                    # produces dsh-crypto-portfolio-0.1.0.tgz
+dsh plugin --profile demo add ./dsh-crypto-portfolio-0.1.0.tgz
+```
+
+### From GitHub
+
+```sh
+dsh plugin --profile demo add github:0xRabit/dsh-crypto-portfolio#<commit-sha>
+```
+
+This package is plain JavaScript + Python with **no build step**, so its
+`prepare` is a no-op and pnpm does not need you to allowlist a build script —
+unlike plugins that ship TypeScript sources. Pin a commit SHA anyway, so a
+later push cannot change what runs on your machine.
+
+### Verify the layer before booting
+
+```sh
+dsh --profile demo --dump-config      # look for: # == dsh-crypto-portfolio
+```
+
+If that line is missing, the bundle did not activate — the package installed as a
+plain dependency instead. Re-run the `add` and check the warning it printed.
+
+### Override the port
+
+A patch replaces the whole `config` of a row, so restate every key you need.
+Put this in `$DSH_HOME/profiles/demo/cordis.patch.yml`:
+
+```yaml
+- id: portfolio-tracker
+  name: dsh-crypto-portfolio
+  config:
+    port: 8199
+    host: 127.0.0.1
+```
+
+Or set `PORTFOLIO_PORT` in the environment.
+
+### Standalone (no DSH)
 
 ```sh
 python3 run.py --init-template --port 8080   # seeds profiles/default from public templates

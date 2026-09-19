@@ -4,6 +4,13 @@
 
 免费、100% 自托管的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）插件：把**链上与 CEX 资产**统一到一张自包含的 Web 仪表盘上。
 
+**依赖** `dsh` `0.1.1-rc.2`（Node `^22.19 || >=24`）· Python 3.9+ · `pip3 install requests pynacl`
+
+```sh
+dsh plugin --profile demo add dsh-crypto-portfolio   # npm
+dsh --profile demo                                    # 仪表盘 http://127.0.0.1:8080
+```
+
 ![Crypto Portfolio Tracker —— 所有链、所有钱包，一张自托管仪表盘](assets/screenshot.png)
 
 > 非官方项目，由社区成员独立开发和维护，与 DeepSeek 官方无关。
@@ -72,16 +79,64 @@ DeBank 会把一堆假代币也列出来，比如 ETHG 这种**价格被操纵�
 
 ## 安装
 
-依赖：Python 3.9+（`requests`；`pynacl` 已随 `vendor/` 打包）。
+### 依赖前提
+
+- **`dsh` `0.1.1-rc.2`**（同一预发布线内的兼容版本）与 **Node `^22.19.0 || >=24.0.0`** —— 即 DSH 自身声明的区间。
+- **Python 3.9+**，并安装两个 pip 包：
+
+  ```sh
+  pip3 install requests pynacl
+  ```
+
+  两者都是普通运行时依赖，**没有**随包 vendored —— 这样 pip 才能按你的平台/版本挑到正确的构建。
+
+### 从 npm 安装（推荐）
+
+装的是预构建产物，**不需要任何 build 授权**：
 
 ```sh
-# 在 DSH 源码目录
-dsh plugin --profile demo add /path/to/dsh-crypto-portfolio
+dsh plugin --profile demo add dsh-crypto-portfolio
 dsh --profile demo
-# 仪表盘地址 http://127.0.0.1:8080（可用 PORTFOLIO_PORT 覆盖）
 ```
 
-或脱离 DSH 独立运行：
+### 从 tarball 安装（离线 / 内网）
+
+```sh
+pnpm pack                                    # 生成 dsh-crypto-portfolio-0.1.0.tgz
+dsh plugin --profile demo add ./dsh-crypto-portfolio-0.1.0.tgz
+```
+
+### 从 GitHub 安装
+
+```sh
+dsh plugin --profile demo add github:0xRabit/dsh-crypto-portfolio#<commit-sha>
+```
+
+本包是纯 JavaScript + Python，**没有任何构建步骤**，`prepare` 是空操作，因此 pnpm **不需要**你给 build 脚本放行 —— 这一点比那些以 TypeScript 源码分发的插件摩擦更小。不过仍**建议 pin 一个 commit SHA**，避免之后的推送悄悄改变你机器上执行的代码。
+
+### 启动前先验证层是否生效
+
+```sh
+dsh --profile demo --dump-config      # 应能看到： # == dsh-crypto-portfolio
+```
+
+**看不到这一行 = bundle 没有激活**（包只被当成普通依赖装了进去）。重新 `add` 并留意它打印的警告。
+
+### 覆盖端口
+
+patch 会**整体替换**某一行的 `config`，所以必须把你需要的键全部写全。放到 `$DSH_HOME/profiles/demo/cordis.patch.yml`：
+
+```yaml
+- id: portfolio-tracker
+  name: dsh-crypto-portfolio
+  config:
+    port: 8199
+    host: 127.0.0.1
+```
+
+也可以设环境变量 `PORTFOLIO_PORT`。
+
+### 脱离 DSH 独立运行
 
 ```sh
 python3 run.py --init-template --port 8080   # 用公开模板初始化 profiles/default
