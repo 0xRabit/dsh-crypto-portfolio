@@ -43,8 +43,6 @@ export function apply(ctx, config) {
   })
 
   console.log(`[dsh-crypto-portfolio] dashboard: http://${host}:${port} (first run: click Refresh)`)
+  // The child is tied to this plugin's lifecycle: unloading the row stops it.
   ctx.on('dispose', () => { child.kill('SIGTERM') })
-
-  // Surface the URL as a runtime service value other plugins can read.
-  ctx.set('portfolioTracker', { url: `http://${host}:${port}`, child }, true)
 }
