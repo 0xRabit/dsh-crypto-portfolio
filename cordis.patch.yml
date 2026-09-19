@@ -1,6 +1,8 @@
 - insert:
+    # `name` must be the installed package name so Node resolution finds
+    # the code (a relative path only works for local --patch overlays).
     - id: portfolio-tracker
-      name: dsh-portfolio-tracker
+      name: dsh-crypto-portfolio
       config:
         # Dashboard port; override in your profile patch or PORTFOLIO_PORT env.
         port: 8080

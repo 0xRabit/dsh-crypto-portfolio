@@ -1,4 +1,4 @@
-// dsh-portfolio-tracker — DSH (Cordis) plugin wrapper.
+// dsh-crypto-portfolio — DSH (Cordis) plugin wrapper.
 //
 // Starts the bundled Python portfolio tracker as a child process.
 // On first run it seeds user-local config files from templates/ (public
@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const name = 'dsh-portfolio-tracker'
+export const name = 'dsh-crypto-portfolio'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const PYTHON = process.env.PORTFOLIO_PYTHON || 'python3'
@@ -22,7 +22,7 @@ function seedConfigs() {
     const target = join(dir, dst)
     const src = join(ROOT, 'templates', tpl)
     if (!existsSync(target) && existsSync(src)) {
-      try { copyFileSync(src, target); console.log(`[portfolio-tracker] seeded profiles/default/${dst} from templates`) } catch (e) { /* ignore */ }
+      try { copyFileSync(src, target); console.log(`[dsh-crypto-portfolio] seeded profiles/default/${dst} from templates`) } catch (e) { /* ignore */ }
     }
   }
 }
@@ -40,7 +40,7 @@ export function apply(ctx) {
     stdio: 'inherit',
   })
 
-  console.log(`[portfolio-tracker] dashboard: http://${host}:${port} (first run: click Refresh)`)
+  console.log(`[dsh-crypto-portfolio] dashboard: http://${host}:${port} (first run: click Refresh)`)
   ctx.on('dispose', () => { child.kill('SIGTERM') })
 
   // Surface the URL as a runtime service value other plugins can read.
