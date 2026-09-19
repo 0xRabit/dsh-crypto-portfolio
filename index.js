@@ -27,8 +27,10 @@ function seedConfigs() {
   }
 }
 
-export function apply(ctx) {
-  const cfg = ctx.config || {}
+// Cordis hands the row's config to apply() as the SECOND argument. Reading it
+// from `ctx.config` throws "cannot get property config without inject".
+export function apply(ctx, config) {
+  const cfg = config || {}
   const port = cfg.port || Number(process.env.PORTFOLIO_PORT) || 8080
   const host = cfg.host || '127.0.0.1'
 
