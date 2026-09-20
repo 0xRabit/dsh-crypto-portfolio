@@ -129,32 +129,42 @@ th.op { width: 70px; }
 
 main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 
-.top-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+/* 1:3 — the asset panel is a narrow left rail, the wallet cards take the rest.
+   Inside the rail the headline figure and the donut stack vertically. */
+.top-row { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 16px; align-items: stretch; }
 .top-half { min-width: 0; }
 .btn-title { float: right; margin-top: -3px; }
-.asset-inline { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
-.asset-left { min-width: 150px; flex: none; }
-.asset-left .big { font-size: 28px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+.asset-inline { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+.asset-left { min-width: 0; }
+.asset-left .big { font-size: 30px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
 .asset-left .change { margin-top: 6px; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .asset-left .change.up { color: var(--green); }
 .asset-left .change.down { color: var(--red); }
 .asset-left .sub { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
 
+/* wallet cards: wider now that they own three quarters of the row, so the name
+   and the balance can carry more weight than before. */
 .wallet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
-.wallet-grid .card { padding: 10px 12px; }
-.wallet-grid .card .w-usd { font-size: 15px; }
-.wallet-grid .card .w-addr { font-size: 10.5px; }
+.wallet-grid .card { padding: 13px 14px; }
+.wallet-grid .card .w-name { font-size: 15px; }
+.wallet-grid .card .w-usd { font-size: 20px; margin-top: 7px; }
+.wallet-grid .card .w-addr { font-size: 11.5px; }
 /* the explorer-icon row needs a little horizontal room: drop to 2/1 columns
    before the icons would collide with the item count. */
 @media (max-width: 760px) { .wallet-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 500px) { .wallet-grid { grid-template-columns: 1fr; } }
 
-.pie-box { position: relative; width: 200px; height: 200px; flex: none; }
+/* share of the total, printed right after the balance on a wallet card */
+.card .w-share { margin-left: 8px; font-size: 13px; font-weight: 600; color: var(--muted);
+  font-variant-numeric: tabular-nums; }
+
+/* the donut fills the narrow rail instead of sitting at a fixed 200px */
+.pie-box { position: relative; width: 100%; max-width: 230px; aspect-ratio: 1 / 1; margin: 0 auto; }
 #walletPie { width: 100%; height: 100%; display: block; }
 .pie-legend { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 10px; }
 .legend-row {
   display: flex; align-items: center; gap: 8px; font-size: 12.5px;
-  padding: 4px 8px; border-radius: 6px; cursor: pointer; width: calc(50% - 7px);
+  padding: 4px 8px; border-radius: 6px; cursor: pointer; width: 100%;
   box-sizing: border-box; color: var(--text);
 }
 .legend-row:hover { background: rgba(88,166,255,.08); }
@@ -166,6 +176,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 @media (max-width: 1100px) {
   .top-row { grid-template-columns: 1fr; }
   .legend-row { width: calc(33.33% - 10px); }
+  .pie-box { max-width: 260px; }
 }
 .total-card { background: linear-gradient(135deg, #16233d, #1c2230); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
 .total-card .label { color: var(--muted); font-size: 12.5px; }
@@ -219,7 +230,12 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
   position: relative; overflow: hidden;
 }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+/* ---- wallet card: a fixed four-row stack ----
+   1 name  ·  2 balance  ·  3 address + copy  ·  4 type badge | explorers
+   Row 1 truncates instead of wrapping so a long name can never turn the card
+   into a five-row block (the full name stays available as a tooltip). */
 .card .w-name { font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+.card .w-name .w-name-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 10.5px; padding: 1px 7px; border-radius: 20px; font-weight: 600; }
 .badge.evm { background: #1f3a5f; color: #7ab0f5; }
 .badge.btc { background: #4a3517; color: #f0b95c; }
@@ -229,7 +245,6 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .badge.ada { background: #123a52; color: #6ec8f0; }
 .card .w-usd { font-size: 17px; font-weight: 700; margin-top: 5px; font-variant-numeric: tabular-nums; }
 .card .w-addr { color: var(--muted); font-size: 11px; margin-top: 4px; word-break: break-all; }
-.card .w-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
 .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .card.dimmed { opacity: .45; }
 .card.dimmed:hover { opacity: .85; }
@@ -239,10 +254,9 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .card .w-copy:hover { color: var(--accent); background: rgba(88,166,255,.12); }
 .card .w-copy.done { color: #7ee787; }
 .card .w-copy .copy-icon { display: block; }
-/* card footer: block-explorer icons, right-aligned. The deselect hint, when the
-   wallet is the active filter, takes the left side of the same row. */
-.card .w-foot { display: flex; align-items: flex-end; gap: 10px; margin-top: 5px; }
-.card .w-foot .w-sub { min-width: 0; margin-top: 0; }
+/* row 4: the top-level type badge sits on the left, block-explorer icons on the
+   right. `align-items: center` lines the badge up with the 18px icon slots. */
+.card .w-foot { display: flex; align-items: center; gap: 8px; margin-top: 7px; min-height: 18px; }
 /* up to 5 explorer icons, left→right in popularity order (source first).
    Favicons come from many different brands: some are near-black, some
    near-white. Each icon sits in a 18px slot and gets a backdrop only when its
@@ -263,6 +277,8 @@ a.w-plat:hover { opacity: 1; transform: scale(1.16); }
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-4); }
 .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
 .hint { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+/* names the wallet filter currently narrowing the token table (empty when none) */
+.hint.filter-chip:not(:empty) { color: var(--accent); font-weight: 600; }
 
 /* ---------- collapsible settings sections (native <details>) ---------- */
 /* No JS: <details>/<summary> gives disclosure + keyboard support for free.

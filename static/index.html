@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=23">
+<link rel="stylesheet" href="/static/style.css?v=25">
 </head>
 <body>
 <header>
@@ -91,23 +91,12 @@
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panel-title" data-i18n="trendTitle">Portfolio Trend <span class="hint">(last snapshot of each day · USD)</span></div>
-      <div class="chart-wrap">
-        <canvas id="trendChart"></canvas>
-        <div id="chartTip" class="chart-tip hidden"></div>
-      </div>
-      <div id="seriesToggle" class="series-toggle"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-title" data-i18n="chainTitle">Chain Distribution (USD)</div>
-      <div id="chainBars"></div>
-    </section>
-
+    <!-- Token details sits directly under the pie + wallet cards: clicking a
+         wallet card narrows this table, and the two must be adjacent for that
+         to be visible. -->
     <section class="panel">
       <div class="panel-title">
-        <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span>
+        <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span><span class="hint filter-chip" id="tokenFilter"></span>
       </div>
       <div class="toolbar">
         <input id="search" type="search" data-i18n-placeholder="searchPh" placeholder="Search token / name / wallet / address…">
@@ -131,6 +120,20 @@
           <tbody id="tokenBody"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" data-i18n="trendTitle">Portfolio Trend <span class="hint">(last snapshot of each day · USD)</span></div>
+      <div class="chart-wrap">
+        <canvas id="trendChart"></canvas>
+        <div id="chartTip" class="chart-tip hidden"></div>
+      </div>
+      <div id="seriesToggle" class="series-toggle"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title" data-i18n="chainTitle">Chain Distribution (USD)</div>
+      <div id="chainBars"></div>
     </section>
 
     <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack (CEX), CoinGecko/DexScreener/OKX (prices). Refresh saves the last snapshot of the day and builds trend charts.</footer>
@@ -227,6 +230,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=17"></script>
+<script src="/static/app.js?v=19"></script>
 </body>
 </html>

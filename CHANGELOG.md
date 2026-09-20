@@ -30,6 +30,14 @@ First public release.
   Birdeye; DOGE: 3; ADA: 4). CEX rows show the exchange mark, since an exchange
   account has no explorer page.
 - One-click address copy on every wallet card.
+- **Each wallet card is a fixed four-row stack** — name · balance (with that
+  wallet's share of the total) · address + copy · type badge on the left and
+  block-explorer icons on the right.
+- **Layout tuned for wide screens**: the asset rail and the wallet grid sit at
+  1:3, the headline figure and the donut stack vertically in the narrow rail,
+  and the token table sits directly under the pie + wallet row so that clicking
+  a wallet card visibly narrows the table below it (the active wallet is named
+  in the table's title).
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

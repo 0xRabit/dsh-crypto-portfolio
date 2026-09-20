@@ -686,13 +686,35 @@ function chainName(id) {
   return state.chains[id] || id || "—";
 }
 
+/**
+ * wallet name -> share of the current view's total, as a percentage number.
+ * Derived from the same token-summed per-wallet values the pie and its legend
+ * use, so the figure printed on a wallet card always equals the legend's.
+ */
+function walletShares() {
+  const v = filteredView({ ignoreWallet: true });
+  const total = (v && v.total_usd) || 0;
+  const map = {};
+  for (const w of (v && v.wallets) || []) {
+    map[w.wallet] = total > 0 ? ((w.total_usd || 0) / total) * 100 : 0;
+  }
+  return map;
+}
+
 /* ---------------- filtered views ---------------- */
-function filteredView() {
+/**
+ * @param opts.ignoreWallet - drop the wallet filter for this call. The wallet
+ *   cards need it: they always render every wallet in the category, and while
+ *   one wallet is selected the pie collapses to that single wallet, so a share
+ *   read off the filtered view would print 100% on every card.
+ */
+function filteredView(opts) {
   if (!state.view) return null;
   const f = state.filters;
+  const ignoreWallet = !!(opts && opts.ignoreWallet);
   const walletSet = state.view.wallets.filter((w) =>
     (f.category === "all" || w.type === f.category) &&
-    (!f.wallet || w.wallet === f.wallet));
+    (ignoreWallet || !f.wallet || w.wallet === f.wallet));
   const wnames = new Set(walletSet.map((w) => w.wallet));
   const tokens = (state.tokens || []).filter((x) =>
     wnames.has(x.wallet) && (!f.chain || x.chain === f.chain));
@@ -795,25 +817,34 @@ function renderWalletCards() {
     .filter((w) => (f.category === "all" || w.type === f.category))
     .sort((a, b) => (b.total_usd || 0) - (a.total_usd || 0));
   $("walletCount").textContent = "(" + list.length + ")";
+  const shares = walletShares();
   list.forEach((w) => {
     const card = document.createElement("div");
     const isSel = selected === w.wallet;
     const wlogo = typeLogoFile(w.type);
     const plats = walletExplorers(w.type, w.address, w.wallet);
     card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
+    // The card is a fixed four-row stack:
+    //   1 wallet name   2 balance   3 address + copy   4 type badge | explorers
+    // The deselect hint used to occupy the footer, but row 4 must hold the badge
+    // plus up to five explorer icons; on a narrow card the hint pushed that row
+    // past the card width, so it lives in the card tooltip instead.
+    if (isSel) card.title = t("deselectHint");
     card.innerHTML =
-      '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' + esc(w.wallet) +
-        ' <span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span></div>" +
-      '<div class="w-usd">' + fmtUsd(w.total_usd) + "</div>" +
+      // row 1 — name only: with the badge gone the name gets the full card width.
+      // It truncates rather than wraps, so the full name is also the tooltip.
+      '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' +
+        '<span class="w-name-txt" title="' + esc(w.wallet) + '">' + esc(w.wallet) + "</span></div>" +
+      // row 2 — balance, with this wallet's share of the total right after it
+      '<div class="w-usd">' + fmtUsd(w.total_usd) +
+        '<span class="w-share">' + (shares[w.wallet] || 0).toFixed(1) + "%</span></div>" +
+      // row 3 — address + copy button
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
         ' <button class="w-copy" data-addr="' + esc(w.address) + '" title="' + esc(t("copyAddr")) + '">' +
           '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' +
-      // The card footer carries the explorer row only. The item count that used to
-      // sit here was removed: it duplicated the token table, and long values ("共
-      // 1106 项") wrapped onto a second line once the explorer row took its space.
-      // The deselect hint still appears, but only while this wallet is selected.
+      // row 4 — top-level type badge on the left, block explorers on the right
       '<div class="w-foot">' +
-        (isSel ? '<div class="w-sub">' + esc(t("deselectHint")) + "</div>" : "") +
+        '<span class="badge ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span>" +
         (plats.length
           ? '<div class="w-plats">' + plats.map((p) => {
               const cls = "w-plat" + (p.tone ? " tone-" + p.tone : "");
@@ -895,6 +926,10 @@ function renderTable() {
     return (va > vb ? 1 : -1) * state.sortDir;
   });
   $("tokenCount").textContent = t("items", rows.length);
+  // Name the active wallet filter in the panel title, so clicking a wallet card
+  // makes the narrowing of this table visibly obvious.
+  const tf = $("tokenFilter");
+  if (tf) tf.textContent = f.wallet ? "· " + f.wallet : "";
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">' +
       (state.view ? t("noMatch") : t("noData")) + "</td></tr>";
