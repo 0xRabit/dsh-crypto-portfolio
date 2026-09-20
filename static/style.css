@@ -144,6 +144,10 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .wallet-grid .card { padding: 10px 12px; }
 .wallet-grid .card .w-usd { font-size: 15px; }
 .wallet-grid .card .w-addr { font-size: 10.5px; }
+/* the explorer-icon row needs a little horizontal room: drop to 2/1 columns
+   before the icons would collide with the item count. */
+@media (max-width: 760px) { .wallet-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .wallet-grid { grid-template-columns: 1fr; } }
 
 .pie-box { position: relative; width: 200px; height: 200px; flex: none; }
 #walletPie { width: 100%; height: 100%; display: block; }
@@ -235,12 +239,26 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .card .w-copy:hover { color: var(--accent); background: rgba(88,166,255,.12); }
 .card .w-copy.done { color: #7ee787; }
 .card .w-copy .copy-icon { display: block; }
-/* platform logo pinned to bottom-right of the card; also the explorer link */
-.card .w-plat { position: absolute; right: 10px; bottom: 8px; width: 22px; height: 22px; opacity: .92; }
-.card .w-plat img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* card footer: item count on the left, block-explorer icons on the right */
+.card .w-foot { display: flex; align-items: flex-end; gap: 10px; margin-top: 2px; }
+.card .w-foot .w-sub { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+/* up to 5 explorer icons, left→right in popularity order (source first).
+   Favicons come from many different brands: some are near-black, some
+   near-white. Each icon sits in a 18px slot and gets a backdrop only when its
+   own polarity would otherwise sink into the surface (see .tone-* below). */
+.card .w-plats { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
+.card .w-plat { width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center;
+  opacity: .85; transition: opacity .12s, transform .12s; }
+.card .w-plat img { width: 13px; height: 13px; object-fit: contain; display: block; }
+.card:hover .w-plat { opacity: 1; }
 a.w-plat { cursor: pointer; }
-a.w-plat:hover { opacity: 1; transform: scale(1.08); transition: transform .12s; }
-
+a.w-plat:hover { opacity: 1; transform: scale(1.16); }
+/* Each explorer mark sits on a small solid tile so its legibility never depends
+   on which theme is active: dark artwork gets a light tile, light artwork gets a
+   dark one. Marks that already read on both surfaces (bright, saturated brand
+   SVGs) get no tile at all, which keeps the row from looking like a toolbar. */
+.card .w-plat.tone-dark  { background: #e9edf2; }
+.card .w-plat.tone-light { background: #2b3138; }
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-4); }
 .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
 .hint { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }

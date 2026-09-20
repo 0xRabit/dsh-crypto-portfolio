@@ -612,43 +612,63 @@ function walletInCategory(name, category) {
   return c ? c.type === category : true;
 }
 
-// per-type explorer details: {url, label, logo} for a wallet's own
-// history/portfolio page. logo = platform wordmark file in static/logos/.
-// For CEX accounts there is no external explorer, so url is null but we still
-// surface the exchange logo.
-function walletExplorer(type, address, name) {
+// Per-type block explorers: a list of {url, label, logo} for a wallet's own
+// address/history page. logo = file name (with extension) in static/logos/.
+//
+// Order matters: the explorer we actually fetch data from comes first, the
+// rest follow in rough order of popularity for that chain. Chains with fewer
+// than 5 credible explorers simply return fewer entries.
+const EXPLORERS = {
+  evm: [
+    { label: "DeBank", logo: "debank.svg", tone: "light", url: (a) => "https://debank.com/profile/" + a + "/history" },
+    { label: "Etherscan", logo: "etherscan.svg", url: (a) => "https://etherscan.io/address/" + a },
+    { label: "Zerion", logo: "zerion.png", tone: "dark", url: (a) => "https://app.zerion.io/" + a + "/overview" },
+    { label: "Blockscout", logo: "blockscout.png", tone: "dark", url: (a) => "https://eth.blockscout.com/address/" + a },
+    { label: "Blockchair", logo: "blockchair.png", tone: "dark", url: (a) => "https://blockchair.com/ethereum/address/" + a },
+  ],
+  btc: [
+    { label: "bitaps", logo: "bitaps.svg", tone: "light", url: (a) => "https://bitaps.com/" + a },
+    { label: "mempool.space", logo: "mempool.png", tone: "dark", url: (a) => "https://mempool.space/address/" + a },
+    { label: "Blockstream", logo: "blockstream.png", tone: "light", url: (a) => "https://blockstream.info/address/" + a },
+    { label: "Blockchain.com", logo: "blockchain.png", tone: "dark", url: (a) => "https://www.blockchain.com/explorer/addresses/btc/" + a },
+    { label: "Blockchair", logo: "blockchair.png", tone: "dark", url: (a) => "https://blockchair.com/bitcoin/address/" + a },
+  ],
+  sol: [
+    { label: "Jupiter", logo: "jupiter.svg", url: (a) => "https://jup.ag/portfolio/" + a },
+    { label: "Solscan", logo: "solscan.png", tone: "light", url: (a) => "https://solscan.io/account/" + a },
+    { label: "Solana Explorer", logo: "solanaexp.png", tone: "dark", url: (a) => "https://explorer.solana.com/address/" + a },
+    { label: "SolanaFM", logo: "solanafm.png", tone: "light", url: (a) => "https://solana.fm/address/" + a },
+    { label: "Birdeye", logo: "birdeye.png", tone: "dark", url: (a) => "https://birdeye.so/solana/owner/" + a },
+  ],
+  doge: [
+    { label: "Dogechain", logo: "doge.svg", tone: "light", url: (a) => "https://dogechain.info/address/" + a },
+    { label: "Blockchair", logo: "blockchair.png", tone: "dark", url: (a) => "https://blockchair.com/dogecoin/address/" + a },
+    { label: "BlockCypher", logo: "blockcypher.png", tone: "dark", url: (a) => "https://live.blockcypher.com/doge/address/" + a },
+  ],
+  ada: [
+    { label: "Cardanoscan", logo: "cardanoscan.png", tone: "dark", url: (a) => "https://cardanoscan.io/address/" + a },
+    { label: "CExplorer", logo: "cexplorer.png", tone: "dark", url: (a) => "https://cexplorer.io/address/" + a },
+    { label: "Cardano Explorer", logo: "cardanoexp.png", tone: "light", url: (a) => "https://explorer.cardano.org/address/" + a },
+    { label: "AdaStat", logo: "adastat.png", tone: "light", url: (a) => "https://adastat.net/addresses/" + a },
+  ],
+};
+
+function walletExplorers(type, address, name) {
   const a = (address || "").trim();
-  if (type === "btc") {
-    return a ? { url: "https://bitaps.com/" + encodeURIComponent(a),
-                 logo: "bitaps", label: "bitaps" } : null;
-  }
-  if (type === "sol") {
-    return a ? { url: "https://jup.ag/portfolio/" + encodeURIComponent(a),
-                 logo: "jupiter", label: "Jupiter" } : null;
-  }
-  if (type === "doge") {
-    // Dogechain explorer address page
-    return a ? { url: "https://dogechain.info/address/" + encodeURIComponent(a),
-                 logo: "doge", label: "Dogechain" } : null;
-  }
-  if (type === "ada") {
-    // Cardanoscan address page
-    return a ? { url: "https://cardanoscan.io/address/" + encodeURIComponent(a),
-                 logo: "ada", label: "Cardanoscan" } : null;
-  }
-  if (type === "evm") {
-    return a ? { url: "https://debank.com/profile/" + a + "/history",
-                 logo: "debank", label: "DeBank" } : null;
+  const list = EXPLORERS[type];
+  if (list && a) {
+    return list.map((e) => ({ url: e.url(encodeURIComponent(a)), logo: e.logo,
+                              label: e.label, tone: e.tone || null }));
   }
   if (type === "cex") {
+    // CEX accounts have no external explorer page: show the exchange mark only.
     const n = (name || "").toLowerCase();
-    // map wallet name (binance_read / bybit_read / backpack_read) -> platform
-    if (n.includes("binance")) return { url: null, logo: "binance", label: "Binance" };
-    if (n.includes("bybit"))   return { url: null, logo: "bybit", label: "Bybit" };
-    if (n.includes("backpack")) return { url: null, logo: "backpack", label: "Backpack" };
-    return { url: null, logo: "evm", label: "CEX" };
+    if (n.includes("binance")) return [{ url: null, logo: "binance.svg", label: "Binance" }];
+    if (n.includes("bybit"))   return [{ url: null, logo: "bybit.svg", label: "Bybit" }];
+    if (n.includes("backpack")) return [{ url: null, logo: "backpack.svg", label: "Backpack" }];
+    return [{ url: null, logo: "evm.svg", label: "CEX" }];
   }
-  return null;
+  return [];
 }
 
 function fillDateSelect(dates) {
@@ -779,7 +799,7 @@ function renderWalletCards() {
     const card = document.createElement("div");
     const isSel = selected === w.wallet;
     const wlogo = typeLogoFile(w.type);
-    const plat = walletExplorer(w.type, w.address, w.wallet);
+    const plats = walletExplorers(w.type, w.address, w.wallet);
     card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
     card.innerHTML =
       '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' + esc(w.wallet) +
@@ -788,12 +808,18 @@ function renderWalletCards() {
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
         ' <button class="w-copy" data-addr="' + esc(w.address) + '" title="' + esc(t("copyAddr")) + '">' +
           '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' +
-      '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>" +
-      (plat ? (plat.url
-        ? '<a class="w-plat" href="' + esc(plat.url) + '" target="_blank" rel="noopener" title="' + esc(plat.label) + '">' +
-            '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></a>'
-        : '<div class="w-plat" title="' + esc(plat.label) + '">' +
-            '<img src="/static/logos/' + esc(plat.logo) + '.svg" alt="' + esc(plat.label) + '"></div>') : "");
+      '<div class="w-foot">' +
+        '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>" +
+        (plats.length
+          ? '<div class="w-plats">' + plats.map((p) => {
+              const cls = "w-plat" + (p.tone ? " tone-" + p.tone : "");
+              const img = '<img src="/static/logos/' + esc(p.logo) + '" alt="' + esc(p.label) + '" loading="lazy">';
+              return p.url
+                ? '<a class="' + cls + '" href="' + esc(p.url) + '" target="_blank" rel="noopener" title="' + esc(p.label) + '">' + img + "</a>"
+                : '<span class="' + cls + '" title="' + esc(p.label) + '">' + img + "</span>";
+            }).join("") + "</div>"
+          : "") +
+      "</div>";
     // copy-to-clipboard (icon only; no visible text)
     const copyBtn = card.querySelector(".w-copy");
     if (copyBtn) copyBtn.addEventListener("click", async (e) => {
@@ -804,9 +830,9 @@ function renderWalletCards() {
         setTimeout(() => copyBtn.classList.remove("done"), 1400);
       } catch (err) { /* ignore */ }
     });
-    // platform logo (bottom-right) acts as the explorer link; toggle via card click
-    const platLink = card.querySelector("a.w-plat");
-    if (platLink) platLink.addEventListener("click", (e) => e.stopPropagation());
+    // explorer icons link out; don't let the click toggle the wallet filter
+    card.querySelectorAll("a.w-plat").forEach((el) =>
+      el.addEventListener("click", (e) => e.stopPropagation()));
     card.addEventListener("click", () => {
       // toggle: clicking the already-selected wallet restores all
       if (state.filters.wallet === w.wallet) {

@@ -23,7 +23,13 @@ First public release.
 - Single-page dashboard with no framework and no CDN (Python stdlib + vanilla JS).
 - Global filters (category / wallet / chain) driving total, pie, trend, chain
   distribution and the token table together.
-- Per-wallet history pages on the matching block explorer, one-click address copy.
+- Up to **five block explorers per wallet**: the provider this app reads from
+  comes first, the rest follow in popularity order (BTC: bitaps → mempool.space →
+  Blockstream → Blockchain.com → Blockchair; EVM: DeBank → Etherscan → Zerion →
+  Blockscout → Blockchair; SOL: Jupiter → Solscan → Solana Explorer → SolanaFM →
+  Birdeye; DOGE: 3; ADA: 4). CEX rows show the exchange mark, since an exchange
+  account has no explorer page.
+- One-click address copy on every wallet card.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 
