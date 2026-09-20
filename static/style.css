@@ -239,14 +239,15 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 .card .w-copy:hover { color: var(--accent); background: rgba(88,166,255,.12); }
 .card .w-copy.done { color: #7ee787; }
 .card .w-copy .copy-icon { display: block; }
-/* card footer: item count on the left, block-explorer icons on the right */
-.card .w-foot { display: flex; align-items: flex-end; gap: 10px; margin-top: 2px; }
-.card .w-foot .w-sub { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+/* card footer: block-explorer icons, right-aligned. The deselect hint, when the
+   wallet is the active filter, takes the left side of the same row. */
+.card .w-foot { display: flex; align-items: flex-end; gap: 10px; margin-top: 5px; }
+.card .w-foot .w-sub { min-width: 0; margin-top: 0; }
 /* up to 5 explorer icons, left→right in popularity order (source first).
    Favicons come from many different brands: some are near-black, some
    near-white. Each icon sits in a 18px slot and gets a backdrop only when its
    own polarity would otherwise sink into the surface (see .tone-* below). */
-.card .w-plats { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
+.card .w-plats { flex: 0 0 auto; margin-left: auto; display: flex; align-items: center; gap: 3px; }
 .card .w-plat { width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center;
   opacity: .85; transition: opacity .12s, transform .12s; }
 .card .w-plat img { width: 13px; height: 13px; object-fit: contain; display: block; }

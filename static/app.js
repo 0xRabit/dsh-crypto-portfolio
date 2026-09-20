@@ -808,8 +808,12 @@ function renderWalletCards() {
       '<div class="w-addr">' + esc(shortAddr(w.address, 10)) +
         ' <button class="w-copy" data-addr="' + esc(w.address) + '" title="' + esc(t("copyAddr")) + '">' +
           '<svg class="copy-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' +
+      // The card footer carries the explorer row only. The item count that used to
+      // sit here was removed: it duplicated the token table, and long values ("共
+      // 1106 项") wrapped onto a second line once the explorer row took its space.
+      // The deselect hint still appears, but only while this wallet is selected.
       '<div class="w-foot">' +
-        '<div class="w-sub">' + t("items", w.token_count) + (isSel ? " · " + esc(t("deselectHint")) : "") + "</div>" +
+        (isSel ? '<div class="w-sub">' + esc(t("deselectHint")) + "</div>" : "") +
         (plats.length
           ? '<div class="w-plats">' + plats.map((p) => {
               const cls = "w-plat" + (p.tone ? " tone-" + p.tone : "");
