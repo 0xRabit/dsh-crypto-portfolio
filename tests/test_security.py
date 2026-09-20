@@ -19,7 +19,7 @@ class MaskingTest(unittest.TestCase):
 
     def test_mask_keeps_a_recognisable_stub(self):
         self.assertEqual(sources.mask_secret("0123456789abcdef0123456789abcdef01234567"),
-                         "cdd7\u202688e1")
+                         "0123\u20264567")
         self.assertEqual(sources.mask_secret(""), "")
         self.assertEqual(sources.mask_secret(None), "")
         # too short to hint at without leaking most of it
