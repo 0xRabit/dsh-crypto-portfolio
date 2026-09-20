@@ -34,9 +34,10 @@ First public release.
   wallet's share of the total) · address + copy · type badge on the left and
   block-explorer icons on the right.
 - **Layout tuned for wide screens**: the asset rail and the wallet grid sit at
-  1:3, the headline figure and the donut stack vertically in the narrow rail,
-  and the token table sits directly under the pie + wallet row so that clicking
-  a wallet card visibly narrows the table below it.
+  1:3 and are exactly equal in height — the figure and the donut spread down the
+  rail's full height, both panels ending on the same line. The token table sits
+  directly under the pie + wallet row so that clicking a wallet card visibly
+  narrows the table below it.
 - **Focusing a wallet never moves the page.** Clicking a card filters every panel
   in place; each panel below names the focused wallet in its own title, and the
   wallet panel says up front that the cards are clickable.

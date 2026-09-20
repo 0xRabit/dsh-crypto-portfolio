@@ -130,13 +130,17 @@ th.op { width: 70px; }
 main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
 
 /* 1:3 — the asset panel is a narrow left rail, the wallet cards take the rest.
-   Inside the rail the headline figure and the donut stack vertically. The rail
-   now ends after the donut (its redundant legend is gone), so panels are
-   top-aligned rather than stretched to a shared height. */
-.top-row { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 16px; align-items: start; }
+   The two panels are the SAME height (stretch) and the rail's contents spread
+   down its full height, so the bottoms line up with no dead space beside the
+   wallet grid. */
+.top-row { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 16px; align-items: stretch; }
 .top-half { min-width: 0; }
+.top-half.asset-rail { display: flex; flex-direction: column; }
 .btn-title { float: right; margin-top: -3px; }
-.asset-inline { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+/* space-evenly drops the figure to the top and the donut toward the bottom, so
+   the rail reads as a deliberate column instead of a short block over a gap */
+.asset-inline { flex: 1 1 auto; display: flex; flex-direction: column; align-items: stretch;
+  justify-content: space-evenly; gap: 16px; }
 .asset-left { min-width: 0; }
 .asset-left .big { font-size: 30px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
 .asset-left .change { margin-top: 6px; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -161,12 +165,12 @@ main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 40px; }
   font-variant-numeric: tabular-nums; }
 
 /* the donut fills the narrow rail instead of sitting at a fixed 200px */
-.pie-box { position: relative; width: 100%; max-width: 260px; aspect-ratio: 1 / 1; margin: 0 auto; }
+.pie-box { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; margin: 0 auto; }
 #walletPie { width: 100%; height: 100%; display: block; }
 
 @media (max-width: 1100px) {
   .top-row { grid-template-columns: 1fr; }
-  .pie-box { max-width: 300px; }
+  .pie-box { max-width: 320px; }
 }
 .total-card { background: linear-gradient(135deg, #16233d, #1c2230); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
 .total-card .label { color: var(--muted); font-size: 12.5px; }
