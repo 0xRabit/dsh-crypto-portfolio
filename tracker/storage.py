@@ -4,7 +4,7 @@ import json
 import os
 import sqlite3
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import config, profiles
 from .blacklist import filter_rows
@@ -186,5 +186,75 @@ def get_tokens(date):
                 "SELECT wallet,chain,token_id,symbol,name,amount,price,usd,logo FROM tokens WHERE date=? "
                 "ORDER BY usd DESC", (date,)).fetchall()
             return filter_rows([dict(r) for r in rows])
+        finally:
+            conn.close()
+
+
+# ————————————————————————————————————————————————————————————————
+# retention
+#
+# Every snapshot keeps a copy of every token row, so a profile grows by roughly
+# 0.75 MB per day (a 12-wallet profile reaches ~280 MB/year) with nothing ever
+# removed. Keep a dense recent window for the trend chart, and thin anything older
+# down to one snapshot per month so long-range history still works.
+# ————————————————————————————————————————————————————————————————
+KEEP_DAILY_DAYS = int(os.environ.get("PORTFOLIO_KEEP_DAILY_DAYS", "90"))
+KEEP_MONTHLY = int(os.environ.get("PORTFOLIO_KEEP_MONTHLY", "24"))
+
+
+def plan_retention(dates, today=None, keep_days=None, keep_monthly=None):
+    """Split dated snapshots into (keep, drop).
+
+    `dates` is any iterable of 'YYYY-MM-DD'. The newest `keep_days` calendar days
+    are all kept; older dates are thinned to the last snapshot of each month, of
+    which the newest `keep_monthly` months survive. Pure so it can be tested
+    without a database.
+    """
+    keep_days = KEEP_DAILY_DAYS if keep_days is None else keep_days
+    keep_monthly = KEEP_MONTHLY if keep_monthly is None else keep_monthly
+    days = sorted({str(d)[:10] for d in dates})
+    if not days:
+        return [], []
+    if today is None:
+        today = datetime.now().date().isoformat()
+    cutoff = (datetime.fromisoformat(today).date() - timedelta(days=keep_days - 1)).isoformat()
+
+    keep, older = [], []
+    for d in days:
+        (keep if d >= cutoff else older).append(d)
+
+    # one representative per month for the tail: the last snapshot in that month
+    by_month = {}
+    for d in older:
+        by_month[d[:7]] = d
+    # One representative per month for the tail: the last snapshot in that month.
+    # A month already present in the dense window contributes nothing extra, so the
+    # chart never ends up with two points a few days apart.
+    represented = {d[:7] for d in keep}
+    tail_months = [m for m in sorted(by_month) if m not in represented]
+    keep_months = tail_months[-keep_monthly:] if keep_monthly > 0 else []
+    tail_keep = {by_month[m] for m in keep_months}
+    keep.extend(sorted(tail_keep))
+    # every older date that is not a chosen representative goes; deriving this from
+    # `older` rather than from the month map is what makes the split exhaustive
+    drop = [d for d in older if d not in tail_keep]
+    return sorted(keep), sorted(drop)
+
+
+def prune_snapshots(today=None, keep_days=None, keep_monthly=None):
+    """Delete snapshots outside the retention window; returns a summary."""
+    with _lock:
+        conn = _connect()
+        try:
+            dates = [r["date"] for r in conn.execute("SELECT date FROM snapshots").fetchall()]
+            keep, drop = plan_retention(dates, today=today, keep_days=keep_days,
+                                        keep_monthly=keep_monthly)
+            for d in drop:
+                conn.execute("DELETE FROM tokens WHERE date=?", (d,))
+                conn.execute("DELETE FROM wallet_totals WHERE date=?", (d,))
+                conn.execute("DELETE FROM snapshots WHERE date=?", (d,))
+            if drop:
+                conn.commit()
+            return {"kept": len(keep), "dropped": len(drop), "dropped_dates": drop}
         finally:
             conn.close()

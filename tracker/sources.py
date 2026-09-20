@@ -16,6 +16,7 @@ Env overrides (highest priority, applied at load time):
 """
 import json
 import os
+import re
 import threading
 
 from . import config, profiles
@@ -234,6 +235,90 @@ def save(cfg):
 
 def get_source(name):
     return load().get(name) or {}
+
+
+# ————————————————————————————————————————————————————————————————
+# secret masking
+#
+# GET /api/sources used to hand the raw API keys to the browser, so anything that
+# could reach the loopback port (another local process, a log dump, a screenshot)
+# saw them in the clear. The API now returns a masked stub by default and reveals
+# only on an explicit request. The stub keeps a 4-char prefix/suffix so the UI can
+# still show WHICH key is configured, and merge_masked guarantees a stub is never
+# written back over the real key.
+# ————————————————————————————————————————————————————————————————
+MASK = "\u2026"                                   # …
+_SECRET_KEYS = ("key", "secret", "api_key", "apikey", "password", "token")
+# secrets embedded in a URL query, e.g. https://host/?api-key=<uuid>
+_SECRET_IN_URL = re.compile(r"([?&](?:api[-_]?key|apikey|key|token)=)([^&\s]+)", re.I)
+
+
+def mask_secret(value):
+    """Recognisable stub for a secret: 'cdd7…8e1e', or a bare '…' when short."""
+    v = "" if value is None else str(value)
+    if not v:
+        return ""
+    if len(v) <= 8:
+        return MASK
+    return v[:4] + MASK + v[-4:]
+
+
+def is_masked(value):
+    return MASK in str(value if value is not None else "")
+
+
+def mask_url(value):
+    """Mask the secret part of a URL query string, leaving the rest readable."""
+    return _SECRET_IN_URL.sub(lambda m: m.group(1) + mask_secret(m.group(2)), str(value))
+
+
+def mask_config(cfg):
+    """Deep copy of the config with every API key / secret replaced by a stub."""
+    if isinstance(cfg, dict):
+        out = {}
+        for k, v in cfg.items():
+            if isinstance(v, (dict, list)):
+                out[k] = mask_config(v)
+            elif isinstance(v, str):
+                out[k] = mask_secret(v) if k.lower() in _SECRET_KEYS else mask_url(v)
+            else:
+                out[k] = v
+        return out
+    if isinstance(cfg, list):
+        return [mask_config(v) for v in cfg]
+    return cfg
+
+
+def merge_masked(incoming, current):
+    """Replace masked stubs in `incoming` with the real values from `current`.
+
+    The settings form round-trips whatever the API gave it, so without this a save
+    would overwrite a live API key with the literal string 'cdd7…8e1e'. Any string
+    carrying the mask character is treated as "unchanged" — a real secret a human
+    typed can never contain it.
+    """
+    if isinstance(incoming, dict):
+        out = {}
+        for k, v in incoming.items():
+            cur = current.get(k) if isinstance(current, dict) else None
+            if isinstance(v, (dict, list)):
+                out[k] = merge_masked(v, cur if isinstance(cur, (dict, list)) else ({} if isinstance(v, dict) else []))
+            elif isinstance(v, str) and is_masked(v) and isinstance(cur, str) and cur:
+                out[k] = cur
+            else:
+                out[k] = v
+        return out
+    if isinstance(incoming, list):
+        cur_list = current if isinstance(current, list) else []
+        out = []
+        for i, v in enumerate(incoming):
+            cur = cur_list[i] if i < len(cur_list) else None
+            if isinstance(v, (dict, list)):
+                out.append(merge_masked(v, cur if isinstance(cur, (dict, list)) else ({} if isinstance(v, dict) else [])))
+            else:
+                out.append(v)
+        return out
+    return incoming
 
 
 def provider_order(source_key, providers):

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import threading
+import time
 import urllib.parse
 from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,6 +35,18 @@ MIME = {
 
 _refresh_state = {"running": False, "stage": "", "done": 0, "total": 0, "msg": ""}
 _state_lock = threading.Lock()
+
+# A full fetch hits DeBank/Binance/CoinGecko and takes tens of seconds. Without a
+# floor, anything that can reach this port (including a cross-site page, see
+# _write_guard) could loop refresh and burn the upstream API quotas.
+REFRESH_COOLDOWN_SECONDS = float(os.environ.get("PORTFOLIO_REFRESH_COOLDOWN", "60"))
+_last_refresh_at = 0.0
+# Cooperative cancel: checked from the progress callback between wallets.
+_refresh_cancel = threading.Event()
+
+
+class RefreshCancelled(Exception):
+    """Raised from the progress callback to abort an in-flight refresh."""
 
 _chain_name_cache = None
 _chain_name_lock = threading.Lock()
@@ -80,7 +93,13 @@ class Handler(BaseHTTPRequestHandler):
                 code, body = _json(self._wallet_view())
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/refresh":
-                self._handle_refresh(qs)
+                # kept for curl/CLI compatibility; the dashboard POSTs. Either way
+                # this is a write, so the cross-site fence applies.
+                denied = self._write_guard(is_post=False)
+                if denied:
+                    self._reply(403, json.dumps({"error": denied}).encode(), "application/json")
+                else:
+                    self._handle_refresh(qs)
             elif path == "/api/current":
                 snap = storage.get_latest_snapshot()
                 if not snap:
@@ -115,9 +134,13 @@ class Handler(BaseHTTPRequestHandler):
                 code, body = _json(self._blacklist_view())
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/sources":
+                # secrets are masked unless the caller explicitly asks to reveal
+                reveal = (qs.get("reveal") or ["0"])[0] in ("1", "true")
+                cfg = sources.load()
                 code, body = _json({
                     "file": sources.sources_file(),
-                    "config": sources.load(),
+                    "config": cfg if reveal else sources.mask_config(cfg),
+                    "masked": not reveal,
                     "last_ok": sources.failover_state(),
                     "status": status.get_status(),
                 })
@@ -166,9 +189,51 @@ class Handler(BaseHTTPRequestHandler):
         sources.reset_failover()
         return self._config_export()
 
+    def _write_guard(self, is_post):
+        """Reject cross-site writes; returns an error string, or None when allowed.
+
+        A browser lets a page issue a "simple" cross-site POST (text/plain, or a
+        form encoding) to a loopback URL with no CORS preflight: the attacker
+        cannot read the response, but the side effect still runs. The same applies
+        to a GET with side effects, which is reachable from a bare <img> tag. Two
+        independent fences:
+
+          * Sec-Fetch-Site is set by the browser itself and page script cannot
+            forge it, so `cross-site` is refused outright.
+          * If an Origin is present it must match the Host we were reached on.
+
+        Non-browser callers (curl, the scheduler, tests) send neither header and
+        pass both checks, which is what keeps the CLI usable.
+        """
+        if (self.headers.get("Sec-Fetch-Site") or "").strip().lower() == "cross-site":
+            return "cross-site request refused"
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin:
+            host = (self.headers.get("Host") or "").strip()
+            if origin == "null":
+                # opaque origin: sandboxed iframe / data: document / file:// page
+                return "opaque origin refused"
+            origin_host = urllib.parse.urlparse(origin).netloc
+            if origin_host and host and origin_host != host:
+                return "origin does not match host"
+        if is_post:
+            ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+            # Empty-body POSTs (no content-type) are allowed; anything with a body
+            # must be JSON so a simple cross-site POST is forced into a preflight
+            # this server never answers.
+            length = int(self.headers.get("Content-Length") or 0)
+            if ctype != "application/json" and (length > 0 or ctype):
+                return "content type must be application/json"
+        return None
+
     def do_POST(self):  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        denied = self._write_guard(is_post=True)
+        if denied:
+            code = 403 if "refused" in denied or "origin" in denied else 415
+            self._reply(code, json.dumps({"error": denied}).encode(), "application/json")
+            return
         try:
             body = self._read_body()
             if path == "/api/blacklist":
@@ -197,11 +262,22 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = (body or {}).get("config")
                 if not isinstance(cfg, dict):
                     raise ValueError("config must be a JSON object")
+                # the form round-trips masked stubs; swap them back for the real
+                # secrets before writing, or a save would destroy every key
+                cfg = sources.merge_masked(cfg, sources.load())
                 sources.save(cfg)
                 sources.reset_failover()
                 self._reply_json({"file": sources.sources_file(),
-                                  "config": sources.load(),
+                                  "config": sources.mask_config(sources.load()),
+                                  "masked": True,
                                   "last_ok": sources.failover_state()})
+            elif path == "/api/refresh/cancel":
+                _refresh_cancel.set()
+                self._reply_json({"cancel_requested": True})
+            elif path == "/api/refresh":
+                # POST form: a GET with side effects is reachable from a bare <img>
+                # tag, so the dashboard uses POST (still guarded by _write_guard).
+                self._handle_refresh({})
             elif path == "/api/config/import":
                 cfg = (body or {}).get("config") or {}
                 self._reply_json(self._config_import(cfg))
@@ -323,15 +399,28 @@ class Handler(BaseHTTPRequestHandler):
         return view
 
     def _handle_refresh(self, qs):
+        global _last_refresh_at
         dry = qs.get("dry", ["0"])[0] in ("1", "true")
+        now = time.time()
         with _state_lock:
             if _refresh_state["running"]:
                 self._reply(429, json.dumps({"error": "Refresh already in progress"}).encode(),
                             "application/json")
                 return
+            wait = REFRESH_COOLDOWN_SECONDS - (now - _last_refresh_at)
+            if _last_refresh_at and wait > 0:
+                self._reply(429, json.dumps({
+                    "error": f"Refresh rate-limited, retry in {int(wait) + 1}s",
+                    "retry_after": int(wait) + 1,
+                }).encode(), "application/json")
+                return
             _refresh_state["running"] = True
+            _last_refresh_at = now
+        _refresh_cancel.clear()
 
         def progress(stage, done, total, msg):
+            if _refresh_cancel.is_set():
+                raise RefreshCancelled()
             with _state_lock:
                 _refresh_state.update(stage=stage, done=done, total=total, msg=msg)
 
@@ -355,9 +444,13 @@ class Handler(BaseHTTPRequestHandler):
                     base = pv["total_usd"]
                     view["change_pct"] = round(view["change_usd"] / base * 100, 2) if base else None
             self._reply_json(view)
+        except RefreshCancelled:
+            # nothing was written: the snapshot is only saved once the fetch ends
+            self._reply_json({"cancelled": True})
         except Exception as e:  # noqa: BLE001
             self._reply_json({"error": f"{type(e).__name__}: {e}"}, 500)
         finally:
+            _refresh_cancel.clear()
             with _state_lock:
                 _refresh_state.update(running=False, stage="", done=0, total=0, msg="")
 

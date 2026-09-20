@@ -53,6 +53,11 @@ const I18N = {
     viewExplorer: "View on explorer",
     deselectHint: "click again to deselect",
     copyAddr: "Copy address", copy: "Copy", copied: "Copied ✓",
+    btnCancel: "Cancel", cancelRequested: "Cancelling…", cancelled: "Refresh cancelled",
+    btnShowKeys: "Show keys", btnHideKeys: "Hide keys",
+    keysMasked: "Keys are masked — use Show keys to load the real values from this machine.",
+    latest: "latest", viewingHistory: "Viewing a historical snapshot",
+    showMore: "Show", remaining: "more", showingAll: "all rows shown",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
     doneUpdating: "Done, updating view…", saving: "Saving…",
@@ -152,6 +157,11 @@ const I18N = {
     viewExplorer: "在浏览器打开",
     deselectHint: "再次点击取消选中",
     copyAddr: "复制地址", copy: "复制", copied: "已复制 ✓",
+    btnCancel: "取消", cancelRequested: "正在取消…", cancelled: "已取消刷新",
+    btnShowKeys: "显示密钥", btnHideKeys: "隐藏密钥",
+    keysMasked: "密钥已打码；点「显示密钥」才会从本机读取明文。",
+    latest: "最新", viewingHistory: "正在查看历史快照",
+    showMore: "再显示", remaining: "项", showingAll: "已显示全部",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
     doneUpdating: "完成，正在更新视图…", saving: "保存中…",
@@ -276,6 +286,8 @@ function shortAddr(a, n = 10) {
   return a.length <= 2 * n ? a : a.slice(0, n) + "…" + a.slice(-6);
 }
 
+const TABLE_PAGE = 200;
+
 const PALETTE = ["#58a6ff", "#f0b95c", "#7ee787", "#d2a8ff", "#ff7b72", "#56d4dd",
                  "#ffa657", "#bc8cff", "#3fb950", "#e3b341", "#79c0ff", "#f85149"];
 const TYPE_LABEL = { evm: "EVM", btc: "BTC", sol: "SOL", cex: "CEX", doge: "DOGE", ada: "ADA" };
@@ -290,6 +302,8 @@ const state = {
   selectedDate: null,
   sortKey: "usd", sortDir: -1,
   filters: { category: "all", wallet: "", chain: "", search: "", hideZero: true },
+  tableLimit: TABLE_PAGE,   // P1: rows rendered so far
+  tableSig: "",             // P1: signature of the inputs the page belongs to
   series: {},
   sourcesCfg: null,
   sourcesLastOk: {},
@@ -369,6 +383,14 @@ function initHeroStrip() {
 async function init() {
   bindEvents();
   applyI18n();
+  // A4: restore the persisted filter choice, but only onto options that exist
+  loadFilters();
+  if ([...$("filterCategory").options].some((o) => o.value === state.filters.category)) {
+    $("filterCategory").value = state.filters.category;
+  } else {
+    state.filters.category = "all";
+  }
+  $("hideZero").checked = state.filters.hideZero;
   restoreSectionState();
   initHeroStrip();
   try {
@@ -396,8 +418,42 @@ async function init() {
   }
 }
 
+// A4: the filter choice is worth keeping across reloads, like theme and language
+const FILTER_KEY = "pt_filters";
+function saveFilters() {
+  try {
+    localStorage.setItem(FILTER_KEY, JSON.stringify({
+      category: state.filters.category, wallet: state.filters.wallet,
+      chain: state.filters.chain, hideZero: state.filters.hideZero,
+    }));
+  } catch (e) { /* ignore */ }
+}
+function loadFilters() {
+  try {
+    const raw = localStorage.getItem(FILTER_KEY);
+    if (!raw) return;
+    const f = JSON.parse(raw) || {};
+    if (typeof f.category === "string") state.filters.category = f.category;
+    if (typeof f.wallet === "string") state.filters.wallet = f.wallet;
+    if (typeof f.chain === "string") state.filters.chain = f.chain;
+    if (typeof f.hideZero === "boolean") state.filters.hideZero = f.hideZero;
+  } catch (e) { /* ignore */ }
+}
+
 function bindEvents() {
   $("btnRefresh").addEventListener("click", refresh);
+  // A6: ask the server to stop between wallets; nothing is written on cancel
+  $("btnCancelRefresh").addEventListener("click", async () => {
+    const b = $("btnCancelRefresh");
+    b.disabled = true;
+    b.textContent = t("cancelRequested");
+    try { await postJSON("/api/refresh/cancel", {}); } catch (e) { /* surfaced by refresh() */ }
+  });
+  // S1: keys come back masked; this pulls the real values from this machine only
+  $("btnRevealKeys").addEventListener("click", () => {
+    state.revealKeys = !state.revealKeys;
+    renderSources();
+  });
   $("btnTheme").addEventListener("click", () => {
     theme = theme === "light" ? "dark" : "light";
     try { localStorage.setItem("pt_theme", theme); } catch (e) { /* ignore */ }
@@ -417,13 +473,13 @@ function bindEvents() {
       state.filters.wallet = "";
     }
     fillFilterSelects();
-    renderAll();
+    saveFilters();
   });
-  $("filterWallet").addEventListener("change", (e) => { state.filters.wallet = e.target.value; renderAll(); });
-  $("filterChain").addEventListener("change", (e) => { state.filters.chain = e.target.value; renderAll(); });
+  $("filterWallet").addEventListener("change", (e) => { state.filters.wallet = e.target.value; saveFilters(); renderAll(); });
+  $("filterChain").addEventListener("change", (e) => { state.filters.chain = e.target.value; saveFilters(); renderAll(); });
   // table locals
   $("search").addEventListener("input", (e) => { state.filters.search = e.target.value.trim().toLowerCase(); renderTable(); });
-  $("hideZero").addEventListener("change", (e) => { state.filters.hideZero = e.target.checked; renderTable(); });
+  $("hideZero").addEventListener("change", (e) => { state.filters.hideZero = e.target.checked; saveFilters(); renderTable(); });
   document.querySelectorAll("#tokenTable th").forEach((th) => {
     th.addEventListener("click", () => {
       const k = th.dataset.key;
@@ -676,10 +732,12 @@ function walletExplorers(type, address, name) {
 function fillDateSelect(dates) {
   const sel = $("dateSelect");
   sel.innerHTML = "";
+  // A5: the newest date is called out, so "which day am I looking at" needs no guessing
+  const newest = dates.length ? dates[dates.length - 1] : null;
   for (const d of dates) {
     const o = document.createElement("option");
     o.value = d;
-    o.textContent = d + " (" + t("snapDate") + ")";
+    o.textContent = d + " (" + t("snapDate") + ")" + (d === newest ? " · " + t("latest") : "");
     sel.appendChild(o);
   }
 }
@@ -774,6 +832,9 @@ async function loadDate(date) {
     $("tokenDate").textContent = "(" + t("snapDate") + " " + date + ")";
     $("lastUpdated").textContent = t("snapDate") + " " + date + " · " + t("recorded") + " " +
       (view.created_at || "").replace("T", " ");
+    // A5: make it obvious when this view is history rather than the latest run
+    const isLatest = !state.dates.length || date === state.dates[state.dates.length - 1];
+    $("historyNote").classList.toggle("hidden", isLatest);
   } catch (e) {
     showError(t("loadingFailed") + e.message);
   }
@@ -839,6 +900,12 @@ function renderWalletCards() {
     const wlogo = typeLogoFile(w.type);
     const plats = walletExplorers(w.type, w.address, w.wallet);
     card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
+    // A1: the card is a control, so it must be reachable and operable by keyboard
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", isSel ? "true" : "false");
+    card.setAttribute("aria-label", (isSel ? t("deselectHint") + ": " : "") +
+      w.wallet + " " + fmtUsd(w.total_usd) + " " + w.type);
     // The card is a fixed four-row stack:
     //   1 wallet name   2 balance   3 address + copy   4 type badge | explorers
     // The deselect hint used to occupy the footer, but row 4 must hold the badge
@@ -898,6 +965,13 @@ function renderWalletCards() {
       // wallet in their own titles instead.
     });
     wrap.appendChild(card);
+    // A1: Enter/Space are what a keyboard user expects from a button
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        card.click();
+      }
+    });
   });
 }
 
@@ -942,13 +1016,25 @@ function renderTable() {
     if (va === vb) return 0;
     return (va > vb ? 1 : -1) * state.sortDir;
   });
-  $("tokenCount").textContent = t("items", rows.length);
+  // P1: with "Hide USD≈0" off this list can reach ~1.4k rows (~12k DOM nodes) in a
+  // single innerHTML. Page it instead: the first slice renders immediately and the
+  // rest arrives on demand. The page resets whenever the result set changes, which
+  // is detected from a signature of every input that can change it.
+  const sig = JSON.stringify([f.category, f.wallet, f.chain, f.search, f.hideZero,
+                              state.selectedDate, state.sortKey, state.sortDir]);
+  if (sig !== state.tableSig) {
+    state.tableSig = sig;
+    state.tableLimit = TABLE_PAGE;
+  }
+  const shown = rows.slice(0, state.tableLimit);
+  $("tokenCount").textContent = t("items", rows.length) +
+    (rows.length > shown.length ? " · " + shown.length + "/" + rows.length : "");
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">' +
       (state.view ? t("noMatch") : t("noData")) + "</td></tr>";
     return;
   }
-  tbody.innerHTML = rows.map((x) =>
+  tbody.innerHTML = shown.map((x) =>
     '<tr>' +
     '<td class="sym">' + (x.logo ? '<img src="' + esc(x.logo) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<span class="dot"></span>')
       + esc(x.symbol) + "</td>" +
@@ -963,7 +1049,26 @@ function renderTable() {
       ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' + t("blBtn") + "</button></td>" +
     "</tr>"
   ).join("");
-}
+
+  // P1: offer the next page rather than pushing every remaining row into the DOM
+  if (rows.length > shown.length) {
+    const moreRow = document.createElement("tr");
+    moreRow.className = "table-more";
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    const more = document.createElement("button");
+    more.className = "btn-ghost";
+    more.textContent = t("showMore") + " " +
+      Math.min(TABLE_PAGE, rows.length - shown.length) + " / " +
+      (rows.length - shown.length) + " " + t("remaining");
+    more.addEventListener("click", () => {
+      state.tableLimit += TABLE_PAGE;
+      renderTable();
+    });
+    cell.appendChild(more);
+    moreRow.appendChild(cell);
+    tbody.appendChild(moreRow);
+  }}
 
 /* ---------------- pie chart ---------------- */
 // The donut is drawn from the filtered view; the hover tooltip names each
@@ -978,6 +1083,12 @@ function renderPie() {
     .sort((a, b) => b.value - a.value);
   const total = (v && v.total_usd) || 0;
   drawPie($("walletPie"), items, total);
+  // A2: a canvas exposes nothing to assistive tech, so carry the numbers in the label
+  const pieTop = items.slice(0, 3)
+    .map((it) => it.label + " " + (total ? ((it.value / total) * 100).toFixed(1) : "0.0") + "%")
+    .join(", ");
+  $("walletPie").setAttribute("aria-label",
+    t("assetTitle") + ": " + fmtUsdFull(total) + (pieTop ? " — " + pieTop : ""));
 }
 
 function drawPie(canvas, items, total) {
@@ -1110,6 +1221,12 @@ function renderChart() {
     });
   });
   drawLineChart($("trendChart"), h.dates, series, state.series);
+  // A2: text alternative for the canvas — range, endpoints and direction
+  const first = h.totals[0], last = h.totals[h.totals.length - 1];
+  $("trendChart").setAttribute("aria-label",
+    t("trendTitle") + ": " + h.dates[0] + " \u2192 " + h.dates[h.dates.length - 1] +
+    ", " + fmtUsdFull(first) + " \u2192 " + fmtUsdFull(last) +
+    " (" + (last >= first ? "+" : "") + (first ? (((last - first) / first) * 100).toFixed(1) : "0.0") + "%)");
 }
 
 function drawLineChart(canvas, labels, series, visible) {
@@ -1397,12 +1514,16 @@ function srcFieldHTML(path, label, value, placeholder) {
 
 async function renderSources() {
   try {
-    const d = await api("/api/sources");
+    // S1: /api/sources masks secrets by default; reveal only on request
+    const d = await api("/api/sources" + (state.revealKeys ? "?reveal=1" : ""));
+    state.maskedKeys = !!d.masked;
+    $("btnRevealKeys").textContent = t(state.revealKeys ? "btnHideKeys" : "btnShowKeys");
     state.sourcesCfg = JSON.parse(JSON.stringify(d.config));
     state.sourcesLastOk = d.last_ok || {};
     const st = d.status || {};
     const lastOk = st.last_ok || {};
     $("sourcesFile").textContent = d.file ? d.file.split(/[\\/]/).pop() : "";
+    $("keysNote").textContent = state.maskedKeys ? t("keysMasked") : "";
     const cfg = state.sourcesCfg;
     const body = $("sourcesBody");
     body.innerHTML = "";
@@ -1685,6 +1806,9 @@ async function refresh() {
   prog.classList.remove("hidden");
   $("progressFill").style.width = "2%";
   $("progressMsg").textContent = t("refreshStart");
+  const cancelBtn = $("btnCancelRefresh");
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = t("btnCancel");
   const timer = setInterval(async () => {
     try {
       const st = await api("/api/status");
@@ -1694,7 +1818,14 @@ async function refresh() {
     } catch (e) { /* ignore */ }
   }, 1500);
   try {
-    await api("/api/refresh");
+    // POST, not GET: a GET with side effects is reachable from a bare <img> tag,
+    // and the server refuses cross-site writes on the POST path (see _write_guard).
+    const res = await postJSON("/api/refresh", {});
+    if (res && res.cancelled) {
+      // nothing was written; the snapshot is only saved once the fetch completes
+      $("progressMsg").textContent = t("cancelled");
+      return;
+    }
     $("progressFill").style.width = "100%";
     $("progressMsg").textContent = t("doneUpdating");
     const [history, dates] = await Promise.all([api("/api/history?days=0"), api("/api/snapshots")]);

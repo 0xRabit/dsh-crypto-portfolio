@@ -272,4 +272,10 @@ def refresh_snapshot(progress=None):
         prev = storage.get_latest_snapshot()
         data = fetch_all(progress=progress)
         storage.save_snapshot(data)
+        # token rows dominate the database, so thin the tail right after a
+        # successful write instead of letting the file grow without bound
+        try:
+            storage.prune_snapshots()
+        except Exception:  # noqa: BLE001  retention must never fail a refresh
+            pass
         return data, prev

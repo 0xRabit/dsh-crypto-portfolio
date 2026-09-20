@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=27">
+<link rel="stylesheet" href="/static/style.css?v=28">
 </head>
 <body>
 <header>
@@ -45,7 +45,10 @@
 
 <div id="progress" class="progress hidden">
   <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
-  <div id="progressMsg">Refreshing…</div>
+  <div class="progress-row">
+    <div id="progressMsg">Refreshing…</div>
+    <button id="btnCancelRefresh" class="btn-ghost btn-cancel" data-i18n="btnCancel">Cancel</button>
+  </div>
 </div>
 
 <div class="filterbar" id="filterbar">
@@ -70,12 +73,13 @@
   <main>
     <section class="top-row">
       <div class="panel top-half asset-rail">
-        <div class="panel-title" data-i18n="assetTitle">Total Assets (USD) · Wallet Share</div>
+        <div class="panel-title"><span data-i18n="assetTitle">Total Assets (USD) · Wallet Share</span></div>
         <div class="asset-inline">
           <div class="asset-left">
             <div id="totalUsd" class="big">--</div>
             <div id="totalChange" class="change"></div>
             <div id="lastUpdated" class="sub"></div>
+            <div id="historyNote" class="history-note hidden" data-i18n="viewingHistory"></div>
           </div>
           <div class="pie-box">
             <canvas id="walletPie"></canvas>
@@ -192,6 +196,8 @@
       <div id="sourcesBody"></div>
       <div class="toolbar" style="margin-top:12px">
         <button id="btnSaveSources" data-i18n="btnSaveSrc">Save & Apply</button>
+        <button id="btnRevealKeys" class="btn-ghost" data-i18n="btnShowKeys">Show keys</button>
+        <span id="keysNote" class="hint"></span>
         <button id="btnExportConfig" class="btn-ghost" data-i18n="btnExport">Export Config</button>
         <button id="btnImportConfig" class="btn-ghost" data-i18n="btnImport">Import Config</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
@@ -233,6 +239,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=20"></script>
+<script src="/static/app.js?v=21"></script>
 </body>
 </html>

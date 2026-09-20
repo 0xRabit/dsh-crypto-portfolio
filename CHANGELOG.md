@@ -43,6 +43,24 @@ First public release.
   wallet panel says up front that the cards are clickable.
 - The pie's clickable legend was dropped: it repeated figures already on the
   wallet cards, which are the click target for focusing a wallet.
+- **Security hardening.** `GET /api/sources` masks API keys by default (a stub like
+  `cdd7…88e1`) and reveals them only on an explicit request, so a local process, a
+  log dump or a screenshot no longer exposes them; a save from the settings form is
+  merged against the stored config so a mask can never overwrite a live key. Writes
+  (including refresh) are fenced against cross-site requests — non-JSON bodies are
+  refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
+  is rate-limited to one run per minute.
+- **Snapshot retention.** A profile keeps a dense 90-day window plus one snapshot per
+  month for the tail (`PORTFOLIO_KEEP_DAILY_DAYS` / `PORTFOLIO_KEEP_MONTHLY`), instead
+  of growing by ~0.75 MB/day forever.
+- **Performance.** The token table renders in pages of 200 with a "show more" row, so
+  turning off "Hide USD≈0" no longer pushes ~1.4k rows into the DOM at once.
+- **Accessibility.** Wallet cards are real controls (`role="button"`, tabindex,
+  Enter/Space, visible focus ring), both charts carry live `aria-label` text
+  alternatives, and `prefers-reduced-motion` is honoured.
+- **Interaction.** Refresh can be cancelled mid-run (nothing is written), the filter
+  choice persists across reloads, the newest snapshot is marked in the date picker
+  and viewing history is called out.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 
