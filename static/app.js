@@ -19,6 +19,7 @@ const I18N = {
     assetTitle: "Total Assets (USD) · Wallet Share",
     totalAssets: "Total Assets",
     walletsTitle: "Wallets", btnManageWallets: "Manage Wallets",
+    walletClickHint: "click a card to see that wallet's details",
     walletMgmtTitle: "Wallet Management",
     walletMgmtDesc: "Adding/removing wallets only affects future fetches; already stored historical snapshots are never touched.",
     wlNamePh: "Name (e.g. evm-new)", wlTypeEvm: "EVM (DeBank + Hyperliquid)", wlTypeBtc: "BTC", wlTypeSol: "Solana",
@@ -117,6 +118,7 @@ const I18N = {
     assetTitle: "总资产（USD）· 各钱包占比",
     totalAssets: "总资产",
     walletsTitle: "钱包", btnManageWallets: "⚙ 钱包管理",
+    walletClickHint: "点击选项卡可查看该钱包详情",
     walletMgmtTitle: "钱包管理",
     walletMgmtDesc: "增加/删除钱包仅影响之后的抓取；已存储的历史快照数据不受影响。",
     wlNamePh: "名称（如 evm-new）", wlTypeEvm: "EVM（DeBank + Hyperliquid）", wlTypeBtc: "BTC", wlTypeSol: "Solana",
@@ -777,7 +779,20 @@ async function loadDate(date) {
   }
 }
 
+/**
+ * Names the focused wallet in the title of every panel below the wallet cards.
+ * A card click does not scroll the page, so these titles are what tells the
+ * reader that the panels underneath are showing one wallet rather than all.
+ */
+function updateFilterChips() {
+  const w = state.filters.wallet || "";
+  document.querySelectorAll("[data-filter-chip]").forEach((el) => {
+    el.textContent = w ? "· " + w : "";
+  });
+}
+
 function renderAll() {
+  updateFilterChips();
   renderSummary();
   renderWalletCards();
   renderChainBars();
@@ -878,7 +893,9 @@ function renderWalletCards() {
       $("filterWallet").value = state.filters.wallet;
       fillFilterSelects();
       renderAll();
-      $("tokenTable").scrollIntoView({ behavior: "smooth", block: "start" });
+      // NOTE: deliberately no scrollIntoView here. Jumping the page on every
+      // card click disoriented the reader; the panels below announce the active
+      // wallet in their own titles instead.
     });
     wrap.appendChild(card);
   });
@@ -926,10 +943,6 @@ function renderTable() {
     return (va > vb ? 1 : -1) * state.sortDir;
   });
   $("tokenCount").textContent = t("items", rows.length);
-  // Name the active wallet filter in the panel title, so clicking a wallet card
-  // makes the narrowing of this table visibly obvious.
-  const tf = $("tokenFilter");
-  if (tf) tf.textContent = f.wallet ? "· " + f.wallet : "";
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">' +
       (state.view ? t("noMatch") : t("noData")) + "</td></tr>";
@@ -953,6 +966,10 @@ function renderTable() {
 }
 
 /* ---------------- pie chart ---------------- */
+// The donut is drawn from the filtered view; the hover tooltip names each
+// slice. The clickable legend that used to sit under it was removed: every
+// figure it listed (name, value, share) is already on the wallet cards, and
+// those cards are the click target for focusing one wallet.
 function renderPie() {
   const v = filteredView();
   const items = (v && v.wallets ? v.wallets : [])
@@ -961,26 +978,6 @@ function renderPie() {
     .sort((a, b) => b.value - a.value);
   const total = (v && v.total_usd) || 0;
   drawPie($("walletPie"), items, total);
-
-  const sorted = items;
-  $("pieLegend").innerHTML = sorted.length
-    ? sorted.map((it) => {
-        const pct = total ? (it.value / total * 100) : 0;
-        return '<div class="legend-row" data-wallet="' + esc(it.label) + '">' +
-          '<span class="t-dot" style="background:' + it.color + '"></span>' +
-          '<span class="lg-name">' + esc(it.label) + "</span>" +
-          '<span class="lg-val">' + fmtUsd(it.value) + "</span>" +
-          '<span class="lg-pct">' + pct.toFixed(1) + "%</span></div>";
-      }).join("")
-    : '<div class="legend-empty">' + t("noValue") + "</div>";
-  $("pieLegend").querySelectorAll(".legend-row").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.filters.wallet = el.dataset.wallet;
-      $("filterWallet").value = el.dataset.wallet;
-      renderAll();
-      $("tokenTable").scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
 }
 
 function drawPie(canvas, items, total) {

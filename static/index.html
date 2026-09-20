@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=25">
+<link rel="stylesheet" href="/static/style.css?v=26">
 </head>
 <body>
 <header>
@@ -82,11 +82,11 @@
             <div id="pieTip" class="chart-tip hidden"></div>
           </div>
         </div>
-        <div id="pieLegend" class="pie-legend"></div>
       </div>
 
       <div class="panel top-half">
-        <div class="panel-title"><span data-i18n="walletsTitle">Wallets</span> <span class="hint" id="walletCount"></span></div>
+        <div class="panel-title"><span data-i18n="walletsTitle">Wallets</span> <span class="hint" id="walletCount"></span>
+          <span class="hint wallet-hint" data-i18n="walletClickHint"></span></div>
         <div class="wallet-grid" id="walletCards"></div>
       </div>
     </section>
@@ -96,7 +96,7 @@
          to be visible. -->
     <section class="panel">
       <div class="panel-title">
-        <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span><span class="hint filter-chip" id="tokenFilter"></span>
+        <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span><span class="hint filter-chip" data-filter-chip></span>
       </div>
       <div class="toolbar">
         <input id="search" type="search" data-i18n-placeholder="searchPh" placeholder="Search token / name / wallet / address…">
@@ -123,7 +123,10 @@
     </section>
 
     <section class="panel">
-      <div class="panel-title" data-i18n="trendTitle">Portfolio Trend <span class="hint">(last snapshot of each day · USD)</span></div>
+      <!-- data-i18n writes textContent, so it must sit on the label span rather
+           than the panel-title: a chip nested under it would be wiped on every
+           language switch. -->
+      <div class="panel-title"><span data-i18n="trendTitle">Portfolio Trend</span> <span class="hint">(last snapshot of each day · USD)</span><span class="hint filter-chip" data-filter-chip></span></div>
       <div class="chart-wrap">
         <canvas id="trendChart"></canvas>
         <div id="chartTip" class="chart-tip hidden"></div>
@@ -132,7 +135,7 @@
     </section>
 
     <section class="panel">
-      <div class="panel-title" data-i18n="chainTitle">Chain Distribution (USD)</div>
+      <div class="panel-title"><span data-i18n="chainTitle">Chain Distribution (USD)</span><span class="hint filter-chip" data-filter-chip></span></div>
       <div id="chainBars"></div>
     </section>
 
@@ -230,6 +233,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=19"></script>
+<script src="/static/app.js?v=20"></script>
 </body>
 </html>

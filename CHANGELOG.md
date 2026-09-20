@@ -36,8 +36,12 @@ First public release.
 - **Layout tuned for wide screens**: the asset rail and the wallet grid sit at
   1:3, the headline figure and the donut stack vertically in the narrow rail,
   and the token table sits directly under the pie + wallet row so that clicking
-  a wallet card visibly narrows the table below it (the active wallet is named
-  in the table's title).
+  a wallet card visibly narrows the table below it.
+- **Focusing a wallet never moves the page.** Clicking a card filters every panel
+  in place; each panel below names the focused wallet in its own title, and the
+  wallet panel says up front that the cards are clickable.
+- The pie's clickable legend was dropped: it repeated figures already on the
+  wallet cards, which are the click target for focusing a wallet.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 
