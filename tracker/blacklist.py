@@ -18,7 +18,7 @@ import json
 import os
 import threading
 
-from . import config, profiles
+from . import atomicio, config, profiles
 
 _lock = threading.Lock()
 _user_cache = {"mtime": None, "data": None}
@@ -62,8 +62,7 @@ def _load_user_entries():
 
 
 def _save_user_entries(entries):
-    with open(profiles.blacklist_file(), "w", encoding="utf-8") as f:
-        json.dump(entries, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(profiles.blacklist_file(), entries)
 
 
 def user_entries():

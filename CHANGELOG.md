@@ -85,6 +85,14 @@ First public release.
   `tracker/assetlabels.py`; the old `stablecoins.json` is migrated on first
   read, so existing rules carry over untouched.
 
+- **Crash-safe config writes.** Every JSON config file is now written to a sibling
+  temp file, fsynced, then `os.replace`d into position (`tracker/atomicio.py`), so an
+  interrupted write can no longer leave a truncated `sources.json` or an empty
+  `.active` pointing at the wrong profile. New files are created mode 0600.
+- **Locks on the shared config.** `profiles`, `schedule` and `status` were the three
+  modules doing unguarded read-modify-write while both the HTTP threads and the
+  scheduler thread touched the same files; a lost update could drop source
+  timestamps or a schedule edit. They now take a lock like the rest.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

@@ -9,7 +9,7 @@ import json
 import os
 import threading
 
-from . import profiles
+from . import atomicio, profiles
 
 VALID_TYPES = ("evm", "btc", "sol", "doge", "ada")
 
@@ -42,8 +42,7 @@ def _load_user_wallets():
 def _save_user_wallets(entries):
     d = os.path.dirname(profiles.wallets_file())
     os.makedirs(d, exist_ok=True)
-    with open(profiles.wallets_file(), "w", encoding="utf-8") as f:
-        json.dump(entries, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(profiles.wallets_file(), entries)
 
 
 def user_wallets():

@@ -7,11 +7,16 @@ once per day even if the scheduler restarts.
 """
 import json
 import os
+import threading
 from datetime import date, datetime
 
-from . import profiles
+from . import atomicio, profiles
 
 DEFAULT_TIME = "09:00"
+
+# The scheduler thread writes last_run_date while an HTTP request may be saving a
+# new time: both are read-modify-write on the same file, so they share one lock.
+_lock = threading.RLock()
 
 
 def schedule_file(profile=None):
@@ -29,14 +34,16 @@ def _load(profile=None):
 
 
 def _save(d, profile=None):
-    p = schedule_file(profile)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(schedule_file(profile), d)
 
 
 def get_schedule(profile=None):
-    d = _load(profile)
+    with _lock:
+        d = _load(profile)
+        return _view(d)
+
+
+def _view(d):
     return {
         "enabled": bool(d.get("enabled", False)),
         "time": d.get("time") or DEFAULT_TIME,
@@ -45,23 +52,25 @@ def get_schedule(profile=None):
 
 
 def set_schedule(enabled, time, profile=None):
-    d = _load(profile)
-    d["enabled"] = bool(enabled)
-    if time:
-        d["time"] = str(time).strip()
-    # reset the once-per-day marker: a newly saved time can fire the same day
-    # (if the time is still in the future; past times fire again tomorrow)
-    d.pop("last_run_date", None)
-    _save(d, profile)
-    return get_schedule(profile)
+    with _lock:
+        d = _load(profile)
+        d["enabled"] = bool(enabled)
+        if time:
+            d["time"] = str(time).strip()
+        # reset the once-per-day marker: a newly saved time can fire the same day
+        # (if the time is still in the future; past times fire again tomorrow)
+        d.pop("last_run_date", None)
+        _save(d, profile)
+        return get_schedule(profile)
 
 
 def mark_run(when=None, profile=None):
-    d = _load(profile)
-    if isinstance(when, str):   # defensive: caller passed profile by position
-        when = None
-    d["last_run_date"] = (when or datetime.now()).date().isoformat()
-    _save(d, profile)
+    with _lock:
+        d = _load(profile)
+        if isinstance(when, str):   # defensive: caller passed profile by position
+            when = None
+        d["last_run_date"] = (when or datetime.now()).date().isoformat()
+        _save(d, profile)
 
 
 def is_due(profile, now=None):

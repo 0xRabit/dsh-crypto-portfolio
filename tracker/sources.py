@@ -19,7 +19,7 @@ import os
 import re
 import threading
 
-from . import config, profiles
+from . import atomicio, config, profiles
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -207,9 +207,7 @@ def ensure_file():
     """Write the default config file if it does not exist yet."""
     if not os.path.exists(profiles.sources_file()):
         with _lock:
-            os.makedirs(os.path.dirname(profiles.sources_file()), exist_ok=True)
-            with open(profiles.sources_file(), "w", encoding="utf-8") as f:
-                json.dump(_DEFAULTS, f, ensure_ascii=False, indent=2)
+            atomicio.write_json(profiles.sources_file(), _DEFAULTS)
 
 
 def save(cfg):
@@ -227,9 +225,7 @@ def save(cfg):
             except Exception:  # noqa: BLE001
                 current = {}
         merged = _deep_merge(_DEFAULTS, _deep_merge(current, cfg if isinstance(cfg, dict) else {}))
-        os.makedirs(os.path.dirname(profiles.sources_file()), exist_ok=True)
-        with open(profiles.sources_file(), "w", encoding="utf-8") as f:
-            json.dump(merged, f, ensure_ascii=False, indent=2)
+        atomicio.write_json(profiles.sources_file(), merged)
         load(force=True)
 
 

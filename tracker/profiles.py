@@ -16,13 +16,20 @@ every config file and the SQLite database.
 """
 import json
 import os
+import threading
 import shutil
 
-from . import config
+from . import atomicio, config
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROFILES_DIR = os.path.join(_ROOT, "profiles")
 ACTIVE_FILE = os.path.join(PROFILES_DIR, ".active")
+
+# One lock for the profile registry: the 11-byte .active pointer, the
+# interrupted-refresh marker and the profile directories are read-modify-written
+# from HTTP threads and the scheduler thread at the same time. RLock because
+# recover_active()/rename_profile() call set_active() while already holding it.
+_lock = threading.RLock()
 TEMPLATES_DIR = os.path.join(_ROOT, "templates")
 
 _BAD = set('/\\:\x00')
@@ -55,23 +62,26 @@ def exists(name):
 
 
 def active():
-    try:
-        with open(ACTIVE_FILE, "r", encoding="utf-8") as f:
-            name = f.read().strip()
-        if name and exists(name):
-            return name
-    except Exception:  # noqa: BLE001
-        pass
-    return "default" if exists("default") else (list_profiles() or [None])[0]
+    with _lock:
+        try:
+            with open(ACTIVE_FILE, "r", encoding="utf-8") as f:
+                name = f.read().strip()
+            if name and exists(name):
+                return name
+        except Exception:  # noqa: BLE001
+            pass
+        return "default" if exists("default") else (list_profiles() or [None])[0]
 
 
 def set_active(name):
-    _valid_name(name)
-    if not exists(name):
-        raise ValueError(f"profile {name!r} does not exist")
-    os.makedirs(PROFILES_DIR, exist_ok=True)
-    with open(ACTIVE_FILE, "w", encoding="utf-8") as f:
-        f.write(name)
+    with _lock:
+        _valid_name(name)
+        if not exists(name):
+            raise ValueError(f"profile {name!r} does not exist")
+        os.makedirs(PROFILES_DIR, exist_ok=True)
+        # 11 bytes, but an empty or torn .active sends the dashboard to the wrong
+        # profile — and the scheduler flips this around every refresh
+        atomicio.write_text(ACTIVE_FILE, name)
 
 
 # Interrupted-refresh recovery -------------------------------------------------
@@ -85,37 +95,39 @@ def _restore_file():
 
 def mark_restore_target(name):
     """Remember which profile to return to if we die mid-refresh."""
-    try:
-        os.makedirs(PROFILES_DIR, exist_ok=True)
-        with open(_restore_file(), "w", encoding="utf-8") as f:
-            f.write(str(name or ""))
-    except Exception:  # noqa: BLE001
-        pass
+    with _lock:
+        try:
+            os.makedirs(PROFILES_DIR, exist_ok=True)
+            atomicio.write_text(_restore_file(), str(name or ""))
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def clear_restore_target():
-    try:
-        os.remove(_restore_file())
-    except OSError:
-        pass
+    with _lock:
+        try:
+            os.remove(_restore_file())
+        except OSError:
+            pass
 
 
 def recover_active():
     """Startup hook: if a scheduled refresh was interrupted, restore the
     profile the user had selected. Returns the restored name, or None."""
-    try:
-        with open(_restore_file(), "r", encoding="utf-8") as f:
-            name = f.read().strip()
-    except OSError:
-        return None
-    clear_restore_target()
-    if name and name != active() and exists(name):
+    with _lock:            # spans the read, the clear and the restore: it is one step
         try:
-            set_active(name)
-            return name
-        except Exception:  # noqa: BLE001
+            with open(_restore_file(), "r", encoding="utf-8") as f:
+                name = f.read().strip()
+        except OSError:
             return None
-    return None
+        clear_restore_target()
+        if name and name != active() and exists(name):
+            try:
+                set_active(name)
+                return name
+            except Exception:  # noqa: BLE001
+                return None
+        return None
 
 
 # per-profile file locations -------------------------------------------------
@@ -174,8 +186,7 @@ def create_profile(name, from_template=False, copy_from=None, wallets_seed=None)
             if os.path.exists(src):
                 shutil.copyfile(src, os.path.join(d, f))
     if wallets_seed is not None:
-        with open(os.path.join(d, "wallets.json"), "w", encoding="utf-8") as f:
-            json.dump(wallets_seed, f, ensure_ascii=False, indent=2)
+        atomicio.write_json(os.path.join(d, "wallets.json"), wallets_seed)
     return name
 
 
@@ -239,8 +250,7 @@ def ensure_profiles():
         except Exception:  # noqa: BLE001
             wallets = []
         if not wallets and config.WALLETS:
-            with open(wp, "w", encoding="utf-8") as f:
-                json.dump(config.WALLETS, f, ensure_ascii=False, indent=2)
+            atomicio.write_json(wp, config.WALLETS)
         set_active("private")
         print("[profiles] migrated legacy configs into profile 'private' (active)")
 

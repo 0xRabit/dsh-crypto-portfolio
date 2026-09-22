@@ -32,7 +32,7 @@ import re
 import os
 import threading
 
-from . import config, profiles
+from . import atomicio, config, profiles
 
 _lock = threading.Lock()
 _user_cache = {"mtime": None, "data": None}
@@ -105,10 +105,7 @@ def _load_user_entries():
 
 
 def _save_user_entries(entries):
-    path = profiles.asset_labels_file()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(entries, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(profiles.asset_labels_file(), entries)
 
 
 def user_entries():
@@ -365,10 +362,7 @@ def label_names():
 
 def _save_names(names):
     global _names_cache
-    path = profiles.labels_file()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump({"names": names}, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(profiles.labels_file(), {"names": names})
     _names_cache = {"mtime": _names_mtime(), "data": dict(names)}
 
 

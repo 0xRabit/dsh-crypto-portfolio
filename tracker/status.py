@@ -6,9 +6,14 @@ source, when it last succeeded (and CEX per-exchange success dates).
 """
 import json
 import os
+import threading
 from datetime import datetime
 
-from . import profiles
+from . import atomicio, profiles
+
+# Every mark_* is a read-modify-write of the whole file, and a refresh marks one
+# source at a time while the scheduler may be updating another profile.
+_lock = threading.RLock()
 
 
 def status_file(profile=None):
@@ -26,10 +31,7 @@ def _load(profile=None):
 
 
 def _save(d, profile=None):
-    p = status_file(profile)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
+    atomicio.write_json(status_file(profile), d)
 
 
 def _now():
@@ -37,22 +39,25 @@ def _now():
 
 
 def mark_source_ok(source, when=None, profile=None):
-    d = _load(profile)
-    last_ok = d.setdefault("last_ok", {})
-    last_ok[source] = when or _now()
-    _save(d, profile)
+    with _lock:
+        d = _load(profile)
+        last_ok = d.setdefault("last_ok", {})
+        last_ok[source] = when or _now()
+        _save(d, profile)
 
 
 def mark_refresh(when=None, profile=None):
-    d = _load(profile)
-    d["last_refresh"] = when or _now()
-    _save(d, profile)
+    with _lock:
+        d = _load(profile)
+        d["last_refresh"] = when or _now()
+        _save(d, profile)
 
 
 def set_detail(key, value, profile=None):
-    d = _load(profile)
-    d[key] = value
-    _save(d, profile)
+    with _lock:
+        d = _load(profile)
+        d[key] = value
+        _save(d, profile)
 
 
 def get_status(profile=None):
