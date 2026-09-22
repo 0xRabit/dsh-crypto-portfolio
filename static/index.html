@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=28">
+<link rel="stylesheet" href="/static/style.css?v=30">
 </head>
 <body>
 <header>
@@ -81,9 +81,20 @@
             <div id="lastUpdated" class="sub"></div>
             <div id="historyNote" class="history-note hidden" data-i18n="viewingHistory"></div>
           </div>
-          <div class="pie-box">
-            <canvas id="walletPie"></canvas>
-            <div id="pieTip" class="chart-tip hidden"></div>
+          <div class="pie-block">
+            <div class="pie-cap" data-i18n="walletShareCap">By wallet</div>
+            <div class="pie-box">
+              <canvas id="walletPie"></canvas>
+              <div id="pieTip" class="chart-tip hidden"></div>
+            </div>
+          </div>
+          <div class="pie-block">
+            <div class="pie-cap" data-i18n="typeShareCap">By asset type</div>
+            <div class="pie-box">
+              <canvas id="typePie"></canvas>
+              <div id="typePieTip" class="chart-tip hidden"></div>
+            </div>
+            <div id="typeLegend" class="type-legend"></div>
           </div>
         </div>
       </div>
@@ -118,6 +129,7 @@
               <th data-key="amount" class="num" data-i18n="thAmount">Amount</th>
               <th data-key="price" class="num" data-i18n="thPrice">Price (USD)</th>
               <th data-key="usd" class="num" data-i18n="thUsd">Balance (USD)</th>
+              <th class="op stable-col" data-i18n="thStable">Stable</th>
               <th class="op" data-i18n="thOp">Action</th>
             </tr>
           </thead>
@@ -206,6 +218,32 @@
       </div>
     </details>
 
+    <details class="panel" id="secStable">
+      <summary class="panel-title"><span data-i18n="stableTitle">Stablecoin Rules</span>
+        <span class="hint" data-i18n="stableSummary">which tokens count as stablecoins</span>
+      </summary>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="stableDesc">The asset-type donut sorts every token into stablecoins / bitcoin / other. Built-in wildcards (USDT*, *USDC, WBTC*, …) are matched against the symbol case-insensitively, and anything priced inside the peg band with a USD/DAI/FRAX marker is treated as a stablecoin automatically. Add a rule here, or click the tag on any row of the token table to include or exclude that exact token.</p>
+        <div id="stableAuto" class="hint"></div>
+        <div id="stableList" class="bl-list"></div>
+        <div class="toolbar" style="margin-top:10px">
+          <input id="stSymbol" data-i18n-placeholder="stSymbolPh" placeholder="Symbol wildcard (e.g. USDT*, *USD)">
+          <select id="stCategory">
+            <option value="stable">stablecoin</option>
+            <option value="btc">bitcoin</option>
+            <option value="other">other (exclude)</option>
+          </select>
+          <input id="stTokenId" data-i18n-placeholder="stTokenIdPh" placeholder="Contract/mint (optional, exact)">
+          <input id="stChain" data-i18n-placeholder="stChainPh" placeholder="Chain (optional)">
+          <button id="btnAddStable" data-i18n="btnAddStable">+ Add Rule</button>
+          <span id="stableMsg" class="hint"></span>
+        </div>
+        <div class="bl-list" style="margin-top:10px">
+          <div class="bl-sub" data-i18n="stableBuiltin">Built-in wildcards</div>
+          <div id="stableBuiltin"></div>
+        </div>
+      </div>
+    </details>
     <details class="panel" id="secBlacklist">
       <summary class="panel-title"><span data-i18n="blTitle">Token Blacklist</span>
         <span class="hint" id="blacklistFile"></span>
@@ -239,6 +277,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=21"></script>
+<script src="/static/app.js?v=22"></script>
 </body>
 </html>

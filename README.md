@@ -60,6 +60,7 @@ Without history there's no peace of mind.
 - **Scheduled daily refresh.** Every profile can auto-refresh at a local time (server-side daemon; closing the browser page does not stop it); per-source last-success timestamps are shown in Settings.
 - **Multi-profile configs.** The `default` profile ships with public template wallets (vitalik.eth, genesis BTC, public SOL, public DOGE, public ADA) and empty keys; each profile can be renamed — its snapshots move with it — and keeps its own daily refresh time; your private wallets and keys live in a separately named profile with its own snapshot history.
 - **Local-first by default.** The API binds to `127.0.0.1` and masks API keys in its responses; writes are refused for cross-site requests (`Sec-Fetch-Site: cross-site`, foreign or opaque `Origin`, non-JSON bodies) and refresh is rate-limited to one run per minute. Snapshot history is kept as a 90-day window plus one per month, so the database does not grow without bound.
+- **Asset-type view.** A second donut splits the portfolio into stablecoins / bitcoin / other. Stablecoin detection is wildcard-based (`USDT*`, `*USDC`, `WBTC*`, …) with a price band as a second net, and every row of the token table carries a tag that includes or excludes that exact token; the wildcard rules are editable in Settings.
 - **Themes & i18n**: light/dark theme toggle, EN / 中文 (English by default), chain/exchange logos throughout.
 
 

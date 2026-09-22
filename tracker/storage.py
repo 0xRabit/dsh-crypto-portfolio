@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 from . import config, profiles
 from .blacklist import filter_rows
+from . import stablecoins
 from .views import view_of
 
 _here = os.path.dirname(os.path.abspath(__file__))
@@ -185,7 +186,9 @@ def get_tokens(date):
             rows = conn.execute(
                 "SELECT wallet,chain,token_id,symbol,name,amount,price,usd,logo FROM tokens WHERE date=? "
                 "ORDER BY usd DESC", (date,)).fetchall()
-            return filter_rows([dict(r) for r in rows])
+            # classification is applied at read time, so editing the rules also
+            # reclassifies every historical snapshot
+            return stablecoins.annotate(filter_rows([dict(r) for r in rows]))
         finally:
             conn.close()
 

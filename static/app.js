@@ -57,6 +57,15 @@ const I18N = {
     btnShowKeys: "Show keys", btnHideKeys: "Hide keys",
     keysMasked: "Keys are masked — use Show keys to load the real values from this machine.",
     latest: "latest", viewingHistory: "Viewing a historical snapshot",
+    walletShareCap: "By wallet", typeShareCap: "By asset type",
+    catStable: "Stablecoins", catBtc: "Bitcoin", catOther: "Other",
+    thStable: "Stable", markStable: "stablecoin", unmarkStable: "not a stablecoin",
+    stableTitle: "Stablecoin Rules", stableSummary: "which tokens count as stablecoins",
+    stableBuiltin: "Built-in wildcards", stableAutoBand: "Auto-detect price band",
+    stSymbolPh: "Symbol wildcard (e.g. USDT*, *USD)", stTokenIdPh: "Contract/mint (optional, exact)",
+    stChainPh: "Chain (optional)", btnAddStable: "+ Add Rule",
+    stableDesc: "The asset-type donut sorts every token into stablecoins / bitcoin / other. Built-in wildcards (USDT*, *USDC, WBTC*, …) match the symbol case-insensitively, and anything priced inside the peg band with a USD/DAI/FRAX marker counts as a stablecoin automatically. Add a rule here, or click the tag on any row of the token table to include or exclude that exact token.",
+    stableSaved: "Rule saved", stableRemoved: "Rule removed", stableFailed: "Rule failed: ",
     showMore: "Show", remaining: "more", showingAll: "all rows shown",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
@@ -161,6 +170,15 @@ const I18N = {
     btnShowKeys: "显示密钥", btnHideKeys: "隐藏密钥",
     keysMasked: "密钥已打码；点「显示密钥」才会从本机读取明文。",
     latest: "最新", viewingHistory: "正在查看历史快照",
+    walletShareCap: "按钱包", typeShareCap: "按资产类型",
+    catStable: "稳定币", catBtc: "比特币", catOther: "其他",
+    thStable: "稳定币", markStable: "标记为稳定币", unmarkStable: "取消稳定币标记",
+    stableTitle: "稳定币规则", stableSummary: "哪些代币算稳定币",
+    stableBuiltin: "内置通配符", stableAutoBand: "自动识别价格带",
+    stSymbolPh: "符号通配符（如 USDT*、*USD）", stTokenIdPh: "合约/铸币地址（可选，精确匹配）",
+    stChainPh: "网络（可选）", btnAddStable: "+ 添加规则",
+    stableDesc: "资产类型饼图把每个代币归入 稳定币 / 比特币 / 其他。内置通配符（USDT*、*USDC、WBTC* 等）对符号做不区分大小写的匹配；价格落在锚定区间内、且符号或名称含 USD/DAI/FRAX 标记的，自动算稳定币。可以在这里加规则，也可以直接点代币明细表里的标签，把某一个代币加入或排除。",
+    stableSaved: "规则已保存", stableRemoved: "规则已删除", stableFailed: "规则操作失败：",
     showMore: "再显示", remaining: "项", showingAll: "已显示全部",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
@@ -411,6 +429,7 @@ async function init() {
     renderChart();
     fillFilterSelects();
     renderBlacklist();
+    renderStablecoins();
     renderWalletMgmt();
     renderProfiles();   // populate header profile dropdown
   } catch (e) {
@@ -614,7 +633,23 @@ function bindEvents() {
   $("btnImportConfig").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", importConfig);
   // blacklist (settings page)
-  $("btnAddBlacklist").addEventListener("click", async () => {
+  $("btnAddStable").addEventListener("click", async () => {
+    const sym = $("stSymbol").value.trim();
+    const tid = $("stTokenId").value.trim();
+    const cat = $("stCategory").value;
+    const chain = $("stChain").value.trim();
+    if (!sym && !tid) { $("stableMsg").textContent = t("atLeastOne"); return; }
+    try {
+      await postJSON("/api/stablecoins", { entry: {
+        symbol: sym, token_id: tid, chain, category: cat,
+        action: cat === "other" ? "exclude" : "include" } });
+      $("stSymbol").value = ""; $("stTokenId").value = ""; $("stChain").value = "";
+      $("stableMsg").textContent = t("stableSaved");
+      renderStablecoins();
+      await reloadViewData();
+    } catch (e) { $("stableMsg").textContent = t("stableFailed") + e.message; }
+  });
+    $("btnAddBlacklist").addEventListener("click", async () => {
     const entry = {
       symbol: $("blSymbol").value.trim(),
       token_id: $("blTokenId").value.trim(),
@@ -854,6 +889,7 @@ function updateFilterChips() {
 
 function renderAll() {
   updateFilterChips();
+  renderTypePie();
   renderSummary();
   renderWalletCards();
   renderChainBars();
@@ -1044,11 +1080,39 @@ function renderTable() {
     '<td class="num amount">' + fmtAmount(x.amount) + "</td>" +
     '<td class="num">' + fmtUsd(x.price) + "</td>" +
     '<td class="num">' + fmtUsd(x.usd) + "</td>" +
+    '<td class="op stable-col">' +
+      '<button class="st-tag' + (x.cat === "stable" ? " on" : "") + '"' +
+        ' data-wallet="' + esc(x.wallet) + '" data-symbol="' + esc(x.symbol) + '"' +
+        ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '"' +
+        ' data-stable="' + (x.cat === "stable" ? "1" : "0") + '"' +
+        ' title="' + esc(t(x.cat === "stable" ? "unmarkStable" : "markStable")) + '">' +
+        (x.cat === "stable" ? "\u2713 " : "") + esc(t("thStable")) + "</button></td>" +
     '<td class="op"><button class="bl-btn" data-wallet="' + esc(x.wallet) + '"' +
       ' data-symbol="' + esc(x.symbol) + '" data-name="' + esc(x.name || "") + '"' +
       ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' + t("blBtn") + "</button></td>" +
     "</tr>"
   ).join("");
+  // The tag toggles an exact-token rule, so a wildcard hit or the price
+  // heuristic can be corrected for one asset without editing the built-in list.
+  tbody.querySelectorAll(".st-tag").forEach((b) => b.addEventListener("click", async () => {
+    const exact = b.dataset.tokenId || "";
+    const base = { token_id: exact, symbol: exact ? "" : b.dataset.symbol, chain: b.dataset.chain };
+    const entry = b.dataset.stable === "1"
+      ? Object.assign({ category: "other", action: "exclude" }, base)
+      : Object.assign({ category: "stable", action: "include" }, base);
+    try {
+      if (b.dataset.stable === "1") {
+        // drop a conflicting user rule first, or the pair fights itself
+        const d = await api("/api/stablecoins");
+        const hit = (d.user || []).find((e) => (exact
+          ? (e.token_id || "").toLowerCase() === exact.toLowerCase()
+          : (e.symbol || "").toLowerCase() === b.dataset.symbol.toLowerCase()));
+        if (hit) await postJSON("/api/stablecoins/remove", { index: hit.index });
+      }
+      await postJSON("/api/stablecoins", { entry });
+      await reloadViewData();   // re-reads tokens with the new rule
+    } catch (e) { showError(t("stableFailed") + e.message); }
+  }));
 
   // P1: offer the next page rather than pushing every remaining row into the DOM
   if (rows.length > shown.length) {
@@ -1070,6 +1134,49 @@ function renderTable() {
     tbody.appendChild(moreRow);
   }}
 
+/* ---------------- asset type donut ---------------- */
+// Three buckets: stablecoins / bitcoin / other. The server classifies each token
+// (tracker/stablecoins.py) and ships a `cat` field, so the client only aggregates.
+const CAT_COLORS = { stable: "#3fb950", btc: "#f0b95c", other: "#58a6ff" };
+
+/** USD per asset-type bucket over the same filtered rows the table shows. */
+function typeTotals() {
+  const f = state.filters;
+  const names = new Set((state.view && state.view.wallets ? state.view.wallets : [])
+    .filter((w) => (f.category === "all" || w.type === f.category) &&
+                   (!f.wallet || w.wallet === f.wallet))
+    .map((w) => w.wallet));
+  const totals = { stable: 0, btc: 0, other: 0 };
+  for (const x of state.tokens || []) {
+    if (!names.has(x.wallet)) continue;
+    if (f.chain && x.chain !== f.chain) continue;
+    const cat = x.cat === "stable" || x.cat === "btc" ? x.cat : "other";
+    totals[cat] += Number(x.usd) || 0;
+  }
+  return totals;
+}
+
+function renderTypePie() {
+  // NOTE: do not name this `t` — that shadows the global t() translator used
+  // two lines down, and the TypeError takes the whole renderAll() with it.
+  const byCat = typeTotals();
+  const order = ["stable", "btc", "other"];
+  const label = { stable: t("catStable"), btc: t("catBtc"), other: t("catOther") };
+  const items = order.map((k) => ({ label: label[k], value: byCat[k], color: CAT_COLORS[k] }))
+    .filter((it) => it.value > 0);
+  const total = order.reduce((a, k) => a + byCat[k], 0);
+  drawPie($("typePie"), items, total, "typePieTip");
+  const pctOf = (k) => (total ? (byCat[k] / total) * 100 : 0);
+  $("typeLegend").innerHTML = order.map((k) =>
+    '<div class="type-row">' +
+      '<span class="t-dot" style="background:' + CAT_COLORS[k] + '"></span>' +
+      '<span class="lg-name">' + esc(label[k]) + "</span>" +
+      '<span class="lg-pct">' + pctOf(k).toFixed(1) + "%</span></div>").join("");
+  // A2: text alternative for the second canvas
+  $("typePie").setAttribute("aria-label", t("typeShareCap") + ": " +
+    order.map((k) => label[k] + " " + pctOf(k).toFixed(1) + "%").join(", "));
+}
+
 /* ---------------- pie chart ---------------- */
 // The donut is drawn from the filtered view; the hover tooltip names each
 // slice. The clickable legend that used to sit under it was removed: every
@@ -1082,7 +1189,7 @@ function renderPie() {
     .filter((it) => it.value > 0)
     .sort((a, b) => b.value - a.value);
   const total = (v && v.total_usd) || 0;
-  drawPie($("walletPie"), items, total);
+  drawPie($("walletPie"), items, total, "pieTip");
   // A2: a canvas exposes nothing to assistive tech, so carry the numbers in the label
   const pieTop = items.slice(0, 3)
     .map((it) => it.label + " " + (total ? ((it.value / total) * 100).toFixed(1) : "0.0") + "%")
@@ -1091,8 +1198,8 @@ function renderPie() {
     t("assetTitle") + ": " + fmtUsdFull(total) + (pieTop ? " — " + pieTop : ""));
 }
 
-function drawPie(canvas, items, total) {
-  const tip = $("pieTip");
+function drawPie(canvas, items, total, tipId) {
+  const tip = $(tipId || "pieTip");
   const dpr = window.devicePixelRatio || 1;
   const box = canvas.parentElement;
   const size = box.clientWidth || 250;
@@ -1368,6 +1475,48 @@ function niceMax(v) {
 }
 
 /* ---------------- blacklist / wallets / sources ---------------- */
+async function renderStablecoins() {
+  try {
+    const d = await api("/api/stablecoins");
+    const fn = d.file ? d.file.split(/[\\/]/).pop() : "";
+    $("stableAuto").textContent = t("stableAutoBand") + ": " +
+      (d.auto && d.auto.price_band ? d.auto.price_band.join(" – ") : "") + "  ·  " + fn;
+    const list = $("stableList");
+    list.innerHTML = "";
+    const user = d.user || [];
+    if (!user.length) {
+      list.innerHTML = '<div class="bl-empty">' + t("stableSummary") + "</div>";
+    } else {
+      user.forEach((e) => {
+        const row = document.createElement("div");
+        row.className = "bl-item";
+        row.innerHTML = '<span class="bl-sym">' + esc(e.symbol || e.token_id || e.name || "") +
+          '</span><span class="st-cat st-cat-' + esc(e.category) + '">' +
+          esc(t(e.category === "stable" ? "catStable" : e.category === "btc" ? "catBtc" : "catOther")) +
+          (e.action === "exclude" ? " ✕" : "") + "</span>" +
+          '<span class="bl-meta">' + esc([e.chain, e.name].filter(Boolean).join(" · ")) + "</span>";
+        const del = document.createElement("button");
+        del.className = "bl-btn";
+        del.textContent = "✕ " + t("remove");
+        del.addEventListener("click", async () => {
+          try {
+            await postJSON("/api/stablecoins/remove", { index: e.index });
+            $("stableMsg").textContent = t("stableRemoved");
+            renderStablecoins();
+          } catch (err) { $("stableMsg").textContent = t("stableFailed") + err.message; }
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }
+    const bi = $("stableBuiltin");
+    bi.innerHTML = (d.builtin || []).map((e) =>
+      '<span class="st-chip ' + esc(e.category) + '">' + esc(e.symbol) + "</span>").join("");
+  } catch (e) {
+    $("stableMsg").textContent = t("stableFailed") + e.message;
+  }
+}
+
 async function renderBlacklist() {
   try {
     const d = await api("/api/blacklist");
@@ -1708,6 +1857,7 @@ async function renderSettings() {
   await renderWalletMgmt();
   await renderSources();
   await renderBlacklist();
+  await renderStablecoins();
 }
 
 /* ---------------- config export / import ---------------- */
@@ -1767,6 +1917,7 @@ async function reloadViewData() {
   state.history = h;
   renderChart();
   await renderBlacklist();
+  await renderStablecoins();
   await renderWalletMgmt();
 }
 
