@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Asset-label classification: the "asset type" donut and the token-table tag.
+"""Asset labels: the "asset type" donut, the row tag picker and the rule engine.
 
 Every token row carries exactly ONE label. Built-ins the system detects on its own:
 
@@ -16,7 +16,7 @@ in the donut and its own colour). Detection is three-layered:
 
   1. Glob rules. `symbol` is a case-insensitive glob (`USDT*`, `*USDC`, `WBTC*`),
      `name` a substring, `token_id` / `chain` pin a rule to one asset. Built-ins
-     live in tracker/config.py; user rules in profiles/<name>/stablecoins.json.
+     live in tracker/config.py; user rules in profiles/<name>/asset_labels.json.
   2. Price band. A token priced inside STABLECOIN_PRICE_BAND whose symbol or name
      carries a dollar marker counts as a stablecoin even with no rule naming it —
      this is what catches a pegged asset under an unfamiliar ticker.
@@ -55,9 +55,21 @@ def normalize_label(value):
     return v if valid_label(v) else DEFAULT_LABEL
 
 
-def _file_mtime():
+def _migrate_legacy_file():
+    """One-time move of profiles/**/stablecoins.json -> asset_labels.json."""
     try:
-        f = profiles.stablecoins_file()
+        old, new = profiles.legacy_asset_labels_file(), profiles.asset_labels_file()
+        if os.path.exists(old) and not os.path.exists(new):
+            os.makedirs(os.path.dirname(new), exist_ok=True)
+            os.replace(old, new)
+    except OSError:
+        pass
+
+
+def _file_mtime():
+    _migrate_legacy_file()
+    try:
+        f = profiles.asset_labels_file()
         return os.path.getmtime(f) if os.path.exists(f) else None
     except OSError:
         return None
@@ -75,13 +87,15 @@ def reset_names_cache():
         _names_cache = {"mtime": None, "data": None}
 
 
-def stablecoins_file():
-    return profiles.stablecoins_file()
+def asset_labels_file():
+    _migrate_legacy_file()
+    return profiles.asset_labels_file()
 
 
 def _load_user_entries():
+    _migrate_legacy_file()
     try:
-        with open(profiles.stablecoins_file(), "r", encoding="utf-8") as f:
+        with open(profiles.asset_labels_file(), "r", encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, list) else []
     except FileNotFoundError:
@@ -91,7 +105,7 @@ def _load_user_entries():
 
 
 def _save_user_entries(entries):
-    path = profiles.stablecoins_file()
+    path = profiles.asset_labels_file()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(entries, f, ensure_ascii=False, indent=2)

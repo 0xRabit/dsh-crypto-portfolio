@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=33">
+<link rel="stylesheet" href="/static/style.css?v=34">
 </head>
 <body>
 <header>
@@ -225,27 +225,27 @@
       </div>
     </details>
 
-    <details class="panel" id="secStable">
-      <summary class="panel-title"><span data-i18n="stableTitle">Stablecoin Rules</span>
-        <span class="hint" data-i18n="stableSummary">which tokens count as stablecoins</span>
+    <details class="panel" id="secLabelRules">
+      <summary class="panel-title"><span data-i18n="labelRulesTitle">Asset Label Rules</span>
+        <span class="hint" data-i18n="labelRulesSummary">which tokens count as which label</span>
       </summary>
       <div class="panel-body">
-        <p class="bl-desc" data-i18n="stableDesc">The asset-type donut sorts every token into stablecoins / bitcoin / other. Built-in wildcards (USDT*, *USDC, WBTC*, …) are matched against the symbol case-insensitively, and anything priced inside the peg band with a USD/DAI/FRAX marker is treated as a stablecoin automatically. Add a rule here, or click the tag on any row of the token table to include or exclude that exact token.</p>
-        <div id="stableAuto" class="hint"></div>
-        <div id="stableLabels" style="margin:8px 0"></div>
-        <div id="stableList" class="bl-list"></div>
+        <p class="bl-desc" data-i18n="labelRulesDesc">The asset-type donut sorts every token into stablecoins / bitcoin / other. Built-in wildcards (USDT*, *USDC, WBTC*, …) are matched against the symbol case-insensitively, and anything priced inside the peg band with a USD/DAI/FRAX marker is treated as a stablecoin automatically. Add a rule here, or click the tag on any row of the token table to include or exclude that exact token.</p>
+        <div id="labelAuto" class="hint"></div>
+        <div id="labelChips" style="margin:8px 0"></div>
+        <div id="labelRuleList" class="bl-list"></div>
         <div class="toolbar" style="margin-top:10px">
-          <input id="stSymbol" data-i18n-placeholder="stSymbolPh" placeholder="Symbol wildcard (e.g. USDT*, *USD)">
-          <input id="stCategory" list="stLabelList" data-i18n-placeholder="stLabelPh" placeholder="Label (e.g. stable, btc, eth, sol, hype, or your own)">
-          <datalist id="stLabelList"></datalist>
-          <input id="stTokenId" data-i18n-placeholder="stTokenIdPh" placeholder="Contract/mint (optional, exact)">
-          <input id="stChain" data-i18n-placeholder="stChainPh" placeholder="Chain (optional)">
-          <button id="btnAddStable" data-i18n="btnAddStable">+ Add Rule</button>
-          <span id="stableMsg" class="hint"></span>
+          <input id="labelSym" data-i18n-placeholder="labelSymPh" placeholder="Symbol wildcard (e.g. USDT*, *USD)">
+          <input id="labelName" list="labelNameList" data-i18n-placeholder="labelNamePh" placeholder="Label (e.g. stable, btc, eth, sol, hype, or your own)">
+          <datalist id="labelNameList"></datalist>
+          <input id="labelTokenId" data-i18n-placeholder="labelTokenIdPh" placeholder="Contract/mint (optional, exact)">
+          <input id="labelChain" data-i18n-placeholder="labelChainPh" placeholder="Chain (optional)">
+          <button id="btnAddLabelRule" data-i18n="btnAddLabelRule">+ Add Rule</button>
+          <span id="labelRuleMsg" class="hint"></span>
         </div>
         <div class="bl-list" style="margin-top:10px">
-          <div class="bl-sub" data-i18n="stableBuiltin">Built-in wildcards</div>
-          <div id="stableBuiltin"></div>
+          <div class="bl-sub" data-i18n="labelBuiltinTitle">Built-in wildcards</div>
+          <div id="labelBuiltin"></div>
         </div>
       </div>
     </details>
@@ -282,6 +282,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=25"></script>
+<script src="/static/app.js?v=26"></script>
 </body>
 </html>

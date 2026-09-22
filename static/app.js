@@ -60,18 +60,18 @@ const I18N = {
     walletShareCap: "By wallet", typeShareCap: "By asset type",
     catStable: "Stablecoins", catBtc: "Bitcoin", catEth: "Ethereum", catSol: "Solana",
     catHype: "HYPE", catOther: "Other", thLabel: "Label",
-    stLabelPh: "Label (e.g. stable, btc, eth, sol, hype, or your own)",
+    labelNamePh: "Label (e.g. stable, btc, eth, sol, hype, or your own)",
     labelChanged: "Label updated",
     labelPopPh: "Find or create a label…", labelCreate: "Create",
     labelRename: "Rename label", labelDelete: "Delete label",
     labelNeedName: "Type a label name first", labelDeleteConfirm: "Delete label \u201c%s\u201d? Its tokens go back to \u201cOther\u201d.",
     thStable: "Stable", markStable: "stablecoin", unmarkStable: "not a stablecoin",
-    stableTitle: "Stablecoin Rules", stableSummary: "which tokens count as stablecoins",
-    stableBuiltin: "Built-in wildcards", stableAutoBand: "Auto-detect price band",
-    stSymbolPh: "Symbol wildcard (e.g. USDT*, *USD)", stTokenIdPh: "Contract/mint (optional, exact)",
-    stChainPh: "Chain (optional)", btnAddStable: "+ Add Rule",
-    stableDesc: "The asset-type donut sorts every token into stablecoins / bitcoin / other. Built-in wildcards (USDT*, *USDC, WBTC*, …) match the symbol case-insensitively, and anything priced inside the peg band with a USD/DAI/FRAX marker counts as a stablecoin automatically. Add a rule here, or click the tag on any row of the token table to include or exclude that exact token.",
-    stableSaved: "Rule saved", stableRemoved: "Rule removed", stableFailed: "Rule failed: ",
+    labelRulesTitle: "Asset Label Rules", labelRulesSummary: "which tokens count as which label",
+    labelBuiltinTitle: "Built-in wildcards", labelAutoBand: "Auto-detect price band",
+    labelSymPh: "Symbol wildcard (e.g. USDT*, *USD)", labelTokenIdPh: "Contract/mint (optional, exact)",
+    labelChainPh: "Chain (optional)", btnAddLabelRule: "+ Add Rule",
+    labelRulesDesc: "Every token carries exactly one label, and the asset-type donut counts by it. The system detects stable / btc / eth / sol / hype on its own — by symbol wildcard (USDT*, *USDC, WBTC* …), plus a price band for stablecoins so a pegged asset under an unfamiliar ticker is still caught. Add a rule here, or use the picker on any row of the token table to set, create or rename a label.",
+    labelRuleSaved: "Rule saved", labelRuleRemoved: "Rule removed", labelRuleFailed: "Rule failed: ",
     showMore: "Show", remaining: "more", showingAll: "all rows shown",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
@@ -179,18 +179,18 @@ const I18N = {
     walletShareCap: "按钱包", typeShareCap: "按资产类型",
     catStable: "稳定币", catBtc: "比特币", catEth: "以太坊", catSol: "Solana",
     catHype: "HYPE", catOther: "其他", thLabel: "标签",
-    stLabelPh: "标签（如 stable、btc、eth、sol、hype，或自定义）",
+    labelNamePh: "标签（如 stable、btc、eth、sol、hype，或自定义）",
     labelChanged: "标签已更新",
     labelPopPh: "查找或新建标签…", labelCreate: "新建",
     labelRename: "重命名标签", labelDelete: "删除标签",
     labelNeedName: "请先输入标签名", labelDeleteConfirm: "删除标签「%s」？该标签下的代币会回到「其他」。",
     thStable: "稳定币", markStable: "标记为稳定币", unmarkStable: "取消稳定币标记",
-    stableTitle: "稳定币规则", stableSummary: "哪些代币算稳定币",
-    stableBuiltin: "内置通配符", stableAutoBand: "自动识别价格带",
-    stSymbolPh: "符号通配符（如 USDT*、*USD）", stTokenIdPh: "合约/铸币地址（可选，精确匹配）",
-    stChainPh: "网络（可选）", btnAddStable: "+ 添加规则",
-    stableDesc: "资产类型饼图把每个代币归入 稳定币 / 比特币 / 其他。内置通配符（USDT*、*USDC、WBTC* 等）对符号做不区分大小写的匹配；价格落在锚定区间内、且符号或名称含 USD/DAI/FRAX 标记的，自动算稳定币。可以在这里加规则，也可以直接点代币明细表里的标签，把某一个代币加入或排除。",
-    stableSaved: "规则已保存", stableRemoved: "规则已删除", stableFailed: "规则操作失败：",
+    labelRulesTitle: "资产类别规则", labelRulesSummary: "哪些代币算哪一类",
+    labelBuiltinTitle: "内置通配符", labelAutoBand: "自动识别价格带",
+    labelSymPh: "符号通配符（如 USDT*、*USD）", labelTokenIdPh: "合约/铸币地址（可选，精确匹配）",
+    labelChainPh: "网络（可选）", btnAddLabelRule: "+ 添加规则",
+    labelRulesDesc: "每个代币带且只带一个标签，资产类型饼图按它统计。系统自己识别 稳定币 / 比特币 / 以太坊 / Solana / HYPE —— 靠符号通配符（USDT*、*USDC、WBTC* 等），稳定币再叠加价格带，所以冷门符号的锚定资产也认得出来。可以在这里加规则，也可以直接用代币明细表里的标签选择器来设置、新建或重命名标签。",
+    labelRuleSaved: "规则已保存", labelRuleRemoved: "规则已删除", labelRuleFailed: "规则操作失败：",
     showMore: "再显示", remaining: "项", showingAll: "已显示全部",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
@@ -646,20 +646,20 @@ function bindEvents() {
   $("btnImportConfig").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", importConfig);
   // blacklist (settings page)
-  $("btnAddStable").addEventListener("click", async () => {
-    const sym = $("stSymbol").value.trim();
-    const tid = $("stTokenId").value.trim();
-    const cat = $("stCategory").value;
-    const chain = $("stChain").value.trim();
-    if (!sym && !tid) { $("stableMsg").textContent = t("atLeastOne"); return; }
+  $("btnAddLabelRule").addEventListener("click", async () => {
+    const sym = $("labelSym").value.trim();
+    const tid = $("labelTokenId").value.trim();
+    const cat = $("labelName").value;
+    const chain = $("labelChain").value.trim();
+    if (!sym && !tid) { $("labelRuleMsg").textContent = t("atLeastOne"); return; }
     try {
-      await postJSON("/api/stablecoins", { entry: {
+      await postJSON("/api/labels", { entry: {
         symbol: sym, token_id: tid, chain, category: cat, action: "include" } });
-      $("stSymbol").value = ""; $("stTokenId").value = ""; $("stChain").value = "";
-      $("stableMsg").textContent = t("stableSaved");
+      $("labelSym").value = ""; $("labelTokenId").value = ""; $("labelChain").value = "";
+      $("labelRuleMsg").textContent = t("labelRuleSaved");
       renderStablecoins();
       await reloadViewData();
-    } catch (e) { $("stableMsg").textContent = t("stableFailed") + e.message; }
+    } catch (e) { $("labelRuleMsg").textContent = t("labelRuleFailed") + e.message; }
   });
     $("btnAddBlacklist").addEventListener("click", async () => {
     const entry = {
@@ -1298,7 +1298,7 @@ function popRender(filter) {
 async function labelApi(path, body) {
   try {
     await postJSON(path, body);
-  } catch (e) { showError(t("stableFailed") + e.message); }
+  } catch (e) { showError(t("labelRuleFailed") + e.message); }
 }
 
 async function popApply(item) {
@@ -1307,11 +1307,11 @@ async function popApply(item) {
   const exact = row.token_id || "";
   popClose();
   try {
-    await postJSON("/api/stablecoins", { entry: {
+    await postJSON("/api/labels", { entry: {
       category: item.label, action: "include",
       token_id: exact, symbol: exact ? "" : row.symbol, chain: row.chain } });
     await reloadViewData();
-  } catch (e) { showError(t("stableFailed") + e.message); }
+  } catch (e) { showError(t("labelRuleFailed") + e.message); }
 }
 
 function bindLabelPop() {
@@ -1630,15 +1630,15 @@ function niceMax(v) {
 /* ---------------- blacklist / wallets / sources ---------------- */
 async function renderStablecoins() {
   try {
-    const d = await api("/api/stablecoins");
+    const d = await api("/api/labels");
     const fn = d.file ? d.file.split(/[\\/]/).pop() : "";
-    $("stableAuto").textContent = t("stableAutoBand") + ": " +
+    $("labelAuto").textContent = t("labelAutoBand") + ": " +
       (d.auto && d.auto.price_band ? d.auto.price_band.join(" – ") : "") + "  ·  " + fn;
-    const list = $("stableList");
+    const list = $("labelRuleList");
     list.innerHTML = "";
     const user = d.user || [];
     if (!user.length) {
-      list.innerHTML = '<div class="bl-empty">' + t("stableSummary") + "</div>";
+      list.innerHTML = '<div class="bl-empty">' + t("labelRulesSummary") + "</div>";
     } else {
       user.forEach((e) => {
         const row = document.createElement("div");
@@ -1653,23 +1653,23 @@ async function renderStablecoins() {
         del.textContent = "✕ " + t("remove");
         del.addEventListener("click", async () => {
           try {
-            await postJSON("/api/stablecoins/remove", { index: e.index });
-            $("stableMsg").textContent = t("stableRemoved");
+            await postJSON("/api/labels/remove", { index: e.index });
+            $("labelRuleMsg").textContent = t("labelRuleRemoved");
             renderStablecoins();
-          } catch (err) { $("stableMsg").textContent = t("stableFailed") + err.message; }
+          } catch (err) { $("labelRuleMsg").textContent = t("labelRuleFailed") + err.message; }
         });
         row.appendChild(del);
         list.appendChild(row);
       });
     }
-    const dl = $("stLabelList");
+    const dl = $("labelNameList");
     dl.innerHTML = (d.labels || []).map((l) =>
       '<option value="' + esc(l) + '">' + esc(labelText(l)) + "</option>").join("");
     // every label with its rule count, renameable/deletable where a user label is
     // concerned (a built-in keeps its id and only takes a display name)
     const counts = {};
     user.forEach((e) => { counts[e.category] = (counts[e.category] || 0) + 1; });
-    $("stableLabels").innerHTML = (d.labels || []).map((l, i) => {
+    $("labelChips").innerHTML = (d.labels || []).map((l, i) => {
       const builtin = (d.builtin_labels || []).includes(l);
       const acts = '<button class="lp-act" data-act="rename" data-label="' + esc(l) + '">\u270e</button>' +
         (builtin ? "" : '<button class="lp-act" data-act="delete" data-label="' + esc(l) + '">\u2715</button>');
@@ -1678,7 +1678,7 @@ async function renderStablecoins() {
         '<b style="font-size:12px">' + esc(labelText(l)) + "</b>" +
         '<span class="lp-hint">' + (counts[l] || 0) + "</span>" + acts + "</span>";
     }).join("");
-    $("stableLabels").querySelectorAll(".lp-act").forEach((b) => {
+    $("labelChips").querySelectorAll(".lp-act").forEach((b) => {
       b.addEventListener("click", async () => {
         const name = b.dataset.label;
         if (b.dataset.act === "delete") {
@@ -1693,11 +1693,11 @@ async function renderStablecoins() {
         await renderStablecoins();
       });
     });
-    const bi = $("stableBuiltin");
+    const bi = $("labelBuiltin");
     bi.innerHTML = (d.builtin || []).map((e) =>
       '<span class="st-chip ' + esc(e.category) + '">' + esc(e.symbol) + "</span>").join("");
   } catch (e) {
-    $("stableMsg").textContent = t("stableFailed") + e.message;
+    $("labelRuleMsg").textContent = t("labelRuleFailed") + e.message;
   }
 }
 

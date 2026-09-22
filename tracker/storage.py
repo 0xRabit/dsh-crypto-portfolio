@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from . import config, profiles
 from .blacklist import filter_rows
-from . import stablecoins
+from . import assetlabels as assetlabels
 from .views import view_of
 
 _here = os.path.dirname(os.path.abspath(__file__))
@@ -188,7 +188,7 @@ def get_tokens(date):
                 "ORDER BY usd DESC", (date,)).fetchall()
             # classification is applied at read time, so editing the rules also
             # reclassifies every historical snapshot
-            return stablecoins.annotate(filter_rows([dict(r) for r in rows]))
+            return assetlabels.annotate(filter_rows([dict(r) for r in rows]))
         finally:
             conn.close()
 

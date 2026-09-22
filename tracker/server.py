@@ -15,7 +15,7 @@ from . import cex
 from . import profiles
 from . import schedule as sched
 from . import sources
-from . import stablecoins
+from . import assetlabels as assetlabels
 from . import status
 from . import walletstore
 from .debank import chain_names
@@ -124,9 +124,9 @@ class Handler(BaseHTTPRequestHandler):
                 d = qs.get("date", [None])[0] or storage.get_latest_snapshot()
                 d = d["date"] if isinstance(d, dict) else d
                 code, body = _json({"date": d, "tokens": storage.get_tokens(d),
-                                    "labels": stablecoins.known_labels(),
-                                    "label_names": stablecoins.label_names(),
-                                    "builtin_labels": list(stablecoins.BUILTIN_LABELS) + [stablecoins.DEFAULT_LABEL]})
+                                    "labels": assetlabels.known_labels(),
+                                    "label_names": assetlabels.label_names(),
+                                    "builtin_labels": list(assetlabels.BUILTIN_LABELS) + [assetlabels.DEFAULT_LABEL]})
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/status":
                 code, body = _json(dict(_refresh_state))
@@ -134,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/snapshots":
                 code, body = _json(storage.get_snapshot_dates())
                 self._reply(code, body, "application/json; charset=utf-8")
-            elif path == "/api/stablecoins":
+            elif path == "/api/labels":
                 code, body = _json(self._stablecoins_view())
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/blacklist":
@@ -180,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
             "sources": sources.load(),
             "wallets": walletstore.user_wallets(),
             "blacklist": bl.user_entries(),
-            "stablecoins": stablecoins.user_entries(),
+            "stablecoins": assetlabels.user_entries(),
             "note": "sources/wallets/blacklist 配置文件备份；导入后点「刷新数据」生效",
         }
 
@@ -196,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
             bl.save_all(blacklist_entries)
         stable_rules = (cfg or {}).get("stablecoins")
         if isinstance(stable_rules, list):
-            stablecoins.save_all(stable_rules)
+            assetlabels.save_all(stable_rules)
         sources.reset_failover()
         return self._config_export()
 
@@ -258,25 +258,25 @@ class Handler(BaseHTTPRequestHandler):
                 if not bl.remove_entry(index):
                     raise ValueError("invalid index or built-in entry cannot be removed")
                 self._reply_json(self._blacklist_view())
-            elif path == "/api/stablecoins":
+            elif path == "/api/labels":
                 entry = (body or {}).get("entry") or {}
                 if not isinstance(entry, dict):
                     raise ValueError("entry must be a JSON object")
-                stablecoins.add_entry(entry)
+                assetlabels.add_entry(entry)
                 self._reply_json(self._stablecoins_view())
             elif path == "/api/labels/rename":
-                kind, label = stablecoins.rename_label((body or {}).get("from"),
+                kind, label = assetlabels.rename_label((body or {}).get("from"),
                                                        (body or {}).get("to"))
                 view = self._stablecoins_view()
                 view["kind"] = kind
                 view["label"] = label
                 self._reply_json(view)
             elif path == "/api/labels/delete":
-                stablecoins.delete_label((body or {}).get("name"))
+                assetlabels.delete_label((body or {}).get("name"))
                 self._reply_json(self._stablecoins_view())
-            elif path == "/api/stablecoins/remove":
+            elif path == "/api/labels/remove":
                 index = int((body or {}).get("index", -1))
-                if not stablecoins.remove_entry(index):
+                if not assetlabels.remove_entry(index):
                     raise ValueError("invalid index")
                 self._reply_json(self._stablecoins_view())
             elif path == "/api/wallets":
@@ -384,8 +384,8 @@ class Handler(BaseHTTPRequestHandler):
         """Re-point all config modules at the newly active profile and make
         sure the new profile's database schema exists."""
         bl.reset_cache()
-        stablecoins.reset_cache()
-        stablecoins.reset_names_cache()
+        assetlabels.reset_cache()
+        assetlabels.reset_names_cache()
         walletstore.reset_cache()
         sources.load(force=True)
         sources.reset_failover()
@@ -404,14 +404,14 @@ class Handler(BaseHTTPRequestHandler):
     def _stablecoins_view(self):
         """Rules for the asset-type donut. `index` counts USER rules only (built-ins
         cannot be deleted), plus one informational auto-detect row."""
-        builtin = stablecoins.builtin_entries()
-        user = stablecoins.user_entries()
-        return {"file": stablecoins.stablecoins_file(),
+        builtin = assetlabels.builtin_entries()
+        user = assetlabels.user_entries()
+        return {"file": assetlabels.asset_labels_file(),
                 "builtin": builtin,
                 "user": [dict(e, index=i) for i, e in enumerate(user)],
-                "labels": stablecoins.known_labels(),
-                "label_names": stablecoins.label_names(),
-                "builtin_labels": list(stablecoins.BUILTIN_LABELS) + [stablecoins.DEFAULT_LABEL],
+                "labels": assetlabels.known_labels(),
+                "label_names": assetlabels.label_names(),
+                "builtin_labels": list(assetlabels.BUILTIN_LABELS) + [assetlabels.DEFAULT_LABEL],
                 "auto": {"price_band": list(config.STABLECOIN_PRICE_BAND),
                          "note": "priced inside the band with a USD/DAI/FRAX marker"}}
 

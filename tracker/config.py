@@ -12,7 +12,7 @@ WALLETS = []  # public deployments keep wallets in portfolio_wallets.json
 # Asset-type classification (the "asset type" donut). Glob patterns matched
 # case-insensitively against the token symbol, plus a price band so pegged assets
 # with unfamiliar tickers are still caught. Edit these, or add/remove rules from
-# the dashboard (profiles/<name>/stablecoins.json).
+# the dashboard (profiles/<name>/asset_labels.json).
 STABLECOIN_SYMBOLS = [
     # dollar-pegged majors and their bridged/wrapped forms
     "USDT*", "USDC*", "*USDT", "*USDC", "USDT.E", "USDC.E", "USDBC", "USDTB",

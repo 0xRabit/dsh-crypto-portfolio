@@ -79,6 +79,12 @@ First public release.
   takes a display name, so detection never breaks. Settings lists every label
   with its rule count, and lets user labels be deleted (built-ins cannot).
 
+- **Renamed for accuracy**: the Settings section is now *Asset Label Rules*
+  (was *Stablecoin Rules*), because it governs every label, not just
+  stablecoins. The rule file moved to `asset_labels.json` and the module to
+  `tracker/assetlabels.py`; the old `stablecoins.json` is migrated on first
+  read, so existing rules carry over untouched.
+
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

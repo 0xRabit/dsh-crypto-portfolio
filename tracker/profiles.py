@@ -131,7 +131,13 @@ def labels_file():
     return os.path.join(profile_dir(active()), "labels.json")
 
 
-def stablecoins_file():
+def asset_labels_file():
+    """Per-profile asset-label rules. Was stablecoins.json before labels became a
+    general concept; `legacy_asset_labels_file` lets the loader migrate it once."""
+    return os.path.join(profile_dir(active()), "asset_labels.json")
+
+
+def legacy_asset_labels_file():
     return os.path.join(profile_dir(active()), "stablecoins.json")
 
 
