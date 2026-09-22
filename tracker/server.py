@@ -123,7 +123,8 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/tokens":
                 d = qs.get("date", [None])[0] or storage.get_latest_snapshot()
                 d = d["date"] if isinstance(d, dict) else d
-                code, body = _json({"date": d, "tokens": storage.get_tokens(d)})
+                code, body = _json({"date": d, "tokens": storage.get_tokens(d),
+                                    "labels": stablecoins.known_labels()})
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/status":
                 code, body = _json(dict(_refresh_state))
@@ -395,6 +396,7 @@ class Handler(BaseHTTPRequestHandler):
         return {"file": stablecoins.stablecoins_file(),
                 "builtin": builtin,
                 "user": [dict(e, index=i) for i, e in enumerate(user)],
+                "labels": stablecoins.known_labels(),
                 "auto": {"price_band": list(config.STABLECOIN_PRICE_BAND),
                          "note": "priced inside the band with a USD/DAI/FRAX marker"}}
 

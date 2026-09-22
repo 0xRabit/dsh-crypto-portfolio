@@ -42,10 +42,63 @@ class ClassifyTest(unittest.TestCase):
             with self.subTest(symbol=sym):
                 self.assertEqual(stablecoins.classify(row(sym, price=63000)), stablecoins.BTC)
 
+    def test_eth_sol_hype_are_detected(self):
+        for sym, label in (("ETH", "eth"), ("WETH", "eth"), ("stETH", "eth"), ("wstETH", "eth"),
+                           ("cbETH", "eth"), ("rETH", "eth"),
+                           ("SOL", "sol"), ("WSOL", "sol"), ("mSOL", "sol"), ("jitoSOL", "sol"),
+                           ("HYPE", "hype"), ("WHYPE", "hype"), ("kHYPE", "hype")):
+            with self.subTest(symbol=sym):
+                self.assertEqual(stablecoins.classify(row(sym, price=1.0)), label)
+
+    def test_staked_positions_match_their_base_symbol(self):
+        """Brokers name staked positions "SOL (staked)"; a plain glob never reached
+        them, which left the largest positions of all sitting in "other"."""
+        self.assertEqual(stablecoins.classify(row("SOL (staked)", price=150)), "sol")
+        self.assertEqual(stablecoins.classify(row("HYPE (staked)", price=30)), "hype")
+        self.assertEqual(stablecoins.classify(row("ETH (staked)", price=2500)), "eth")
+        self.assertEqual(stablecoins.classify(row("SOL/ankr", price=150)), "sol")
+
     def test_other(self):
-        for sym, price in (("ETH", 2500), ("SOL", 150), ("JUP", 0.8), ("HYPE", 30)):
+        for sym, price in (("JUP", 0.8), ("MAGIC", 1.0), ("DOGE", 0.2), ("PENDLE", 4.0)):
             with self.subTest(symbol=sym):
                 self.assertEqual(stablecoins.classify(row(sym, price=price)), stablecoins.OTHER)
+
+    def test_a_row_carries_exactly_one_label(self):
+        """Every token gets one label; a second rule for the same target replaces
+        the first so the user's LAST choice is the one that sticks."""
+        r = row("USDC", price=1.0, chain="sol", token_id="MINT1")
+        self.assertEqual(stablecoins.classify(r), stablecoins.STABLE)
+        stablecoins.add_entry({"category": "other", "action": "exclude",
+                               "token_id": "MINT1", "chain": "sol"})
+        self.assertEqual(stablecoins.classify(r), stablecoins.OTHER)
+        # the user changes their mind: the stale exclude must not keep winning
+        stablecoins.add_entry({"category": "stable", "action": "include",
+                               "token_id": "MINT1", "chain": "sol"})
+        self.assertEqual(stablecoins.classify(r), stablecoins.STABLE)
+        self.assertEqual(len(stablecoins.user_entries()), 1)
+
+    def test_a_user_label_overrides_a_builtin_wildcard(self):
+        """A human decision has to beat a built-in glob. This used to fail: the
+        built-ins were consulted first, so relabelling USDC (which the `*USD*`
+        built-in claims) silently did nothing."""
+        r = row("USDC", "USD Coin", price=1.0, chain="linea", token_id="0xLINEA")
+        self.assertEqual(stablecoins.classify(r), stablecoins.STABLE)
+        stablecoins.add_entry({"category": "defi", "action": "include",
+                               "token_id": "0xLINEA", "chain": "linea"})
+        self.assertEqual(stablecoins.classify(r), "defi")
+        # ...without disturbing USDC on any other chain
+        self.assertEqual(stablecoins.classify(row("USDC", price=1.0, chain="eth")),
+                         stablecoins.STABLE)
+
+    def test_user_defined_labels_are_first_class(self):
+        stablecoins.add_entry({"symbol": "PENX", "category": "pendle"})
+        self.assertEqual(stablecoins.classify(row("PENX", price=4.0)), "pendle")
+        labels = stablecoins.known_labels()
+        self.assertIn("pendle", labels)
+        # auto-detected labels keep their order, a custom one slots in before "other"
+        self.assertEqual(labels[-1], "other")
+        self.assertLess(labels.index("stable"), labels.index("btc"))
+        self.assertLess(labels.index("pendle"), labels.index("other"))
 
     def test_price_band_catches_unlisted_pegs_but_only_near_one_dollar(self):
         # A ticker no wildcard covers, whose NAME marks it as a dollar asset, is
@@ -90,25 +143,39 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(stablecoins.classify(row("USDT", chain="eth", price=1.0)),
                          stablecoins.STABLE)
 
-    def test_duplicate_and_invalid_rules_rejected(self):
-        stablecoins.add_entry({"symbol": "DUPX", "category": "stable"})
+    def test_invalid_rules_rejected(self):
         with self.assertRaises(ValueError):
-            stablecoins.add_entry({"symbol": "DUPX", "category": "stable"})
+            stablecoins.add_entry({"symbol": "X"})                       # no label
         with self.assertRaises(ValueError):
-            stablecoins.add_entry({"symbol": "X", "category": "nonsense"})
+            stablecoins.add_entry({"symbol": "X", "category": "a" * 40})  # too long
         with self.assertRaises(ValueError):
-            stablecoins.add_entry({"category": "stable"})   # nothing to match on
+            stablecoins.add_entry({"symbol": "X", "category": "bad;label"})
+        with self.assertRaises(ValueError):
+            stablecoins.add_entry({"category": "stable"})                # nothing to match
+        with self.assertRaises(ValueError):
+            stablecoins.add_entry({"symbol": "X", "category": "ok", "action": "sideways"})
+        # an invented label IS allowed — labels are data, not an enum
+        stablecoins.add_entry({"symbol": "OKX1", "category": "my label 1"})
+        self.assertIn("my label 1", stablecoins.known_labels())
+
+    def test_label_validation(self):
+        for good in ("stable", "btc", "myLabel", "my label", "a-b_c.d", "L2"):
+            self.assertTrue(stablecoins.valid_label(good), good)
+        for bad in ("", " ", "x" * 25, "bad;x", "bad/x", "<script>"):
+            self.assertFalse(stablecoins.valid_label(bad), bad)
 
     def test_annotate_and_category_totals_are_additive(self):
         rows = [row("USDC", price=1.0, usd=100.0), row("BTC", price=60000, usd=250.0),
-                row("ETH", price=2500, usd=50.0)]
+                row("ETH", price=2500, usd=50.0), row("PEPE", price=0.001, usd=7.0)]
         ann = stablecoins.annotate(rows)
-        self.assertEqual([r["cat"] for r in ann], ["stable", "btc", "other"])
+        self.assertEqual([r["cat"] for r in ann], ["stable", "btc", "eth", "other"])
         totals = stablecoins.category_totals(rows)
         self.assertEqual(totals[stablecoins.STABLE], 100.0)
         self.assertEqual(totals[stablecoins.BTC], 250.0)
-        self.assertEqual(totals[stablecoins.OTHER], 50.0)
-        self.assertEqual(sum(totals.values()), 400.0)   # nothing lost or double counted
+        self.assertEqual(totals["eth"], 50.0)
+        self.assertEqual(totals[stablecoins.OTHER], 7.0)
+        self.assertEqual(sum(totals.values()), 407.0)   # nothing lost or double counted
+        self.assertEqual(list(totals), stablecoins.known_labels())  # covers every label
         # annotate must not mutate the caller's rows
         self.assertNotIn("cat", rows[0])
 
@@ -121,6 +188,10 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(on_disk[0]["symbol"], "PERSISTX")
         stablecoins.reset_cache()
         self.assertEqual(len(stablecoins.user_entries()), 1)
+
+    def test_builtin_list_covers_every_auto_label(self):
+        cats = {e["category"] for e in stablecoins.builtin_entries()}
+        self.assertEqual(cats, {"stable", "btc", "eth", "sol", "hype"})
 
     def test_builtin_list_has_no_catch_all_pattern(self):
         """A `*` built-in would classify every token as a stablecoin."""

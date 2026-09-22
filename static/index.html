@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=30">
+<link rel="stylesheet" href="/static/style.css?v=32">
 </head>
 <body>
 <header>
@@ -129,7 +129,7 @@
               <th data-key="amount" class="num" data-i18n="thAmount">Amount</th>
               <th data-key="price" class="num" data-i18n="thPrice">Price (USD)</th>
               <th data-key="usd" class="num" data-i18n="thUsd">Balance (USD)</th>
-              <th class="op stable-col" data-i18n="thStable">Stable</th>
+              <th class="op stable-col" data-i18n="thLabel">Label</th>
               <th class="op" data-i18n="thOp">Action</th>
             </tr>
           </thead>
@@ -228,11 +228,8 @@
         <div id="stableList" class="bl-list"></div>
         <div class="toolbar" style="margin-top:10px">
           <input id="stSymbol" data-i18n-placeholder="stSymbolPh" placeholder="Symbol wildcard (e.g. USDT*, *USD)">
-          <select id="stCategory">
-            <option value="stable">stablecoin</option>
-            <option value="btc">bitcoin</option>
-            <option value="other">other (exclude)</option>
-          </select>
+          <input id="stCategory" list="stLabelList" data-i18n-placeholder="stLabelPh" placeholder="Label (e.g. stable, btc, eth, sol, hype, or your own)">
+          <datalist id="stLabelList"></datalist>
           <input id="stTokenId" data-i18n-placeholder="stTokenIdPh" placeholder="Contract/mint (optional, exact)">
           <input id="stChain" data-i18n-placeholder="stChainPh" placeholder="Chain (optional)">
           <button id="btnAddStable" data-i18n="btnAddStable">+ Add Rule</button>
@@ -277,6 +274,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=22"></script>
+<script src="/static/app.js?v=24"></script>
 </body>
 </html>

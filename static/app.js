@@ -58,7 +58,10 @@ const I18N = {
     keysMasked: "Keys are masked — use Show keys to load the real values from this machine.",
     latest: "latest", viewingHistory: "Viewing a historical snapshot",
     walletShareCap: "By wallet", typeShareCap: "By asset type",
-    catStable: "Stablecoins", catBtc: "Bitcoin", catOther: "Other",
+    catStable: "Stablecoins", catBtc: "Bitcoin", catEth: "Ethereum", catSol: "Solana",
+    catHype: "HYPE", catOther: "Other", thLabel: "Label",
+    stLabelPh: "Label (e.g. stable, btc, eth, sol, hype, or your own)",
+    labelChanged: "Label updated",
     thStable: "Stable", markStable: "stablecoin", unmarkStable: "not a stablecoin",
     stableTitle: "Stablecoin Rules", stableSummary: "which tokens count as stablecoins",
     stableBuiltin: "Built-in wildcards", stableAutoBand: "Auto-detect price band",
@@ -171,7 +174,10 @@ const I18N = {
     keysMasked: "密钥已打码；点「显示密钥」才会从本机读取明文。",
     latest: "最新", viewingHistory: "正在查看历史快照",
     walletShareCap: "按钱包", typeShareCap: "按资产类型",
-    catStable: "稳定币", catBtc: "比特币", catOther: "其他",
+    catStable: "稳定币", catBtc: "比特币", catEth: "以太坊", catSol: "Solana",
+    catHype: "HYPE", catOther: "其他", thLabel: "标签",
+    stLabelPh: "标签（如 stable、btc、eth、sol、hype，或自定义）",
+    labelChanged: "标签已更新",
     thStable: "稳定币", markStable: "标记为稳定币", unmarkStable: "取消稳定币标记",
     stableTitle: "稳定币规则", stableSummary: "哪些代币算稳定币",
     stableBuiltin: "内置通配符", stableAutoBand: "自动识别价格带",
@@ -641,8 +647,7 @@ function bindEvents() {
     if (!sym && !tid) { $("stableMsg").textContent = t("atLeastOne"); return; }
     try {
       await postJSON("/api/stablecoins", { entry: {
-        symbol: sym, token_id: tid, chain, category: cat,
-        action: cat === "other" ? "exclude" : "include" } });
+        symbol: sym, token_id: tid, chain, category: cat, action: "include" } });
       $("stSymbol").value = ""; $("stTokenId").value = ""; $("stChain").value = "";
       $("stableMsg").textContent = t("stableSaved");
       renderStablecoins();
@@ -863,6 +868,7 @@ async function loadDate(date) {
     ]);
     state.view = view;
     state.tokens = tokens.tokens;
+    state.labels = tokens.labels || state.labels;
     renderAll();
     $("tokenDate").textContent = "(" + t("snapDate") + " " + date + ")";
     $("lastUpdated").textContent = t("snapDate") + " " + date + " · " + t("recorded") + " " +
@@ -1080,13 +1086,16 @@ function renderTable() {
     '<td class="num amount">' + fmtAmount(x.amount) + "</td>" +
     '<td class="num">' + fmtUsd(x.price) + "</td>" +
     '<td class="num">' + fmtUsd(x.usd) + "</td>" +
-    '<td class="op stable-col">' +
-      '<button class="st-tag' + (x.cat === "stable" ? " on" : "") + '"' +
-        ' data-wallet="' + esc(x.wallet) + '" data-symbol="' + esc(x.symbol) + '"' +
-        ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '"' +
-        ' data-stable="' + (x.cat === "stable" ? "1" : "0") + '"' +
-        ' title="' + esc(t(x.cat === "stable" ? "unmarkStable" : "markStable")) + '">' +
-        (x.cat === "stable" ? "\u2713 " : "") + esc(t("thStable")) + "</button></td>" +
+    // one row carries exactly one label, so this is a single-select; picking one
+    // writes a rule for this exact token, and the server replaces any previous
+    // rule for the same target so the last choice is the one that sticks
+    '<td class="op stable-col"><select class="cat-select cat-' + esc(x.cat || "other") + '"' +
+      ' data-wallet="' + esc(x.wallet) + '" data-symbol="' + esc(x.symbol) + '"' +
+      ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' +
+      (state.labels || ["other"]).map(function (lab) {
+        return '<option value="' + esc(lab) + '"' + (lab === (x.cat || "other") ? " selected" : "") +
+          ">" + esc(labelText(lab)) + "</option>";
+      }).join("") + "</select></td>" +
     '<td class="op"><button class="bl-btn" data-wallet="' + esc(x.wallet) + '"' +
       ' data-symbol="' + esc(x.symbol) + '" data-name="' + esc(x.name || "") + '"' +
       ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' + t("blBtn") + "</button></td>" +
@@ -1094,23 +1103,14 @@ function renderTable() {
   ).join("");
   // The tag toggles an exact-token rule, so a wildcard hit or the price
   // heuristic can be corrected for one asset without editing the built-in list.
-  tbody.querySelectorAll(".st-tag").forEach((b) => b.addEventListener("click", async () => {
-    const exact = b.dataset.tokenId || "";
-    const base = { token_id: exact, symbol: exact ? "" : b.dataset.symbol, chain: b.dataset.chain };
-    const entry = b.dataset.stable === "1"
-      ? Object.assign({ category: "other", action: "exclude" }, base)
-      : Object.assign({ category: "stable", action: "include" }, base);
+  tbody.querySelectorAll(".cat-select").forEach((sel) => sel.addEventListener("change", async () => {
+    const exact = sel.dataset.tokenId || "";
     try {
-      if (b.dataset.stable === "1") {
-        // drop a conflicting user rule first, or the pair fights itself
-        const d = await api("/api/stablecoins");
-        const hit = (d.user || []).find((e) => (exact
-          ? (e.token_id || "").toLowerCase() === exact.toLowerCase()
-          : (e.symbol || "").toLowerCase() === b.dataset.symbol.toLowerCase()));
-        if (hit) await postJSON("/api/stablecoins/remove", { index: hit.index });
-      }
-      await postJSON("/api/stablecoins", { entry });
-      await reloadViewData();   // re-reads tokens with the new rule
+      await postJSON("/api/stablecoins", { entry: {
+        category: sel.value, action: "include",
+        token_id: exact, symbol: exact ? "" : sel.dataset.symbol,
+        chain: sel.dataset.chain } });
+      await reloadViewData();
     } catch (e) { showError(t("stableFailed") + e.message); }
   }));
 
@@ -1137,7 +1137,20 @@ function renderTable() {
 /* ---------------- asset type donut ---------------- */
 // Three buckets: stablecoins / bitcoin / other. The server classifies each token
 // (tracker/stablecoins.py) and ships a `cat` field, so the client only aggregates.
-const CAT_COLORS = { stable: "#3fb950", btc: "#f0b95c", other: "#58a6ff" };
+// Fixed hues for the labels the system detects itself; anything the user invents
+// takes the next palette colour, so a custom label still gets its own slice.
+const LABEL_COLORS = { stable: "#3fb950", btc: "#f0b95c", eth: "#8b7cf6",
+                       sol: "#14f195", hype: "#2dd4bf", other: "#58a6ff" };
+const LABEL_PALETTE = ["#f778ba", "#e3b341", "#79c0ff", "#ffa657", "#a5d6ff", "#d2a8ff"];
+function labelColor(name, idx) {
+  return LABEL_COLORS[name] || LABEL_PALETTE[idx % LABEL_PALETTE.length];
+}
+/** Display name: translated for the auto labels, verbatim for an invented one. */
+function labelText(name) {
+  const key = { stable: "catStable", btc: "catBtc", eth: "catEth", sol: "catSol",
+                hype: "catHype", other: "catOther" }[name];
+  return key ? t(key) : name;
+}
 
 /** USD per asset-type bucket over the same filtered rows the table shows. */
 function typeTotals() {
@@ -1146,12 +1159,14 @@ function typeTotals() {
     .filter((w) => (f.category === "all" || w.type === f.category) &&
                    (!f.wallet || w.wallet === f.wallet))
     .map((w) => w.wallet));
-  const totals = { stable: 0, btc: 0, other: 0 };
+  const totals = {};
+  for (const label of state.labels || ["other"]) totals[label] = 0;
   for (const x of state.tokens || []) {
     if (!names.has(x.wallet)) continue;
     if (f.chain && x.chain !== f.chain) continue;
-    const cat = x.cat === "stable" || x.cat === "btc" ? x.cat : "other";
-    totals[cat] += Number(x.usd) || 0;
+    // the server assigns one label per row; anything unknown lands in "other"
+    const cat = (state.labels || []).includes(x.cat) ? x.cat : "other";
+    totals[cat] = (totals[cat] || 0) + (Number(x.usd) || 0);
   }
   return totals;
 }
@@ -1160,21 +1175,23 @@ function renderTypePie() {
   // NOTE: do not name this `t` — that shadows the global t() translator used
   // two lines down, and the TypeError takes the whole renderAll() with it.
   const byCat = typeTotals();
-  const order = ["stable", "btc", "other"];
-  const label = { stable: t("catStable"), btc: t("catBtc"), other: t("catOther") };
-  const items = order.map((k) => ({ label: label[k], value: byCat[k], color: CAT_COLORS[k] }))
+  const order = state.labels || ["other"];
+  const items = order.map((k, i) => ({ label: labelText(k), value: byCat[k] || 0,
+                                       color: labelColor(k, i) }))
     .filter((it) => it.value > 0);
-  const total = order.reduce((a, k) => a + byCat[k], 0);
+  const total = order.reduce((a, k) => a + (byCat[k] || 0), 0);
   drawPie($("typePie"), items, total, "typePieTip");
-  const pctOf = (k) => (total ? (byCat[k] / total) * 100 : 0);
-  $("typeLegend").innerHTML = order.map((k) =>
-    '<div class="type-row">' +
-      '<span class="t-dot" style="background:' + CAT_COLORS[k] + '"></span>' +
-      '<span class="lg-name">' + esc(label[k]) + "</span>" +
+  const pctOf = (k) => (total ? ((byCat[k] || 0) / total) * 100 : 0);
+  // only labels that actually carry value appear in the legend, so a user with no
+  // HYPE is not shown an empty row
+  $("typeLegend").innerHTML = order.filter((k) => (byCat[k] || 0) > 0).map((k) =>
+    '<div class="type-row" data-label="' + esc(k) + '">' +
+      '<span class="t-dot" style="background:' + labelColor(k, order.indexOf(k)) + '"></span>' +
+      '<span class="lg-name">' + esc(labelText(k)) + "</span>" +
       '<span class="lg-pct">' + pctOf(k).toFixed(1) + "%</span></div>").join("");
   // A2: text alternative for the second canvas
   $("typePie").setAttribute("aria-label", t("typeShareCap") + ": " +
-    order.map((k) => label[k] + " " + pctOf(k).toFixed(1) + "%").join(", "));
+    order.map((k) => labelText(k) + " " + pctOf(k).toFixed(1) + "%").join(", "));
 }
 
 /* ---------------- pie chart ---------------- */
@@ -1509,6 +1526,9 @@ async function renderStablecoins() {
         list.appendChild(row);
       });
     }
+    const dl = $("stLabelList");
+    dl.innerHTML = (d.labels || []).map((l) =>
+      '<option value="' + esc(l) + '">' + esc(labelText(l)) + "</option>").join("");
     const bi = $("stableBuiltin");
     bi.innerHTML = (d.builtin || []).map((e) =>
       '<span class="st-chip ' + esc(e.category) + '">' + esc(e.symbol) + "</span>").join("");

@@ -61,16 +61,17 @@ First public release.
 - **Interaction.** Refresh can be cancelled mid-run (nothing is written), the filter
   choice persists across reloads, the newest snapshot is marked in the date picker
   and viewing history is called out.
-- **Asset-type donut.** A second donut in the asset rail splits the portfolio into
-  stablecoins / bitcoin / other, stacked under the wallet-share donut. Stablecoins
-  cover USDT, USDC and their bridged or renamed forms on any venue, and wrapped
-  bitcoin counts as bitcoin.
-- **Editable stablecoin rules.** Detection is two-layered: built-in wildcards
-  (`USDT*`, `*USDC`, `WBTC*`, …) plus a price band, so a pegged asset under an
-  unfamiliar ticker is still caught while depegged assets and $0 tokens named after
-  a stablecoin are not. Every row of the token table carries a **stablecoin tag**
-  that toggles that exact token in or out, and a Settings section manages the
-  wildcard rules (persisted per profile in `stablecoins.json`).
+- **Asset labels + "asset type" donut.** A second donut in the asset rail breaks the
+  portfolio down by label, stacked under the wallet-share donut. The system detects
+  **stable / btc / eth / sol / hype** on its own (including bridged, wrapped and
+  staked forms), and anything it cannot place is `other`.
+- **Labels are yours to define.** Every row of the token table carries a single-select
+  label control — one label per row, by construction — and the Settings panel lets you
+  add rules with your *own* label names (they get their own slice, colour and legend
+  entry, exactly like a built-in one). Matching uses symbol globs plus a name/token/chain
+  filter; stablecoins additionally use a price band so a pegged asset under an unfamiliar
+  ticker is caught while depegged assets and $0 tokens named after a stablecoin are not.
+  Your own rules always take precedence over the built-in wildcards.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

@@ -27,6 +27,16 @@ BITCOIN_SYMBOLS = [
     "BTC", "WBTC*", "*BTC", "TBTC*", "CBBTC*", "LBTC*", "SBTC*", "RENBTC*",
     "BTCB*", "RBTC*", "CLBTC*", "SOLVBTC*", "BTC.B", "BTC.E",
 ]
+ETHEREUM_SYMBOLS = [
+    "ETH", "WETH*", "*ETH", "ETHX*", "CBETH*", "RETH*", "SETH*", "ETH.E",
+]
+SOLANA_SYMBOLS = [
+    "SOL", "WSOL*", "*SOL", "SOL.E", "JUPSOL*", "JITOSOL*", "MSOL*", "BSOL*",
+    "HSOL*", "STSOL*", "INF",
+]
+HYPE_SYMBOLS = [
+    "HYPE", "WHYPE*", "*HYPE", "KHYPE*", "STHYPE*",
+]
 
 TOKEN_BLACKLIST = [
     {
