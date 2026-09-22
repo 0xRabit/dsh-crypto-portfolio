@@ -127,6 +127,10 @@ def wallets_file():
     return os.path.join(profile_dir(active()), "wallets.json")
 
 
+def labels_file():
+    return os.path.join(profile_dir(active()), "labels.json")
+
+
 def stablecoins_file():
     return os.path.join(profile_dir(active()), "stablecoins.json")
 

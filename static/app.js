@@ -62,6 +62,9 @@ const I18N = {
     catHype: "HYPE", catOther: "Other", thLabel: "Label",
     stLabelPh: "Label (e.g. stable, btc, eth, sol, hype, or your own)",
     labelChanged: "Label updated",
+    labelPopPh: "Find or create a label…", labelCreate: "Create",
+    labelRename: "Rename label", labelDelete: "Delete label",
+    labelNeedName: "Type a label name first", labelDeleteConfirm: "Delete label \u201c%s\u201d? Its tokens go back to \u201cOther\u201d.",
     thStable: "Stable", markStable: "stablecoin", unmarkStable: "not a stablecoin",
     stableTitle: "Stablecoin Rules", stableSummary: "which tokens count as stablecoins",
     stableBuiltin: "Built-in wildcards", stableAutoBand: "Auto-detect price band",
@@ -178,6 +181,9 @@ const I18N = {
     catHype: "HYPE", catOther: "其他", thLabel: "标签",
     stLabelPh: "标签（如 stable、btc、eth、sol、hype，或自定义）",
     labelChanged: "标签已更新",
+    labelPopPh: "查找或新建标签…", labelCreate: "新建",
+    labelRename: "重命名标签", labelDelete: "删除标签",
+    labelNeedName: "请先输入标签名", labelDeleteConfirm: "删除标签「%s」？该标签下的代币会回到「其他」。",
     thStable: "稳定币", markStable: "标记为稳定币", unmarkStable: "取消稳定币标记",
     stableTitle: "稳定币规则", stableSummary: "哪些代币算稳定币",
     stableBuiltin: "内置通配符", stableAutoBand: "自动识别价格带",
@@ -367,7 +373,7 @@ function refreshLanguage() {
   // re-set dynamic date/updated texts
   if (state.view) {
     $("tokenDate").textContent = "(" + t("snapDate") + " " + state.selectedDate + ")";
-    $("lastUpdated").textContent = t("snapDate") + " " + state.selectedDate + " · " + t("recorded") + " " +
+    $("lastUpdated").textContent = t("recorded") + " " +
       (state.view.created_at || "").replace("T", " ");
   }
   renderAll();
@@ -466,6 +472,7 @@ function loadFilters() {
 }
 
 function bindEvents() {
+  bindLabelPop();
   $("btnRefresh").addEventListener("click", refresh);
   // A6: ask the server to stop between wallets; nothing is written on cancel
   $("btnCancelRefresh").addEventListener("click", async () => {
@@ -869,9 +876,13 @@ async function loadDate(date) {
     state.view = view;
     state.tokens = tokens.tokens;
     state.labels = tokens.labels || state.labels;
+    state.labelNames = tokens.label_names || state.labelNames || {};
+    state.builtinLabels = tokens.builtin_labels || state.builtinLabels || [];
     renderAll();
     $("tokenDate").textContent = "(" + t("snapDate") + " " + date + ")";
-    $("lastUpdated").textContent = t("snapDate") + " " + date + " · " + t("recorded") + " " +
+    // only the "recorded at" half: the snapshot date is already in the picker and
+    // the panel title, so printing it here too was noise
+    $("lastUpdated").textContent = t("recorded") + " " +
       (view.created_at || "").replace("T", " ");
     // A5: make it obvious when this view is history rather than the latest run
     const isLatest = !state.dates.length || date === state.dates[state.dates.length - 1];
@@ -1089,13 +1100,12 @@ function renderTable() {
     // one row carries exactly one label, so this is a single-select; picking one
     // writes a rule for this exact token, and the server replaces any previous
     // rule for the same target so the last choice is the one that sticks
-    '<td class="op stable-col"><select class="cat-select cat-' + esc(x.cat || "other") + '"' +
+    // a chip that opens the shared label picker: pick, create or rename
+    '<td class="op stable-col"><button type="button" class="cat-chip cat-' + esc(x.cat || "other") + '"' +
       ' data-wallet="' + esc(x.wallet) + '" data-symbol="' + esc(x.symbol) + '"' +
-      ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' +
-      (state.labels || ["other"]).map(function (lab) {
-        return '<option value="' + esc(lab) + '"' + (lab === (x.cat || "other") ? " selected" : "") +
-          ">" + esc(labelText(lab)) + "</option>";
-      }).join("") + "</select></td>" +
+      ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '"' +
+      ' data-cat="' + esc(x.cat || "other") + '">' +
+      esc(labelText(x.cat || "other")) + "</button></td>" +
     '<td class="op"><button class="bl-btn" data-wallet="' + esc(x.wallet) + '"' +
       ' data-symbol="' + esc(x.symbol) + '" data-name="' + esc(x.name || "") + '"' +
       ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '">' + t("blBtn") + "</button></td>" +
@@ -1103,15 +1113,10 @@ function renderTable() {
   ).join("");
   // The tag toggles an exact-token rule, so a wildcard hit or the price
   // heuristic can be corrected for one asset without editing the built-in list.
-  tbody.querySelectorAll(".cat-select").forEach((sel) => sel.addEventListener("change", async () => {
-    const exact = sel.dataset.tokenId || "";
-    try {
-      await postJSON("/api/stablecoins", { entry: {
-        category: sel.value, action: "include",
-        token_id: exact, symbol: exact ? "" : sel.dataset.symbol,
-        chain: sel.dataset.chain } });
-      await reloadViewData();
-    } catch (e) { showError(t("stableFailed") + e.message); }
+  tbody.querySelectorAll(".cat-chip").forEach((b) => b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    popOpen(b, { token_id: b.dataset.tokenId || "", symbol: b.dataset.symbol,
+                     chain: b.dataset.chain, cat: b.dataset.cat });
   }));
 
   // P1: offer the next page rather than pushing every remaining row into the DOM
@@ -1147,9 +1152,15 @@ function labelColor(name, idx) {
 }
 /** Display name: translated for the auto labels, verbatim for an invented one. */
 function labelText(name) {
+  // a user-chosen display name wins; then the translated built-in; then the raw id
+  const custom = (state.labelNames || {})[name];
+  if (custom) return custom;
   const key = { stable: "catStable", btc: "catBtc", eth: "catEth", sol: "catSol",
                 hype: "catHype", other: "catOther" }[name];
   return key ? t(key) : name;
+}
+function labelIsBuiltin(name) {
+  return (state.builtinLabels || []).includes(name);
 }
 
 /** USD per asset-type bucket over the same filtered rows the table shows. */
@@ -1192,6 +1203,131 @@ function renderTypePie() {
   // A2: text alternative for the second canvas
   $("typePie").setAttribute("aria-label", t("typeShareCap") + ": " +
     order.map((k) => labelText(k) + " " + pctOf(k).toFixed(1) + "%").join(", "));
+}
+
+
+/* ---------------- label picker (Notion-style) ----------------
+   One popover shared by every row: type to filter, Enter or click to apply, and a
+   "Create …" entry appears for any name that does not exist yet. Each row also
+   offers rename and delete, so labels are managed where they are used instead of
+   only in Settings. */
+const labelPop = {
+  row: null,        // { token_id, symbol, chain } of the row being edited
+  active: 0,        // keyboard highlight
+  items: [],        // [{label, create?:bool}]
+};
+
+function popOpen(anchorEl, row) {
+  labelPop.row = row;
+  const pop = $("labelPop");
+  pop.classList.remove("hidden");
+  const search = $("labelPopSearch");
+  search.value = "";
+  popRender("");
+  // place it under the chip, nudged to stay inside the viewport
+  const r = anchorEl.getBoundingClientRect();
+  const w = pop.offsetWidth || 230;
+  let left = Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - w - 8);
+  pop.style.left = Math.max(8, left) + "px";
+  pop.style.top = (r.bottom + window.scrollY + 4) + "px";
+  search.focus();
+}
+
+function popClose() {
+  $("labelPop").classList.add("hidden");
+  labelPop.row = null;
+}
+
+function popRender(filter) {
+  const q = (filter || "").trim();
+  const lower = q.toLowerCase();
+  const labels = state.labels || ["other"];
+  const shown = labels.filter((l) => !lower || l.toLowerCase().includes(lower));
+  const exact = labels.some((l) => l.toLowerCase() === lower);
+  labelPop.items = [];
+  if (q && !exact) labelPop.items.push({ label: q, create: true });
+  shown.forEach((l) => labelPop.items.push({ label: l }));
+  if (labelPop.active >= labelPop.items.length) labelPop.active = 0;
+
+  const current = labelPop.row ? labelPop.row.cat : null;
+  $("labelPopList").innerHTML = labelPop.items.map((it, i) => {
+    const dot = '<span class="t-dot" style="background:' +
+      labelColor(it.label, labels.indexOf(it.label)) + '"></span>';
+    // every label can be renamed (a built-in keeps its id and takes a display name),
+    // but only a user-created one can be deleted
+    const tail = it.create
+      ? '<span class="lp-hint">' + esc(t("labelCreate")) + "</span>"
+      : '<button class="lp-act" data-act="rename" data-label="' + esc(it.label) + '" title="' +
+        esc(t("labelRename")) + '">\u270e</button>' +
+        (labelIsBuiltin(it.label) ? ""
+          : '<button class="lp-act" data-act="delete" data-label="' + esc(it.label) + '" title="' +
+            esc(t("labelDelete")) + '">\u2715</button>');
+    return '<div class="lp-row' + (i === labelPop.active ? " hl" : "") +
+      (it.label === current ? " on" : "") + (it.create ? " create" : "") +
+      '" data-i="' + i + '">' + dot +
+      '<span class="lp-name">' + esc(it.create ? it.label : labelText(it.label)) + "</span>" + tail + "</div>";
+  }).join("");
+
+  $("labelPopList").querySelectorAll(".lp-row").forEach((row) => {
+    row.addEventListener("mousedown", (ev) => {
+      if (ev.target.classList.contains("lp-act")) return;   // handled below
+      ev.preventDefault();
+      popApply(labelPop.items[Number(row.dataset.i)]);
+    });
+  });
+  $("labelPopList").querySelectorAll(".lp-act").forEach((b) => {
+    b.addEventListener("mousedown", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const name = b.dataset.label;
+      if (b.dataset.act === "delete") {
+        if (!confirm(t("labelDeleteConfirm").replace("%s", name))) return;
+        await labelApi("/api/labels/delete", { name });
+      } else {
+        const to = prompt(t("labelRename"), labelText(name));
+        if (to === null) return;
+        if (!to.trim()) { showError(t("labelNeedName")); return; }
+        await labelApi("/api/labels/rename", { from: name, to: to.trim() });
+      }
+      await reloadViewData();
+      if (labelPop.row) popRender($("labelPopSearch").value);
+    });
+  });
+}
+
+async function labelApi(path, body) {
+  try {
+    await postJSON(path, body);
+  } catch (e) { showError(t("stableFailed") + e.message); }
+}
+
+async function popApply(item) {
+  if (!item || !labelPop.row) return;
+  const row = labelPop.row;
+  const exact = row.token_id || "";
+  popClose();
+  try {
+    await postJSON("/api/stablecoins", { entry: {
+      category: item.label, action: "include",
+      token_id: exact, symbol: exact ? "" : row.symbol, chain: row.chain } });
+    await reloadViewData();
+  } catch (e) { showError(t("stableFailed") + e.message); }
+}
+
+function bindLabelPop() {
+  $("labelPopSearch").addEventListener("input", (e) => { labelPop.active = 0; popRender(e.target.value); });
+  $("labelPopSearch").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); popClose(); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); labelPop.active = Math.min(labelPop.active + 1, labelPop.items.length - 1); popRender($("labelPopSearch").value); return; }
+    if (e.key === "ArrowUp") { e.preventDefault(); labelPop.active = Math.max(labelPop.active - 1, 0); popRender($("labelPopSearch").value); return; }
+    if (e.key === "Enter") { e.preventDefault(); popApply(labelPop.items[labelPop.active]); }
+  });
+  // clicking anywhere else closes it
+  document.addEventListener("mousedown", (e) => {
+    if ($("labelPop").classList.contains("hidden")) return;
+    if (e.target.closest("#labelPop") || e.target.closest(".cat-chip")) return;
+    popClose();
+  });
 }
 
 /* ---------------- pie chart ---------------- */
@@ -1529,6 +1665,34 @@ async function renderStablecoins() {
     const dl = $("stLabelList");
     dl.innerHTML = (d.labels || []).map((l) =>
       '<option value="' + esc(l) + '">' + esc(labelText(l)) + "</option>").join("");
+    // every label with its rule count, renameable/deletable where a user label is
+    // concerned (a built-in keeps its id and only takes a display name)
+    const counts = {};
+    user.forEach((e) => { counts[e.category] = (counts[e.category] || 0) + 1; });
+    $("stableLabels").innerHTML = (d.labels || []).map((l, i) => {
+      const builtin = (d.builtin_labels || []).includes(l);
+      const acts = '<button class="lp-act" data-act="rename" data-label="' + esc(l) + '">\u270e</button>' +
+        (builtin ? "" : '<button class="lp-act" data-act="delete" data-label="' + esc(l) + '">\u2715</button>');
+      return '<span class="src-block" style="display:inline-flex;align-items:center;gap:6px;margin:2px 4px 2px 0;padding:3px 8px">' +
+        '<span class="t-dot" style="background:' + labelColor(l, i) + '"></span>' +
+        '<b style="font-size:12px">' + esc(labelText(l)) + "</b>" +
+        '<span class="lp-hint">' + (counts[l] || 0) + "</span>" + acts + "</span>";
+    }).join("");
+    $("stableLabels").querySelectorAll(".lp-act").forEach((b) => {
+      b.addEventListener("click", async () => {
+        const name = b.dataset.label;
+        if (b.dataset.act === "delete") {
+          if (!confirm(t("labelDeleteConfirm").replace("%s", labelText(name)))) return;
+          await labelApi("/api/labels/delete", { name });
+        } else {
+          const to = prompt(t("labelRename"), labelText(name));
+          if (to === null || !to.trim()) return;
+          await labelApi("/api/labels/rename", { from: name, to: to.trim() });
+        }
+        await reloadViewData();
+        await renderStablecoins();
+      });
+    });
     const bi = $("stableBuiltin");
     bi.innerHTML = (d.builtin || []).map((e) =>
       '<span class="st-chip ' + esc(e.category) + '">' + esc(e.symbol) + "</span>").join("");

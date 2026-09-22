@@ -36,6 +36,7 @@ from . import config, profiles
 
 _lock = threading.Lock()
 _user_cache = {"mtime": None, "data": None}
+_names_cache = {"mtime": None, "data": None}
 
 STABLE, BTC, ETH, SOL, HYPE, OTHER = "stable", "btc", "eth", "sol", "hype", "other"
 # donut / legend order for the auto-detected labels; user labels follow, `other` last
@@ -66,6 +67,12 @@ def reset_cache():
     global _user_cache
     with _lock:
         _user_cache = {"mtime": None, "data": None}
+
+
+def reset_names_cache():
+    global _names_cache
+    with _lock:
+        _names_cache = {"mtime": None, "data": None}
 
 
 def stablecoins_file():
@@ -303,3 +310,110 @@ def known_labels(include_empty=True):
                 extra.append(cat)
     out = BUILTIN_LABELS + extra + [DEFAULT_LABEL]
     return out if include_empty else [x for x in out if x != DEFAULT_LABEL]
+
+# ————————————————————————————————————————————————————————————————
+# display names
+#
+# A label id is what the rules match on, so a built-in id (stable/btc/eth/…) must
+# keep its name or detection breaks. Renaming a built-in therefore stores a DISPLAY
+# name instead, and renaming a user-created label rewrites its rules — either way
+# the user gets the "rename a tag" behaviour without breaking classification.
+# ————————————————————————————————————————————————————————————————
+
+
+def _names_mtime():
+    try:
+        f = profiles.labels_file()
+        return os.path.getmtime(f) if os.path.exists(f) else None
+    except OSError:
+        return None
+
+
+def label_names():
+    """{label id: display name} for labels the user renamed."""
+    global _names_cache
+    with _lock:
+        mtime = _names_mtime()
+        if _names_cache["data"] is None or _names_cache["mtime"] != mtime:
+            data = {}
+            try:
+                with open(profiles.labels_file(), "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                if isinstance(raw, dict) and isinstance(raw.get("names"), dict):
+                    data = {k: str(v) for k, v in raw["names"].items() if valid_label(k)}
+            except FileNotFoundError:
+                pass
+            except Exception:  # noqa: BLE001
+                data = {}
+            _names_cache = {"mtime": mtime, "data": data}
+        return dict(_names_cache["data"])
+
+
+def _save_names(names):
+    global _names_cache
+    path = profiles.labels_file()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"names": names}, f, ensure_ascii=False, indent=2)
+    _names_cache = {"mtime": _names_mtime(), "data": dict(names)}
+
+
+def is_builtin_label(label):
+    return label in BUILTIN_LABELS or label == DEFAULT_LABEL
+
+
+def rename_label(old, new):
+    """Rename a label.
+
+    User-created label -> every rule using it is rewritten (ids are data).
+    Built-in label      -> the id must not change (detection depends on it), so this
+                           stores a display name and leaves matching alone.
+    Returns (kind, label) where kind is "renamed" or "display".
+    """
+    old = str(old or "").strip()
+    new = str(new or "").strip()
+    if not valid_label(new):
+        raise ValueError("label must be 1-24 chars: letters, digits, space, _ . -")
+    if old == new:
+        return "renamed", new
+    if is_builtin_label(old):
+        names = label_names()
+        names[old] = new
+        # a renamed custom label that already carried this display name is dropped
+        _save_names(names)
+        return "display", old
+    if not valid_label(old):
+        raise ValueError("unknown label")
+    global _user_cache
+    with _lock:
+        entries = _load_user_entries()
+        n = 0
+        for e in entries:
+            if _norm(e.get("category")) == _norm(old):
+                e["category"] = new
+                n += 1
+        if not n:
+            raise ValueError(f"label {old!r} is not in use")
+        _save_user_entries(entries)
+        _user_cache = {"mtime": _file_mtime(), "data": entries}
+    return "renamed", new
+
+
+def delete_label(label):
+    """Remove a user-created label: its rules go, so its tokens fall back to `other`."""
+    label = str(label or "").strip()
+    if is_builtin_label(label):
+        raise ValueError(f"{label!r} is built in and cannot be deleted")
+    global _user_cache
+    with _lock:
+        entries = _load_user_entries()
+        keep = [e for e in entries if _norm(e.get("category")) != _norm(label)]
+        if len(keep) == len(entries):
+            raise ValueError(f"label {label!r} is not in use")
+        _save_user_entries(keep)
+        _user_cache = {"mtime": _file_mtime(), "data": keep}
+    names = label_names()
+    if label in names:
+        names.pop(label)
+        _save_names(names)
+    return True

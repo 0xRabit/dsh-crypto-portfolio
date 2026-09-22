@@ -21,14 +21,19 @@ class ClassifyTest(unittest.TestCase):
         # never touch the real profile file
         self._tmp = tempfile.mkdtemp()
         self._orig = profiles.stablecoins_file
+        self._orig_labels = profiles.labels_file
         self._orig_active = profiles.active
         profiles.stablecoins_file = lambda: os.path.join(self._tmp, "stablecoins.json")
+        profiles.labels_file = lambda: os.path.join(self._tmp, "labels.json")
         stablecoins.reset_cache()
+        stablecoins.reset_names_cache()
 
     def tearDown(self):
         profiles.stablecoins_file = self._orig
+        profiles.labels_file = self._orig_labels
         profiles.active = self._orig_active
         stablecoins.reset_cache()
+        stablecoins.reset_names_cache()
 
     def test_stablecoin_wildcards_cover_bridged_forms(self):
         for sym in ("USDT", "USDC", "USDT.e", "USDC.e", "USDBC", "BUSD", "FDUSD",
@@ -62,6 +67,44 @@ class ClassifyTest(unittest.TestCase):
         for sym, price in (("JUP", 0.8), ("MAGIC", 1.0), ("DOGE", 0.2), ("PENDLE", 4.0)):
             with self.subTest(symbol=sym):
                 self.assertEqual(stablecoins.classify(row(sym, price=price)), stablecoins.OTHER)
+
+    def test_renaming_a_user_label_rewrites_its_rules(self):
+        stablecoins.add_entry({"symbol": "PENX", "category": "pendle"})
+        self.assertEqual(stablecoins.classify(row("PENX", price=4.0)), "pendle")
+        kind, label = stablecoins.rename_label("pendle", "defi")
+        self.assertEqual(kind, "renamed")
+        self.assertEqual(label, "defi")
+        self.assertEqual(stablecoins.classify(row("PENX", price=4.0)), "defi")
+        self.assertNotIn("pendle", stablecoins.known_labels())
+        self.assertIn("defi", stablecoins.known_labels())
+
+    def test_renaming_a_builtin_label_only_changes_the_display(self):
+        """A built-in id is what detection matches on, so it must survive a rename."""
+        kind, label = stablecoins.rename_label("eth", "Ethereum")
+        self.assertEqual((kind, label), ("display", "eth"))
+        self.assertEqual(stablecoins.label_names().get("eth"), "Ethereum")
+        # detection is untouched
+        self.assertEqual(stablecoins.classify(row("WETH", price=2500)), "eth")
+        self.assertIn("eth", stablecoins.known_labels())
+
+    def test_deleting_a_user_label_drops_its_rules(self):
+        stablecoins.add_entry({"symbol": "TMPX", "category": "temp"})
+        self.assertEqual(stablecoins.classify(row("TMPX", price=9.0)), "temp")
+        stablecoins.delete_label("temp")
+        self.assertEqual(stablecoins.classify(row("TMPX", price=9.0)), "other")
+        self.assertNotIn("temp", stablecoins.known_labels())
+
+    def test_builtin_labels_cannot_be_deleted(self):
+        for name in ("stable", "btc", "eth", "sol", "hype", "other"):
+            with self.subTest(label=name):
+                with self.assertRaises(ValueError):
+                    stablecoins.delete_label(name)
+
+    def test_rename_rejects_a_bad_name(self):
+        for bad in ("", "   ", "x" * 25, "bad;name"):
+            with self.subTest(name=bad):
+                with self.assertRaises(ValueError):
+                    stablecoins.rename_label("eth", bad)
 
     def test_a_row_carries_exactly_one_label(self):
         """Every token gets one label; a second rule for the same target replaces

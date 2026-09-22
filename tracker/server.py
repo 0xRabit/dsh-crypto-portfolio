@@ -124,7 +124,9 @@ class Handler(BaseHTTPRequestHandler):
                 d = qs.get("date", [None])[0] or storage.get_latest_snapshot()
                 d = d["date"] if isinstance(d, dict) else d
                 code, body = _json({"date": d, "tokens": storage.get_tokens(d),
-                                    "labels": stablecoins.known_labels()})
+                                    "labels": stablecoins.known_labels(),
+                                    "label_names": stablecoins.label_names(),
+                                    "builtin_labels": list(stablecoins.BUILTIN_LABELS) + [stablecoins.DEFAULT_LABEL]})
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/status":
                 code, body = _json(dict(_refresh_state))
@@ -262,6 +264,16 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("entry must be a JSON object")
                 stablecoins.add_entry(entry)
                 self._reply_json(self._stablecoins_view())
+            elif path == "/api/labels/rename":
+                kind, label = stablecoins.rename_label((body or {}).get("from"),
+                                                       (body or {}).get("to"))
+                view = self._stablecoins_view()
+                view["kind"] = kind
+                view["label"] = label
+                self._reply_json(view)
+            elif path == "/api/labels/delete":
+                stablecoins.delete_label((body or {}).get("name"))
+                self._reply_json(self._stablecoins_view())
             elif path == "/api/stablecoins/remove":
                 index = int((body or {}).get("index", -1))
                 if not stablecoins.remove_entry(index):
@@ -373,6 +385,7 @@ class Handler(BaseHTTPRequestHandler):
         sure the new profile's database schema exists."""
         bl.reset_cache()
         stablecoins.reset_cache()
+        stablecoins.reset_names_cache()
         walletstore.reset_cache()
         sources.load(force=True)
         sources.reset_failover()
@@ -397,6 +410,8 @@ class Handler(BaseHTTPRequestHandler):
                 "builtin": builtin,
                 "user": [dict(e, index=i) for i, e in enumerate(user)],
                 "labels": stablecoins.known_labels(),
+                "label_names": stablecoins.label_names(),
+                "builtin_labels": list(stablecoins.BUILTIN_LABELS) + [stablecoins.DEFAULT_LABEL],
                 "auto": {"price_band": list(config.STABLECOIN_PRICE_BAND),
                          "note": "priced inside the band with a USD/DAI/FRAX marker"}}
 

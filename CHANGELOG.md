@@ -72,6 +72,13 @@ First public release.
   filter; stablecoins additionally use a price band so a pegged asset under an unfamiliar
   ticker is caught while depegged assets and $0 tokens named after a stablecoin are not.
   Your own rules always take precedence over the built-in wildcards.
+- **Create and rename labels where you use them.** The row control is a tag
+  picker: type to filter, Enter or click to apply, and a *Create "…"* entry
+  appears for any name that does not exist yet. Each entry can be renamed
+  inline — a user label has its rules rewritten, a built-in keeps its id and
+  takes a display name, so detection never breaks. Settings lists every label
+  with its rule count, and lets user labels be deleted (built-ins cannot).
+
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 
