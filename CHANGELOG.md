@@ -93,6 +93,16 @@ First public release.
   modules doing unguarded read-modify-write while both the HTTP threads and the
   scheduler thread touched the same files; a lost update could drop source
   timestamps or a schedule edit. They now take a lock like the rest.
+- **Backpack reads both balance views.** The exchange UI's "US Dollar" row is USDC in
+  the futures collateral account (`/api/v1/capital/collateral`, signed with
+  `instruction=collateralQuery`), which the spot endpoint never mentions — so the
+  largest position in a Backpack account was invisible. The two views are merged
+  per asset with `max()` rather than summed, because a pledged spot balance is
+  reported identically in both and summing would double count it.
+- **Tokenised equities are priced.** Stocks such as `GOOGL.US` have no `*_USDC`
+  ticker at all; their price comes from the collateral view's `assetMarkPrice`.
+  A native asset whose on-chain price is unavailable now falls back to the
+  exchange's own price instead of being reported as worth nothing.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

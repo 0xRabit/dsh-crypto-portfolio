@@ -129,7 +129,22 @@ def _bybit_balances(acc):
     return out
 
 
-def _backpack_balances(acc):
+# Backpack splits a balance across TWO signed views:
+#   /api/v1/capital              spot                      (instruction=balanceQuery)
+#   /api/v1/capital/collateral   futures collateral acct   (instruction=collateralQuery)
+# The fiat-like "US Dollar" row the exchange UI shows is USDC held in the collateral
+# account, so reading only the spot endpoint hid it completely — it was the single
+# largest position in the account. The two views also overlap: an asset held in spot
+# and pledged as collateral is reported in both with the SAME quantity, so we take the
+# per-asset maximum rather than summing (summing would double count it).
+#
+# The collateral view also carries `assetMarkPrice` per asset, which is the only price
+# source for tokenised equities: GOOGL.US has no *_USDC ticker at all.
+_BACKPACK_NON_ASSETS = {"POINTS"}   # loyalty points: no price, absent from the UI list
+
+
+def _backpack_sign(acc):
+    """An Ed25519 signer + the per-instruction caller, or a clear error if pynacl is absent."""
     try:
         import nacl.signing  # provided by pynacl (see requirements.txt)
     except ImportError as e:  # noqa: BLE001
@@ -140,20 +155,55 @@ def _backpack_balances(acc):
     priv = base64.b64decode(str(acc["secret"]).strip())
     pub = base64.b64decode(str(acc["key"]).strip())
     sk = nacl.signing.SigningKey(priv)
-    ts = str(int(time.time() * 1000))
-    window = "10000"
-    msg = f"instruction=balanceQuery&timestamp={ts}&window={window}"
-    sig = base64.b64encode(sk.sign(msg.encode()).signature).decode()
-    d = http_get_json("https://api.backpack.exchange/api/v1/capital", headers={
-        "X-API-Key": base64.b64encode(pub).decode(),
-        "X-Signature": sig, "X-Timestamp": ts, "X-Window": window})
-    out = {}
-    for asset, v in (d or {}).items():
-        total = (float(v.get("available") or 0) + float(v.get("locked") or 0)
-                 + float(v.get("staked") or 0))
-        if total > 0:
-            out[asset] = total
-    return out
+
+    def call(instruction, path):
+        ts = str(int(time.time() * 1000))
+        window = "10000"
+        msg = f"instruction={instruction}&timestamp={ts}&window={window}"
+        sig = base64.b64encode(sk.sign(msg.encode()).signature).decode()
+        return http_get_json("https://api.backpack.exchange" + path, headers={
+            "X-API-Key": base64.b64encode(pub).decode(),
+            "X-Signature": sig, "X-Timestamp": ts, "X-Window": window})
+
+    return call
+
+
+def _backpack_state(acc):
+    """(balances, prices) merged across both of Backpack's balance views."""
+    call = _backpack_sign(acc)
+    spot = call("balanceQuery", "/api/v1/capital") or {}
+    try:
+        coll = call("collateralQuery", "/api/v1/capital/collateral") or {}
+    except Exception:  # noqa: BLE001
+        coll = {}          # a spot-only API key can still read the spot balances
+
+    balances, prices = {}, {}
+    for asset, v in (spot or {}).items():
+        if asset in _BACKPACK_NON_ASSETS:
+            continue
+        qty = (float(v.get("available") or 0) + float(v.get("locked") or 0)
+               + float(v.get("staked") or 0))
+        if qty > 0:
+            balances[asset] = qty
+
+    for e in (coll or {}).get("collateral") or []:
+        sym = str(e.get("symbol") or "")
+        if not sym or sym in _BACKPACK_NON_ASSETS:
+            continue
+        try:
+            qty = float(e.get("totalQuantity") or 0)
+        except (TypeError, ValueError):
+            qty = 0.0
+        if qty > 0:
+            # maximum, not sum: the collateral view mirrors a pledged spot balance
+            balances[sym] = max(balances.get(sym, 0.0), qty)
+        try:
+            mark = float(e.get("assetMarkPrice") or 0)
+        except (TypeError, ValueError):
+            mark = 0.0
+        if mark > 0:
+            prices[sym] = mark
+    return balances, prices
 
 
 # --------------------------------------------------------------------------
@@ -216,7 +266,12 @@ def _price_of(asset, native, ticker):
     if asset in STABLES:
         return 1.0
     if asset in NATIVE_SYMBOL:
-        return native.get(NATIVE_SYMBOL[asset]) or 0.0
+        # the on-chain price is preferred, but if that pipeline is down the exchange's
+        # own price is far better than reporting the holding as worth nothing
+        p = native.get(NATIVE_SYMBOL[asset])
+        if p:
+            return p
+        return ticker.get(asset, 0.0)
     return ticker.get(asset, 0.0)
 
 
@@ -231,10 +286,14 @@ def fetch_cex_accounts(accounts, native):
             elif ex == "bybit":
                 balances = _bybit_balances(acc)
             elif ex == "backpack":
-                balances = _backpack_balances(acc)
+                balances, mark_prices = _backpack_state(acc)
             else:
                 raise ValueError(f"未知交易所: {ex}（支持 {'/'.join(EXCHANGES)}）")
             ticker = _ticker_map(ex, list(balances.keys()))
+            if ex == "backpack":
+                # a *_USDC lastPrice is the better price for a spot balance;
+                # the collateral mark fills in anything with no pair (stocks)
+                ticker = dict(mark_prices, **ticker)
             rows = []
             for asset, amount in sorted(balances.items()):
                 if amount <= 0:
