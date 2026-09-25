@@ -11,7 +11,13 @@ dsh plugin --profile demo add dsh-crypto-portfolio   # npm
 dsh --profile demo                                    # dashboard at http://127.0.0.1:8080
 ```
 
-![Crypto Portfolio Tracker — every chain, every wallet, one self-hosted dashboard](assets/screenshot.png)
+> **Twin project.** This dashboard is the twin of the [SmartFolio Chrome extension](https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin): the extension puts the same wallets in your toolbar, this one is the self-hosted, all-chains view that runs on your own machine. Same idea, two shells — the dashboard is a DSH plugin and follows the DSH plugin conventions, so it keeps its own name.
+
+![Dashboard: total assets, wallet share and the health report](assets/screenshot-dashboard.png)
+
+![Token details and the portfolio trend](assets/screenshot-tokens.png)
+
+![Chain distribution](assets/screenshot-chains.png)
 
 > Unofficial project, independently developed and maintained by community members.
 

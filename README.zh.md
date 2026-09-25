@@ -11,7 +11,13 @@ dsh plugin --profile demo add dsh-crypto-portfolio   # npm
 dsh --profile demo                                    # 仪表盘 http://127.0.0.1:8080
 ```
 
-![Crypto Portfolio Tracker —— 所有链、所有钱包，一张自托管仪表盘](assets/screenshot.png)
+> **孪生项目。** 这张仪表盘是 [SmartFolio Chrome 扩展](https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin)的孪生项目：扩展把同一批钱包放进浏览器工具栏，而这里是跑在你自己机器上的自托管、全链视图。同一个思路，两种外壳——仪表盘是一个 DSH 插件，遵循 DSH 插件规范，因此保留自己的名字。
+
+![仪表盘：总资产、钱包占比与健康度报告](assets/screenshot-dashboard.png)
+
+![代币明细与资产趋势](assets/screenshot-tokens.png)
+
+![网络分布](assets/screenshot-chains.png)
 
 > 非官方项目，由社区成员独立开发和维护，与 DeepSeek 官方无关。
 
