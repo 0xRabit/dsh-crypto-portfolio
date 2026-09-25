@@ -50,21 +50,157 @@ def cex_accounts():
 # balance fetchers
 # --------------------------------------------------------------------------
 
+BINANCE_API = "https://api.binance.com"
+BINANCE_FUTURES = "https://fapi.binance.com"
+
+
+def _binance_signed(acc, path, params=None, host=None, method="GET", recv_window=60000):
+    """Signed Binance request.
+
+    Three things this does that a plain params= call does not:
+
+    * the query string is built and signed by hand, so what we sign is exactly what
+      goes on the wire (a proxy that re-encodes `params` would break the signature);
+    * the error body is surfaced — Binance explains itself in JSON, and
+      "400 Client Error: Bad Request" tells the user nothing;
+    * one retry with a fresh timestamp covers the case that actually bit us: a proxy
+      that holds a request for a few seconds makes Binance answer `-1021 Timestamp
+      for this request is outside of the recvWindow` with HTTP 400, which turned a
+      $5.8k read into a $0 error row. recvWindow is 60 s for the same reason.
+    """
+    key = str(acc.get("key") or "").split(":")[-1].strip()   # allow "label:key"
+    secret = str(acc.get("secret") or "").strip()
+    base = host or BINANCE_API
+    last = None
+    for attempt in range(2):
+        q = {"timestamp": int(time.time() * 1000), "recvWindow": recv_window}
+        q.update(params or {})
+        qs = "&".join("%s=%s" % (k, v) for k, v in q.items())
+        sig = hmac.new(secret.encode(), qs.encode(), hashlib.sha256).hexdigest()
+        url = "%s%s?%s&signature=%s" % (base, path, qs, sig)
+        try:
+            return _signed_request(url, {"X-MBX-APIKEY": key}, method)
+        except _BinanceRetry as e:
+            last = e
+            continue
+    raise RuntimeError("Binance %s: %s" % (path, last))
+
+
+class _BinanceRetry(Exception):
+    """A -1021 timestamp rejection: worth one retry with a fresh timestamp."""
+
+
+def _signed_request(url, headers, method):
+    import requests
+    try:
+        if method == "POST":
+            r = requests.post(url, headers=headers, timeout=20)
+        else:
+            r = requests.get(url, headers=headers, timeout=20)
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError("%s: %s" % (type(e).__name__, e))
+    if r.status_code != 200:
+        code, msg = None, r.text[:200]
+        try:
+            body = r.json()
+            code, msg = body.get("code"), body.get("msg") or msg
+        except ValueError:
+            pass
+        if code == -1021 or "recvWindow" in str(msg):
+            raise _BinanceRetry("timestamp rejected (code %s)" % code)
+        raise RuntimeError("%s (HTTP %s)" % (msg, r.status_code))
+    return r.json()
+
+
 def _binance_balances(acc):
-    key = str(acc["key"]).split(":")[-1].strip()   # allow "label:key" prefixes
-    secret = str(acc["secret"]).strip()
-    ts = int(time.time() * 1000)
-    qs = f"timestamp={ts}&recvWindow=5000"
-    sig = hmac.new(secret.encode(), qs.encode(), hashlib.sha256).hexdigest()
-    d = http_get_json("https://api.binance.com/api/v3/account",
-                      params={"timestamp": ts, "recvWindow": 5000, "signature": sig},
-                      headers={"X-MBX-APIKEY": key})
-    out = {}
-    for b in (d or {}).get("balances", []):
+    """(balances, prices, notes) across every Binance sub-account.
+
+    The spot endpoint only shows one of the five places money can sit, so reading it
+    alone under-reports an account that uses Earn, Funding, margin or futures. Each
+    extra call is additive and independently tolerated: a key without Futures
+    permission returns -2015, which must degrade to a note, not to an error row.
+    """
+    out, prices, notes = {}, {}, []
+
+    spot = _binance_signed(acc, "/api/v3/account")
+    for b in spot.get("balances", []):
         total = float(b.get("free") or 0) + float(b.get("locked") or 0)
         if total > 0:
-            out[b["asset"]] = total
-    return out
+            out[b["asset"]] = out.get(b["asset"], 0.0) + total
+
+    # Simple Earn reports the *underlying* coin; spot carries an LDxxx receipt for the
+    # same position, and that receipt usually has no ticker (so it prices at 0). Count
+    # the position and drop the receipt, or the holding is counted twice or at zero.
+    earn = {}
+    for part, path, extra in (("earn-flexible", "/sapi/v1/simple-earn/flexible/position", {"size": 100}),
+                              ("earn-locked", "/sapi/v1/simple-earn/locked/position", {"size": 100})):
+        try:
+            d = _binance_signed(acc, path, extra)
+        except Exception as e:  # noqa: BLE001
+            notes.append({"part": part, "message": str(e)[:160]})
+            continue
+        for row in d.get("rows") or []:
+            asset = str(row.get("asset") or "").upper()
+            amount = 0.0
+            for field in ("totalAmount", "amount", "rewards"):
+                try:
+                    amount += float(row.get(field) or 0)
+                except (TypeError, ValueError):
+                    pass
+            if asset and amount > 0:
+                earn[asset] = earn.get(asset, 0.0) + amount
+    for asset, amount in earn.items():
+        out[asset] = out.get(asset, 0.0) + amount
+    for asset in list(out):
+        if asset.startswith("LD") and asset[2:] in earn:
+            del out[asset]                      # the receipt mirrors a counted position
+
+    # Funding (deposits waiting to be traded)
+    try:
+        d = _binance_signed(acc, "/sapi/v1/asset/get-funding-asset", method="POST")
+        for row in d if isinstance(d, list) else []:
+            asset = str(row.get("asset") or "").upper()
+            qty = 0.0
+            for field in ("free", "freeze", "locked", "withdrawing"):
+                try:
+                    qty += float(row.get(field) or 0)
+                except (TypeError, ValueError):
+                    pass
+            if asset and qty > 0:
+                out[asset] = out.get(asset, 0.0) + qty
+    except Exception as e:  # noqa: BLE001
+        notes.append({"part": "funding", "message": str(e)[:160]})
+
+    # Cross margin: netAsset per coin
+    try:
+        d = _binance_signed(acc, "/sapi/v1/margin/account")
+        for row in d.get("userAssets") or []:
+            asset = str(row.get("asset") or "").upper()
+            try:
+                qty = float(row.get("netAsset") or 0)
+            except (TypeError, ValueError):
+                qty = 0.0
+            if asset and qty > 0:
+                out[asset] = out.get(asset, 0.0) + qty
+    except Exception as e:  # noqa: BLE001
+        notes.append({"part": "margin", "message": str(e)[:160]})
+
+    # USD-M futures: `balance` is the wallet balance per margin asset
+    try:
+        d = _binance_signed(acc, "/fapi/v2/balance", host=BINANCE_FUTURES)
+        for row in d if isinstance(d, list) else []:
+            asset = str(row.get("asset") or "").upper()
+            try:
+                qty = float(row.get("balance") or 0)
+            except (TypeError, ValueError):
+                qty = 0.0
+            if asset and qty > 0:
+                out[asset] = out.get(asset, 0.0) + qty
+    except Exception as e:  # noqa: BLE001
+        # the usual case: the API key has no Futures permission (-2015)
+        notes.append({"part": "futures", "message": str(e)[:160]})
+
+    return out, prices, notes
 
 
 def _bybit_signed_get(acc, path, params):
@@ -501,9 +637,10 @@ def fetch_cex_accounts(accounts, native):
     results = []
     for acc in accounts:
         ex = str(acc.get("exchange") or "").lower()
+        notes = []
         try:
             if ex == "binance":
-                balances = _binance_balances(acc)
+                balances, _mark, notes = _binance_balances(acc)
             elif ex == "bybit":
                 balances = _bybit_balances(acc)
             elif ex == "backpack":
@@ -533,8 +670,8 @@ def fetch_cex_accounts(accounts, native):
                 })
             results.append({"account": acc, "rows": rows,
                             "total_usd": round(sum(r["usd"] for r in rows), 2),
-                            "error": None})
+                            "error": None, "notes": notes})
         except Exception as e:  # noqa: BLE001
             results.append({"account": acc, "rows": [], "total_usd": 0.0,
-                            "error": f"{type(e).__name__}: {e}"})
+                            "error": f"{type(e).__name__}: {e}", "notes": notes})
     return results

@@ -234,6 +234,8 @@ def fetch_all(progress=None):
             ew = next((e for e in evm_results if e["wallet"] == w["name"]), None)
             if ew:
                 obj["tokens"] = ew["tokens"]
+                if ew.get("error"):
+                    obj["error"] = ew["error"]
         elif w["type"] == "sol":
             obj["tokens"] = [r for r in sol_rows_all if r["wallet"] == w["name"]]
         obj["tokens"] = filter_rows(obj["tokens"])
@@ -249,7 +251,7 @@ def fetch_all(progress=None):
         obj = {"wallet": acc["name"], "address": str(acc.get("exchange") or ""),
                "type": "cex", "storage": "cex", "tokens": filter_rows(res["rows"]),
                "total_usd": round(sum(r["usd"] for r in res["rows"]), 2),
-               "error": res["error"]}
+               "error": res["error"], "notes": res.get("notes") or []}
         if res["error"]:
             obj["tokens"] = [{"wallet": acc["name"], "chain": str(acc.get("exchange") or "cex"),
                               "symbol": "CEX-Error", "name": res["error"],

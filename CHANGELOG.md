@@ -54,6 +54,26 @@ First public release.
   (including refresh) are fenced against cross-site requests — non-JSON bodies are
   refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
   is rate-limited to one run per minute.
+- **Binance reads every sub-account, and says why when it cannot.** A refresh once
+  reported a funded account as `$0` because Binance answered a signed request with
+  HTTP 400 — the body said `-1021 Timestamp for this request is outside of the
+  recvWindow` (a proxy held the request past the 5 s window). The query is now signed
+  by hand so what is signed is what is sent, the error body is read instead of
+  surfacing "400 Bad Request", one retry uses a fresh timestamp, and the window is
+  60 s. Reading is also complete: spot (free **and** locked), Funding, Simple Earn
+  (the underlying coin, with the `LDxxx` receipt that mirrors it de-duplicated), cross
+  margin and USD-M futures are summed, and a key without Futures permission degrades
+  to a note rather than an error row.
+- **Every source has its own Test button.** Settings → Data sources probes one row at
+  a time (each CEX account, DeBank, Etherscan, every BTC/DOGE/ADA/price/Hyperliquid
+  provider, each Solana RPC, Birdeye, SPL prices) and prints the result where the key
+  is typed — total and asset count for an exchange, chain count for DeBank, the
+  provider's own wording when it refuses. Tolerated sub-accounts are shown as notes,
+  so a missing permission is visible before a refresh depends on it.
+- **A wallet that failed to update is impossible to miss.** The dashboard card gets an
+  asterisk with the reason in its tooltip and the wallet panel title counts them
+  ("Wallets (14) · 1 failed"); Settings shows the same wallet as a red-bordered row
+  with the provider's message. Before this, a failed fetch simply read as "$0".
 - **Page loads are ~50× faster.** Every path helper (`blacklist.json`, `labels.json`,
   `wallets.json`, …) resolved the active profile by opening and reading
   `profiles/.active` — ~85 µs per call, against ~1 µs for a bare stat — and a trend

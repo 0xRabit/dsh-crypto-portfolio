@@ -755,3 +755,30 @@ summary:focus-visible {
 .share-copy-state { font-size: 12.5px; color: var(--muted); align-self: center; }
 .share-copy-state.ok { color: var(--success); font-weight: 600; }
 .share-copy-state.fail { color: var(--warning); font-weight: 600; }
+
+/* per-source Test button + inline result (Settings → data sources) */
+.btn-test {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; flex: none;
+}
+.btn-test:hover { border-color: var(--accent); color: var(--accent); }
+.btn-test:disabled { opacity: .55; cursor: progress; }
+.src-testmsg { font-size: 11.5px; margin-left: 8px; flex: 1 1 160px; min-width: 0; }
+.src-testmsg.ok { color: var(--success); }
+.src-testmsg.warn { color: var(--warning); }
+.src-testmsg.fail { color: var(--danger); font-weight: 600; word-break: break-word; }
+
+/* a wallet whose last fetch failed: an asterisk on the card, a red row in Settings */
+.card .w-error { color: var(--danger); font-weight: 700; margin-left: 4px; flex: none; }
+.card.has-error { border-color: rgba(248,81,73,.55); }
+.bl-item-err { border-left: 3px solid var(--danger); }
+.wl-err {
+  color: var(--danger); font-size: 11.5px; font-weight: 600;
+  background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.35);
+  border-radius: 6px; padding: 1px 7px; margin-left: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46%;
+}
+.wl-warn {
+  color: var(--warning); font-size: 11.5px; margin-left: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%;
+}

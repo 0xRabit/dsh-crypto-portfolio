@@ -33,6 +33,10 @@ def view_of(snap, storage_map=None):
                 by_chain[c] = round(by_chain.get(c, 0.0) + float(t["usd"]), 2)
         wallets.append({"wallet": name,
                         "address": w.get("address", ""), "type": w.get("type", ""),
+                        # a wallet that failed to fetch must be markable in the UI:
+                        # without this an error reads as "this wallet holds nothing"
+                        "error": w.get("error") or None,
+                        "notes": w.get("notes") or [],
                         # storage class (cold/hot/cex) drives the health report; a
                         # snapshot taken before this field existed simply has none
                         "storage": (storage_map or {}).get(name) or w.get("storage"),

@@ -118,6 +118,10 @@ const I18N = {
     healthCfgTitle: "Health Thresholds", hcWarn: "warning %", hcDanger: "danger %", hcSafe: "safe %",
     healthCfgDesc: "Each check turns yellow at its warning line and red at its danger line. Values are a percentage of the portfolio; storage security is inverted — more cold storage is better, so its safe line sits above its warning line. Every profile keeps its own numbers.",
     btnSaveHealthCfg: "Save Thresholds", btnResetHealthCfg: "Restore Defaults",
+    btnTest: "Test", testing: "Testing…", testFailed: "failed",
+    fetchFailed: "did not update", failedTag: "failed",
+    notInSnapshot: "not in the latest snapshot yet",
+    fetchFailedHint: "This wallet failed to update in the last refresh",
     healthCfgSaved: "Thresholds saved.", healthCfgReset: "Defaults restored.",
     healthCfgFailed: "Could not save: ",
     storageHot: "Hot wallet", storageCold: "Cold wallet",
@@ -283,6 +287,10 @@ const I18N = {
     healthCfgTitle: "健康度阈值", hcWarn: "注意 %", hcDanger: "危险 %", hcSafe: "安全 %",
     healthCfgDesc: "三项检查分别在「注意」线与「危险」线变色。数值是占资产组合的百分比；托管安全是反过来的——冷存储越多越好，所以「安全」线在「注意」线之上。每个 Profile 各自保存自己的数值。",
     btnSaveHealthCfg: "保存阈值", btnResetHealthCfg: "恢复默认",
+    btnTest: "测试", testing: "测试中…", testFailed: "失败",
+    fetchFailed: "未更新成功", failedTag: "个失败",
+    notInSnapshot: "尚未出现在最新快照中",
+    fetchFailedHint: "该钱包在最近一次刷新中读取失败",
     healthCfgSaved: "阈值已保存。", healthCfgReset: "已恢复默认值。",
     healthCfgFailed: "保存失败：",
     storageHot: "热钱包", storageCold: "冷钱包",
@@ -1629,14 +1637,17 @@ function renderWalletCards() {
   const list = state.view.wallets
     .filter((w) => (f.category === "all" || w.type === f.category))
     .sort((a, b) => (b.total_usd || 0) - (a.total_usd || 0));
-  $("walletCount").textContent = "(" + list.length + ")";
+  const failed = list.filter((w) => w.error).length;
+  $("walletCount").textContent = "(" + list.length + ")" +
+    (failed ? " · " + failed + " " + t("failedTag") : "");
   const shares = walletShares();
   list.forEach((w) => {
     const card = document.createElement("div");
     const isSel = selected === w.wallet;
     const wlogo = typeLogoFile(w.type);
     const plats = walletExplorers(w.type, w.address, w.wallet);
-    card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "");
+    card.className = "card" + (isSel ? " active" : "") + (selected ? " dimmed" : "") +
+      (w.error ? " has-error" : "");
     // A1: the card is a control, so it must be reachable and operable by keyboard
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
@@ -1657,6 +1668,8 @@ function renderWalletCards() {
         // cold storage is worth a mark; hot is the default and stays unmarked so
         // the row keeps the width it needs for long wallet names
         (w.storage === "cold" ? '<span class="w-cold" title="' + esc(t("storageMark")) + '">❄</span>' : "") +
+        // an asterisk, not a silent $0: the wallet failed to update
+        (w.error ? '<span class="w-error" title="' + esc(t("fetchFailedHint") + ": " + w.error) + '">*</span>' : "") +
         "</div>" +
       // row 2 — balance, with this wallet's share of the total right after it
       '<div class="w-usd">' + fmtUsd(w.total_usd) +
@@ -2449,11 +2462,22 @@ async function renderWalletMgmt() {
                 t(k === "cold" ? "storageCold" : "storageHot") + "</option>").join("") +
               "</select>"
             : "");
-      return '<div class="bl-item">' +
+      // a wallet that did not update must be impossible to miss here: red badge
+      // plus the provider's own message, not just a $0 on the dashboard
+      const f = w.fetch || {};
+      const alert = f.state === "error"
+        ? '<span class="wl-err" title="' + esc(f.error || "") + '">✕ ' + t("fetchFailed") +
+          (f.error ? ": " + esc(String(f.error).slice(0, 120)) : "") + "</span>"
+        : f.state === "missing"
+          ? '<span class="wl-warn">' + t("notInSnapshot") + "</span>"
+          : (f.notes && f.notes.length
+              ? '<span class="wl-warn">' + esc(f.notes.map((n) => n.part + ": " + n.message).join("; ").slice(0, 120)) + "</span>"
+              : "");
+      return '<div class="bl-item' + (f.state === "error" ? " bl-item-err" : "") + '">' +
         '<img class="logo-img bl-logo" src="' + typeLogo(w.type) + '" alt="">' +
         '<span class="bl-sym">' + esc(w.name) + "</span>" +
         '<span class="bl-tag ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span>" +
-        storage +
+        storage + alert +
         '<span class="bl-meta">' + esc(w.address) + "</span>" + right + "</div>";
     }).join("");
     list.querySelectorAll(".wl-storage").forEach((sel) => {
@@ -2505,11 +2529,74 @@ function setByPath(obj, path, value) {
   cur[parts[parts.length - 1]] = value;
 }
 
+function testTargetFor(basePath) {
+  if (basePath.indexOf("solana.rpc") === 0) return "solana-rpc";
+  if (basePath.indexOf("solana.spl_prices") === 0) return "spl-prices";
+  return basePath.split(".")[0];
+}
+
+/** One "Test" button per source row: it POSTs to /api/sources/test and the result
+ *  is printed next to the button, so a wrong key or URL is named where it is typed. */
+function testBtnHTML(target, name, url) {
+  return '<button type="button" class="btn-test" data-test-target="' + esc(target) + '"' +
+    (name ? ' data-test-name="' + esc(name) + '"' : "") +
+    (url ? ' data-test-url="' + esc(url) + '"' : "") +
+    ">" + t("btnTest") + "</button>" +
+    '<span class="src-testmsg"></span>';
+}
+
+async function runSourceTest(btn) {
+  const slot = btn.parentElement ? btn.parentElement.querySelector(".src-testmsg") : null;
+  const set = (cls, text) => {
+    if (!slot) return;
+    slot.className = "src-testmsg " + cls;
+    slot.textContent = text;
+  };
+  btn.disabled = true;
+  set("", t("testing"));
+  try {
+    const r = await postJSON("/api/sources/test", {
+      target: btn.dataset.testTarget,
+      name: btn.dataset.testName || null,
+      url: btn.dataset.testUrl || null,
+    });
+    const ms = r.ms != null ? r.ms + " ms" : "";
+    if (r.ok) {
+      const d = r.detail || {};
+      let extra = "";
+      if (d.total_usd != null) extra = "$" + Number(d.total_usd).toFixed(2) + " · " + d.assets + " assets";
+      else if (d.chains) extra = d.chains + " chains";
+      else if (d.height) extra = "height " + d.height;
+      else if (d.providers) {
+        const okp = d.providers.filter((x) => !x.error).length;
+        extra = okp + "/" + d.providers.length + " providers";
+        const bad = d.providers.filter((x) => x.error);
+        if (bad.length) extra += " · " + bad.map((x) => x.provider + " failed").join(", ");
+      }
+      else if (d.gecko_says) extra = d.gecko_says;
+      else if (d.health) extra = d.health;
+      else if (d.pairs != null) extra = d.pairs + " pairs";
+      else if (d.value != null) extra = "SOL $" + Number(d.value).toFixed(2);
+      set("ok", "✓ " + [ms, extra].filter(Boolean).join(" · "));
+      const notes = d.notes || [];
+      if (notes.length) set("warn", "✓ " + ms + " · " + notes.map((n) => n.part + ": " + n.message).join("; "));
+    } else {
+      set("fail", "✗ " + (r.message || t("testFailed")));
+    }
+  } catch (e) {
+    set("fail", "✗ " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function srcProvidersHTML(basePath, providers, keyPh, links) {
   const keyPlaceholder = (p) => (typeof keyPh === "function" ? keyPh(p) : keyPh) || t("srcKeyPh");
   const linkFor = (p) => (links && links[p.name]) || (links && links[p.exchange])
     ? '<a class="src-link" href="' + esc((links[p.name] || links[p.exchange])) + '" target="_blank" rel="noopener noreferrer">' + t("getKey") + " ↗</a>"
     : "";
+  // "btc.providers" -> btc, but the Solana rows are probes of their own
+  const targetFor = (basePath) => testTargetFor(basePath);
   return '<div class="src-providers">' + providers.map((p, i) => {
     const urlField = p.base_url !== undefined ? "base_url" : "url";
     const urlVal = p.base_url !== undefined ? (p.base_url || "") : (p.url || "");
@@ -2523,6 +2610,7 @@ function srcProvidersHTML(basePath, providers, keyPh, links) {
         : "") +
       (p.paid ? '<span class="paid-badge">' + t("paidBadge") + "</span>" : "") +
       linkFor(p) +
+      testBtnHTML(targetFor(basePath, p), p.name, p.url || p.base_url) +
       "</div>";
   }).join("") + "</div>";
 }
@@ -2610,6 +2698,7 @@ async function renderSources() {
         '<div class="src-sub">' + t("providersHint") + "</div>" +
         srcProvidersHTML("debank.providers", cfg.debank.providers || [], (p) =>
           p.type === "pro" ? "AccessKey (required)" : "free - no key", SRC_LINKS) +
+        '<div class="src-prov">' + testBtnHTML("debank-chain-list") + "</div>" +
         srcFieldHTML("debank.chain_list_url", "chain_list_url", cfg.debank.chain_list_url, t("chainListPh")) +
         srcFieldHTML("debank.chains", "chains", cfg.debank.chains || "", t("chainsPh")) +
         '<p class="bl-desc">' + t("debankHint") + "</p>");
@@ -2632,6 +2721,7 @@ async function renderSources() {
           (cfg.solana.birdeye.enabled ? " checked" : "") + "> " + t("enabled") + "</label>" +
         '<input data-path="solana.birdeye.key" value="' + esc(cfg.solana.birdeye.key || "") + '" class="src-key" placeholder="' + t("srcKeyPh") + '">' +
         '<input data-path="solana.birdeye.url" value="' + esc(cfg.solana.birdeye.url || "") + '" class="src-url">' +
+        testBtnHTML("birdeye") +
         "</div>");
     }
     if (cfg.cex) {
@@ -2666,6 +2756,7 @@ async function renderSources() {
             (a.enabled !== false ? " checked" : "") + "></label>" +
           '<input data-path="cex.accounts.' + i + '.key" value="' + esc(a.key || "") + '" class="src-key" placeholder="' + t("cexKeyPh") + '">' +
           '<input data-path="cex.accounts.' + i + '.secret" value="' + esc(a.secret || "") + '" class="src-key" placeholder="' + t("cexSecretPh") + '">' +
+          testBtnHTML("cex", a.name) +
           (NEEDS_PASSPHRASE[a.exchange]
             ? '<input data-path="cex.accounts.' + i + '.passphrase" value="' + esc(a.passphrase || "") +
               '" class="src-key" placeholder="' + t("cexPassPh") + '">'
@@ -2692,6 +2783,7 @@ async function renderSources() {
         }).join("");
       }
       b.insertAdjacentHTML("beforeend",
+        '<div class="src-prov">' + testBtnHTML("etherscan") + "</div>" +
         srcFieldHTML("etherscan.api_key", "API Key", cfg.etherscan.api_key, "Etherscan V2 API key") +
         srcFieldHTML("etherscan.chains", "chains", cfg.etherscan.chains || "eth", t("chainsPh")) +
         (detailHTML || '<p class="bl-desc">' + t("lastOk") + ": " + esc(escTime) + "</p>"));

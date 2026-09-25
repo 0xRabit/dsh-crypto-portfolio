@@ -19,7 +19,7 @@ from . import assetlabels as assetlabels
 from . import status
 from . import walletstore
 from .debank import chain_names
-from . import views
+from . import sourcetest, views
 from .views import view_of
 from . import health, healthconfig
 
@@ -298,6 +298,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not walletstore.remove_wallet(index):
                     raise ValueError("invalid index or built-in wallet cannot be removed")
                 self._reply_json(self._wallet_view())
+            elif path == "/api/sources/test":
+                # POST: it performs a network call, so it goes through the write guard
+                # (a bare <img> must not be able to trigger it)
+                body = body or {}
+                self._reply_json(sourcetest.run_test(body.get("target"),
+                                                     body.get("name"),
+                                                     body.get("url")))
             elif path == "/api/sources":
                 cfg = (body or {}).get("config")
                 if not isinstance(cfg, dict):
@@ -370,14 +377,42 @@ class Handler(BaseHTTPRequestHandler):
             self._reply_json({"error": f"{type(e).__name__}: {e}"}, 400)
 
     def _wallet_view(self):
+        """Configured wallets + CEX accounts, each with its last fetch outcome.
+
+        `fetch` lets Settings flag a wallet that did not update (a failed key, an
+        API that answered with an error) instead of showing a silent $0 — the same
+        information the dashboard marks with an asterisk.
+        """
         wallets = [dict(w, source="user", index=i)
                    for i, w in enumerate(walletstore.user_wallets())]
         cex_wallets = [{"name": a["name"], "type": "cex", "source": "cex",
                         "address": str(a.get("exchange") or "")}
                        for a in cex.cex_accounts()]
-        return {"wallets": wallets + cex_wallets,
+        rows = wallets + cex_wallets
+
+        snap = storage.get_latest_snapshot()
+        by_name = {}
+        if snap:
+            for w in snap.get("wallets", []):
+                by_name[w.get("wallet") or w.get("name")] = w
+        for row in rows:
+            last = by_name.get(row["name"])
+            if last is None:
+                row["fetch"] = {"state": "missing", "date": (snap or {}).get("date")}
+                continue
+            err = last.get("error")
+            row["fetch"] = {
+                "state": "error" if err else "ok",
+                "date": snap.get("date"),
+                "usd": last.get("total_usd", 0.0),
+                "tokens": len(last.get("tokens") or []),
+                "error": err,
+                "notes": last.get("notes") or [],
+            }
+        return {"wallets": rows,
                 "chains": get_chain_names(),
                 "profile": profiles.active(),
+                "last_snapshot": (snap or {}).get("date"),
                 "file": walletstore.wallets_file()}
 
     def _profiles_view(self):
