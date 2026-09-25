@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=51">
+<link rel="stylesheet" href="/static/style.css?v=53">
 </head>
 <body>
 <header>
@@ -34,7 +34,18 @@
     <label class="pf-switch"><span class="fb-label" data-i18n="profileActive">Profile</span>
       <select id="profileSelect" data-i18n-title="profileSwitchTitle"></select></label>
     <select id="dateSelect" data-i18n-title="viewDateTitle"></select>
-    <button id="btnShare" class="btn-ghost" data-i18n="shareBtn" data-i18n-title="shareHint" title="Draw a PNG summary of what you are looking at (no addresses)">Share</button>
+    <button id="btnShare" class="btn-share" type="button" aria-haspopup="dialog" aria-expanded="false"
+            data-i18n-aria-label="shareBtn" data-i18n-title="shareHint"
+            title="Draw a PNG summary of what you are looking at">
+      <!-- square-and-arrow-up: the share/export glyph from SF Symbols ("square.and.arrow.up")
+           that iOS, macOS and most web apps use, drawn inline so it themes with currentColor -->
+      <svg class="btn-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 15.5V3.5"/><path d="M8 7.5l4-4 4 4"/>
+        <path d="M20 12.5v6a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-6"/>
+      </svg>
+      <span class="btn-share-label" data-i18n="shareBtn" aria-hidden="true">Share</span>
+    </button>
     <button id="btnRefresh" data-i18n="btnRefresh">Refresh</button>
   </div>
 </header>
@@ -417,6 +428,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=54"></script>
+<script src="/static/app.js?v=55"></script>
 </body>
 </html>

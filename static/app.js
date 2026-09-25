@@ -347,6 +347,11 @@ function applyI18n() {
   document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  // for controls whose visible label can be hidden at narrow widths, the accessible
+  // name must come from an attribute rather than the (hidden) text
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+  });
   document.title = t("brand");
   $("btnLang").textContent = lang === "zh" ? "EN" : "中文";
   const tb = document.getElementById("btnTheme");
