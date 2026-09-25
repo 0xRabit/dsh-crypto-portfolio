@@ -129,13 +129,13 @@ const I18N = {
     shareDownload: "Download PNG", shareCopyText: "Copy text",
     shareCopied: "Copied.", shareCopyImgFail: "This browser did not allow copying the image — use Download PNG.",
     shareCopyWorking: "Preparing the image…",
-    shareCopyOk: "✓ Image copied — just paste it",
+    shareCopyOk: "✓ Image copied — click a social button below, then paste",
     shareCopyFailShort: "⚠ Copy blocked — use Download PNG",
     shareCopyFail: "Copy blocked — the text is selected, press \u2318/Ctrl+C.",
     shareTextTpl: (total, repo) =>
       "Found the perfect self-custody portfolio tracker. My multi-chain allocation: " + total +
       " with #SmartFolio!\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
-    shareImgPasteTip: "Screenshot copied. In the composer press ⌘/Ctrl+V once to attach it.",
+    shareImgPasteTip: "Image copied — press ⌘/Ctrl+V in the composer to attach it.",
     shareOtherPct: (pct) => "Other " + pct + "%",
     shareColdPct: (pct) => "Cold " + pct + "%",
     shareHint: "Draw a PNG summary of what you are looking at (no addresses).",
@@ -293,13 +293,13 @@ const I18N = {
     shareDownload: "下载 PNG", shareCopyText: "复制文字",
     shareCopied: "已复制。", shareCopyImgFail: "当前浏览器不允许复制图片——请用「下载 PNG」。",
     shareCopyWorking: "正在生成图片…",
-    shareCopyOk: "✓ 图片已复制，粘贴即可",
+    shareCopyOk: "✓ 图片已复制，点击对应的社交媒体按钮后粘贴即可",
     shareCopyFailShort: "⚠ 复制被拦截，请用「下载 PNG」",
     shareCopyFail: "复制被拦截——文字已选中，按 ⌘/Ctrl+C 即可。",
     shareTextTpl: (total, repo) =>
       "找到一个很顺手的自托管资产追踪工具，我的多链配置：" + total +
       " #SmartFolio\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
-    shareImgPasteTip: "截图已复制。发推时在输入框按一次 ⌘/Ctrl+V 就能附上图片。",
+    shareImgPasteTip: "图片已复制，在输入框按一次 ⌘/Ctrl+V 即可附上截图。",
     shareOtherPct: (pct) => "其他 " + pct + "%",
     shareColdPct: (pct) => "冷存储 " + pct + "%",
     shareHint: "把当前视图画成一张 PNG（不含任何地址）。",
