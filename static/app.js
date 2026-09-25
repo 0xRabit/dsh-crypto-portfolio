@@ -7,7 +7,6 @@ const I18N = {
     brand: "Crypto Portfolio Tracker",
     heroLine: "Free · self-hosted · any chain",
     heroLineFull: "Free & self-hosted · every chain, every wallet in one view · no account, no tracking — your keys never leave your machine",
-    aboutLine: "Python stdlib + vanilla JS · no framework, no CDN · data sources are configurable per profile",
     siblingLabel: "Sibling project:",
     chromeExt: "Chrome extension",
     btnSources: "Sources", btnRefresh: "Refresh", btnLang: "中文",
@@ -141,7 +140,7 @@ const I18N = {
     /* bmc:start — personal author block; stripped from the public bundle */
     buyMeCoffee: "Buy me a coffee ☕", donateTitle: "☕ Buy Me a Coffee",
     tipHint: "Tip with any crypto via tip.md", binancePay: "🟡 Binance Pay",
-    scanHint: "Scan with the Binance App", madeBy: "Made with ❤️ by @CryptoRabit",
+    scanHint: "Scan with the Binance App", 
     socialX: "Follow on X", socialDiscord: "Join the Discord", socialGithub: "Source on GitHub",
     /* bmc:end */
     healthTier1: "BTC", healthTier2: "On-chain", healthTier3: "CEX", healthRest: "other wallets",
@@ -170,7 +169,6 @@ const I18N = {
     brand: "Crypto Portfolio Tracker",
     heroLine: "免费 · 自托管 · 支持所有链",
     heroLineFull: "免费 · 自托管 · 所有链、所有钱包一屏总览 · 无需注册、无追踪——私钥永不离开你的机器",
-    aboutLine: "Python 标准库 + 原生 JS · 无框架、无 CDN · 每个 Profile 独立配置数据源",
     siblingLabel: "兄弟版本：",
     chromeExt: "Chrome 扩展",
     btnSources: "数据源", btnRefresh: "刷新数据", btnLang: "EN",
@@ -304,7 +302,7 @@ const I18N = {
     /* bmc:start */
     buyMeCoffee: "请我喝杯咖啡 ☕", donateTitle: "☕ 请我喝杯咖啡",
     tipHint: "用任意币种通过 tip.md 打赏", binancePay: "🟡 币安支付",
-    scanHint: "用币安 App 扫码", madeBy: "Made with ❤️ by @CryptoRabit",
+    scanHint: "用币安 App 扫码", 
     socialX: "在 X 上关注", socialDiscord: "加入 Discord", socialGithub: "GitHub 源码",
     /* bmc:end */
     healthTier1: "BTC", healthTier2: "链上", healthTier3: "CEX", healthRest: "其他钱包",
