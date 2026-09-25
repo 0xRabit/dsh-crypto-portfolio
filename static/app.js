@@ -134,7 +134,8 @@ const I18N = {
     shareCopyFail: "Copy blocked — the text is selected, press \u2318/Ctrl+C.",
     shareTextTpl: (total, repo) =>
       "Found the perfect self-custody portfolio tracker. My multi-chain allocation: " + total +
-      " with #SmartFolio!\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
+      " with #SmartFolio — a self-hosted plugin for DeepSeek Harness!\n\n" +
+      "#SelfCustody #DeFi #CryptoTracking #DeepSeekHarness\n" + repo,
     shareImgPasteTip: "Image copied — press ⌘/Ctrl+V in the composer to attach it.",
     shareOtherPct: (pct) => "Other " + pct + "%",
     shareColdPct: (pct) => "Cold " + pct + "%",
@@ -298,7 +299,8 @@ const I18N = {
     shareCopyFail: "复制被拦截——文字已选中，按 ⌘/Ctrl+C 即可。",
     shareTextTpl: (total, repo) =>
       "找到一个很顺手的自托管资产追踪工具，我的多链配置：" + total +
-      " #SmartFolio\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
+      " —— #SmartFolio，一个跑在 DeepSeek Harness 上的自托管插件\n\n" +
+      "#SelfCustody #DeFi #CryptoTracking #DeepSeekHarness\n" + repo,
     shareImgPasteTip: "图片已复制，在输入框按一次 ⌘/Ctrl+V 即可附上截图。",
     shareOtherPct: (pct) => "其他 " + pct + "%",
     shareColdPct: (pct) => "冷存储 " + pct + "%",
