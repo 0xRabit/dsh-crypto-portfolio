@@ -404,11 +404,12 @@ footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20
 @media (min-width: 1000px) {
   .settings-about > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
 }
-.settings-about .about-sibling {
-  display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+.settings-about .about-sibling { display: inline-flex; align-items: center; }
+.settings-about .sibling-icon {
+  width: 20px; height: 20px; display: block; opacity: .9;
+  transition: opacity .15s ease, transform .15s ease;
 }
-.settings-about .about-sibling a { color: var(--accent); text-decoration: none; white-space: nowrap; }
-.settings-about .about-sibling a:hover { text-decoration: underline; }
+.settings-about .about-sibling a:hover .sibling-icon { opacity: 1; transform: scale(1.08); }
 
 .hidden { display: none !important; }
 
