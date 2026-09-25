@@ -386,36 +386,36 @@ footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20
 /* One footer row: app identity · sibling project · author + tip jar. The three
    groups are separated by hairlines rather than stacked, so the whole footer is a
    single 40px line that still wraps cleanly on a narrow window. */
-.settings-about {
+.page-footer {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
   color: var(--muted); font-size: 12px;
   padding: var(--sp-3) 0 0; margin-top: var(--sp-2);
   border-top: 1px solid var(--border);
 }
-.settings-about .about-app { display: inline-flex; align-items: center; gap: 8px; }
-.settings-about .about-name {
+.page-footer .about-app { display: inline-flex; align-items: center; gap: 8px; }
+.page-footer .about-name {
   display: inline-flex; align-items: baseline; gap: 6px;
   color: var(--text); font-weight: 600; font-size: 12.5px;
 }
-.settings-about .brand-logo { width: 18px; height: 18px; vertical-align: middle; margin: 0; }
-.settings-about .hint { margin-left: 0; }
+.page-footer .brand-logo { width: 18px; height: 18px; vertical-align: middle; margin: 0; }
+.page-footer .hint { margin-left: 0; }
 /* Hairlines only where the whole row fits on one line: once it wraps, a trailing
    divider would start the next line with a dangling "|". */
 @media (min-width: 1000px) {
-  .settings-about > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
+  .page-footer > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
 }
-.settings-about .about-sibling { display: inline-flex; align-items: center; gap: 6px; }
-.settings-about .sibling-label { color: var(--muted); }
-.settings-about .about-sibling a { display: inline-flex; align-items: center; }
+.page-footer .about-sibling { display: inline-flex; align-items: center; gap: 6px; }
+.page-footer .sibling-label { color: var(--muted); }
+.page-footer .about-sibling a { display: inline-flex; align-items: center; }
 /* The store mark is a light-grey shopping bag on transparency: on the light theme
    it would dissolve into the page, so it sits on a small white tile with a hairline
    — the way an app-store badge is normally presented on any background. */
-.settings-about .sibling-icon {
+.page-footer .sibling-icon {
   width: 20px; height: 20px; display: block; box-sizing: border-box;
   padding: 1px; border-radius: 5px; background: #fff; border: 1px solid var(--border);
   transition: transform .15s ease;
 }
-.settings-about .about-sibling a:hover .sibling-icon { transform: scale(1.12); filter: brightness(1.05); }
+.page-footer .about-sibling a:hover .sibling-icon { transform: scale(1.12); filter: brightness(1.05); }
 
 .hidden { display: none !important; }
 

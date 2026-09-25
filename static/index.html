@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=48">
+<link rel="stylesheet" href="/static/style.css?v=50">
 </head>
 <body>
 <header>
@@ -233,6 +233,26 @@
 
     <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack/OKX/Bitget (CEX). Refresh saves the last snapshot of the day and builds trend charts.</footer>
   </main>
+
+  <footer class="page-footer">
+    <!-- App identity + the twin project. These two groups used to sit at the bottom
+         of Settings; they belong to the product, not to the config page, so the
+         dashboard carries them now and Settings keeps only the author block. -->
+      <span class="about-app">
+        <img src="/static/logos/logo.svg" class="brand-logo" alt="">
+        <span class="about-name"><span data-i18n="brand">Crypto Portfolio Tracker</span>
+          <span class="hint">v<span id="versionTag"></span></span></span>
+      </span>
+      <span class="about-sibling">
+        <!-- "Sibling extensions" + the official Chrome Web Store mark (shopping bag,
+             not the Chrome browser logo): a lone icon leaves people guessing, and the
+             full "Sibling project: SmartFolio Chrome extension" was too long -->
+        <span class="sibling-label" data-i18n="extLabel">Sibling extensions</span>
+        <a href="https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin"
+           target="_blank" rel="noopener noreferrer" data-i18n-title="extensionTitle"
+           aria-label="Chrome Web Store"><img src="/static/logos/chrome-webstore.png" alt="" class="sibling-icon"></a>
+      </span>
+  </footer>
 </div>
 
 <!-- ================= Settings ================= -->
@@ -379,31 +399,13 @@
     </details>
 
     <!-- build / about line: where the version number lives now -->
-    <footer class="settings-about">
-      <!-- One row: the app, its sibling project, and the author with the tip jar.
-           The supporting blurbs that used to sit here ("Python stdlib + …" and
-           "Made with ❤️ by …") were dropped: the handle is already right there, and
-           the marketing line belongs in the README, not in the footer. -->
-      <span class="about-app">
-        <img src="/static/logos/logo.svg" class="brand-logo" alt="">
-        <span class="about-name"><span data-i18n="brand">Crypto Portfolio Tracker</span>
-          <span class="hint">v<span id="versionTag"></span></span></span>
-      </span>
-      <span class="about-sibling">
-        <!-- "Sibling extensions" + the official Chrome Web Store mark (shopping bag,
-             not the Chrome browser logo): a lone icon leaves people guessing, and the
-             full "Sibling project: SmartFolio Chrome extension" was too long -->
-        <span class="sibling-label" data-i18n="extLabel">Sibling extensions</span>
-        <a href="https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin"
-           target="_blank" rel="noopener noreferrer" data-i18n-title="extensionTitle"
-           aria-label="Chrome Web Store"><img src="/static/logos/chrome-webstore.png" alt="" class="sibling-icon"></a>
-      </span>
+    <footer class="page-footer">
       <!-- bmc:start
            Author / donation block, ported from the SmartFolio Chrome extension's
-           footer: avatar + handle + socials + "Buy me a coffee", with the donation
-           dialog behind it (tip.md badge, Binance Pay QR). The badge is VENDORED
-           rather than hot-linked, so the page keeps working with no CDN and no
-           outbound requests.
+           footer: avatar + handle + "Buy me a coffee", with the donation dialog behind
+           it (tip.md badge, Binance Pay QR and the social links). The badge is
+           VENDORED rather than hot-linked, so the page keeps working with no CDN and
+           no outbound requests.
            These markers ship in the public bundle too (the author's call); they exist
            so the whole block can be lifted out in one piece later. Keep new personal
            data inside them. -->
@@ -417,6 +419,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=51"></script>
+<script src="/static/app.js?v=53"></script>
 </body>
 </html>
