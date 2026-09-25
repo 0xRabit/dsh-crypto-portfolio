@@ -723,3 +723,17 @@ summary:focus-visible {
 .donate-block .hint { margin-left: 0; display: block; margin-top: 6px; }
 .donate-qr { width: 170px; height: 170px; border-radius: 10px; border: 1px solid var(--border); }
 /* bmc:end */
+
+/* transient tip: clipboard feedback without stealing layout space */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+  z-index: 60; max-width: min(560px, calc(100vw - 40px));
+  padding: 9px 16px; border-radius: 10px;
+  background: var(--panel2); color: var(--text);
+  border: 1px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,.35);
+  font-size: 12.5px; font-weight: 600; text-align: center;
+  animation: toast-in .18s ease-out;
+}
+.toast.hidden { display: none; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }

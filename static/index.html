@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=53">
+<link rel="stylesheet" href="/static/style.css?v=55">
 </head>
 <body>
 <header>
@@ -55,6 +55,8 @@
   <button class="tab" data-tab="pageSettings" data-i18n="tabSettings">Settings</button>
 </nav>
 
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
 <div id="shareModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
   <div class="modal-box">
     <div class="modal-head">
@@ -72,10 +74,10 @@
       <button id="shareDownload" data-i18n="shareDownload">Download PNG</button>
       <button id="shareCopyImg" class="btn-ghost" data-i18n="shareCopyImg">Copy image</button>
       <span class="share-social">
-        <a id="shareX" class="share-link" target="_blank" rel="noopener noreferrer">X</a>
-        <a id="shareFb" class="share-link" target="_blank" rel="noopener noreferrer">Facebook</a>
-        <a id="shareWa" class="share-link" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-        <a id="shareTg" class="share-link" target="_blank" rel="noopener noreferrer">Telegram</a>
+        <a id="shareX" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">X</a>
+        <a id="shareFb" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a id="shareWa" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a id="shareTg" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">Telegram</a>
       </span>
     </div>
     <div id="shareMsg" class="hint share-msg"></div>
@@ -428,6 +430,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=55"></script>
+<script src="/static/app.js?v=59"></script>
 </body>
 </html>

@@ -129,11 +129,13 @@ const I18N = {
     shareDownload: "Download PNG", shareCopyImg: "Copy image", shareCopyText: "Copy text",
     shareCopied: "Copied.", shareCopyImgFail: "This browser did not allow copying the image — use Download PNG.",
     shareCopyFail: "Copy blocked — the text is selected, press \u2318/Ctrl+C.",
-    shareTextTpl: (total, change, date, top, repo) =>
-      "My portfolio (" + date + "): " + total + (change ? " · " + change : "") +
-      "\nTop holdings: " + top +
-      "\nTracked with dsh-crypto-portfolio — self-hosted, no CDN, keys stay local: " + repo +
-      "\n#crypto #portfolio",
+    shareTextTpl: (total, repo) =>
+      "Found the perfect self-custody portfolio tracker. My multi-chain allocation: " + total +
+      " with #SmartFolio!\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
+    shareImgCopied: "Screenshot copied — paste it anywhere with ⌘/Ctrl+V.",
+    shareImgPasteTip: "Screenshot copied. In the composer press ⌘/Ctrl+V once to attach it.",
+    shareOtherPct: (pct) => "Other " + pct + "%",
+    shareColdPct: (pct) => "Cold " + pct + "%",
     shareHint: "Draw a PNG summary of what you are looking at (no addresses).",
     /* bmc:start — personal author block; stripped from the public bundle */
     buyMeCoffee: "Buy me a coffee ☕", donateTitle: "☕ Buy Me a Coffee",
@@ -289,11 +291,13 @@ const I18N = {
     shareDownload: "下载 PNG", shareCopyImg: "复制图片", shareCopyText: "复制文字",
     shareCopied: "已复制。", shareCopyImgFail: "当前浏览器不允许复制图片——请用「下载 PNG」。",
     shareCopyFail: "复制被拦截——文字已选中，按 ⌘/Ctrl+C 即可。",
-    shareTextTpl: (total, change, date, top, repo) =>
-      "我的资产组合（" + date + "）：" + total + (change ? " · " + change : "") +
-      "\n主要持仓：" + top +
-      "\n用 dsh-crypto-portfolio 自建追踪，全本地、无 CDN、私钥不出本机：" + repo +
-      "\n#crypto #portfolio",
+    shareTextTpl: (total, repo) =>
+      "找到一个很顺手的自托管资产追踪工具，我的多链配置：" + total +
+      " #SmartFolio\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
+    shareImgCopied: "截图已复制到剪贴板——在任意位置 ⌘/Ctrl+V 即可粘贴。",
+    shareImgPasteTip: "截图已复制。发推时在输入框按一次 ⌘/Ctrl+V 就能附上图片。",
+    shareOtherPct: (pct) => "其他 " + pct + "%",
+    shareColdPct: (pct) => "冷存储 " + pct + "%",
     shareHint: "把当前视图画成一张 PNG（不含任何地址）。",
     /* bmc:start */
     buyMeCoffee: "请我喝杯咖啡 ☕", donateTitle: "☕ 请我喝杯咖啡",
@@ -601,6 +605,9 @@ function bindEvents() {
   $("shareDownload").addEventListener("click", shareDownload);
   $("shareCopyImg").addEventListener("click", shareCopyImage);
   $("shareCopyText").addEventListener("click", shareCopyText);
+  document.querySelectorAll(".js-share-intent").forEach((a) => {
+    a.addEventListener("click", shareToSocial);
+  });
   $("shareModal").addEventListener("click", (ev) => {
     if (ev.target === $("shareModal")) closeShare();
   });
@@ -1247,10 +1254,96 @@ function topHoldings(limit) {
   return Array.from(bySymbol.values()).sort((a, b) => b.usd - a.usd).slice(0, limit || 5);
 }
 
+/* Brand mark for the share card header. scripts/sync_public.sh rewrites this path
+   for the public bundle (which ships its own logo), so the personal mark never
+   reaches it. */
+const BRAND_LOGO_URL = "/static/logos/logo.svg";
+
+/** Loads the brand mark once; a missing one is not fatal (the header then draws
+ *  the name alone), so every failure resolves to null instead of rejecting. */
+let _brandLogo;
+function loadBrandLogo() {
+  if (_brandLogo !== undefined) return Promise.resolve(_brandLogo);
+  const probe = (src) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+  return (async () => {
+    _brandLogo = (await probe(BRAND_LOGO_URL)) ||
+                 (await probe("/static/logos/logo.svg")) || null;
+    return _brandLogo;
+  })();
+}
+
+function shareLevelColor(level) {
+  return level === "highRisk" ? SHARE_THEME.danger
+    : (level === "warning" ? SHARE_THEME.warning : SHARE_THEME.success);
+}
+
+/** A segmented bar (stable/btc/other, cold/hot/exchange) inside a health block. */
+function shareStackBar(ctx, x, y, w, h, parts) {
+  let cx = x;
+  parts.forEach((p) => {
+    const seg = Math.max(0, Math.min(w - (cx - x), p.pct / 100 * w));
+    if (seg > 0) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(cx, y, seg, h);
+      cx += seg;
+    }
+  });
+  ctx.fillStyle = "rgba(255,255,255,.06)";
+  if (cx < x + w) ctx.fillRect(cx, y, x + w - cx, h);
+}
+
+/** Concentration gauge: safe / warning / risk zones with a marker on the value. */
+function shareGauge(ctx, x, y, w, h, percent, th) {
+  const warn = (th && th.warning) || 50, danger = (th && th.danger) || 75;
+  const zone = (from, to, color) => { ctx.fillStyle = color; ctx.fillRect(x + w * from / 100, y, w * (to - from) / 100, h); };
+  zone(0, warn, "rgba(63,185,80,.75)");
+  zone(warn, danger, "rgba(210,153,34,.8)");
+  zone(danger, 100, "rgba(248,81,73,.8)");
+  const mx = x + w * Math.min(Math.max(percent, 0), 100) / 100;
+  ctx.fillStyle = SHARE_THEME.text;
+  ctx.fillRect(mx - 1.5, y - 3, 3, h + 6);
+}
+
+/** The three health checks, as mini charts under the holdings. */
+function drawHealthStrip(ctx, health, y) {
+  if (!health) return;
+  const cols = [
+    { name: t("healthVolatility"), level: health.volatility.level,
+      value: t("shareOtherPct", (health.volatility.buckets.other.percent || 0).toFixed(1)),
+      draw: (x, w, by, bh) => shareStackBar(ctx, x, by, w, bh, [
+        { pct: health.volatility.buckets.stable.percent, color: "#34A853" },
+        { pct: health.volatility.buckets.btc.percent, color: "#F7931A" },
+        { pct: health.volatility.buckets.other.percent, color: "#4285F4" }]) },
+    { name: t("healthConcentration"), level: health.concentration.level,
+      value: (health.concentration.percent || 0).toFixed(1) + "%",
+      draw: (x, w, by, bh) => shareGauge(ctx, x, by, w, bh, health.concentration.percent,
+                                         health.concentration.thresholds) },
+    { name: t("healthStorage"), level: health.storage.securityLevel,
+      value: t("shareColdPct", (health.storage.storage.cold.percent || 0).toFixed(1)),
+      draw: (x, w, by, bh) => shareStackBar(ctx, x, by, w, bh, [
+        { pct: health.storage.storage.cold.percent, color: "#34A853" },
+        { pct: health.storage.storage.hot.percent, color: "#F0B90B" },
+        { pct: health.storage.storage.cex.percent, color: "#8B5CF6" }]) },
+  ];
+  const colW = (SHARE_W - 112 - 2 * 28) / 3;
+  cols.forEach((c, i) => {
+    const x = 56 + i * (colW + 28);
+    shareText(ctx, c.name, x, y, { size: 13, weight: 600 });
+    shareText(ctx, healthLevelLabel(c.level), x + colW, y, { size: 12, weight: 600,
+              color: shareLevelColor(c.level), align: "right" });
+    c.draw(x, colW, y + 12, 10);
+    shareText(ctx, c.value, x, y + 40, { size: 12.5, color: SHARE_THEME.muted });
+  });
+}
+
 function drawShareCard(ctx, data) {
   const T = SHARE_THEME;
   ctx.clearRect(0, 0, SHARE_W, SHARE_H);
-  // card body
   shareRoundRect(ctx, 0, 0, SHARE_W, SHARE_H, 28);
   ctx.fillStyle = T.bg;
   ctx.fill();
@@ -1258,46 +1351,50 @@ function drawShareCard(ctx, data) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // header
-  shareText(ctx, t("brand"), 56, 74, { size: 20, weight: 700 });
-  shareText(ctx, t("shareSnapshot") + " " + state.selectedDate, SHARE_W - 56, 74,
+  // header: brand mark + name on the left, snapshot date and build on the right
+  let brandX = 56;
+  if (_brandLogo) {
+    const s = 26;
+    ctx.drawImage(_brandLogo, brandX, 50, s, s);
+    brandX += s + 10;
+  }
+  shareText(ctx, t("brand"), brandX, 71, { size: 20, weight: 700 });
+  shareText(ctx, t("shareSnapshot") + " " + state.selectedDate, SHARE_W - 56, 66,
             { size: 15, color: T.muted, align: "right" });
-  shareText(ctx, t("brand") + (APP_VERSION ? " " + APP_VERSION : ""),
-            SHARE_W - 56, 98, { size: 12, color: T.muted, align: "right" });
+  shareText(ctx, APP_VERSION ? t("brand") + " " + APP_VERSION : t("brand"),
+            SHARE_W - 56, 88, { size: 12, color: T.muted, align: "right" });
 
   // left column — the number a share card is about
-  shareText(ctx, t("shareTotal"), 56, 158, { size: 14, color: T.muted });
-  shareText(ctx, fmtUsdFull(data.total), 56, 218, { size: 52, weight: 700 });
+  shareText(ctx, t("shareTotal"), 56, 140, { size: 14, color: T.muted });
+  shareText(ctx, fmtUsdFull(data.total), 56, 196, { size: 52, weight: 700 });
   if (data.filtered) {
-    shareText(ctx, t("shareFiltered"), 56, 254, { size: 16, color: T.accent });
+    shareText(ctx, t("shareFiltered"), 56, 232, { size: 16, color: T.accent });
   } else if (data.change != null) {
     const up = data.change >= 0;
     shareText(ctx, (up ? "▲ +" : "▼ ") + fmtUsd(Math.abs(data.change)) +
-      "  (" + fmtPct(data.changePct || 0) + ")   vs " + data.prevDate, 56, 254,
+      "  (" + fmtPct(data.changePct || 0) + ")   vs " + data.prevDate, 56, 232,
       { size: 17, weight: 600, color: up ? T.success : T.danger });
   }
   ctx.strokeStyle = T.border;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(56, 288); ctx.lineTo(608, 288); ctx.stroke();
+  ctx.moveTo(56, 272); ctx.lineTo(608, 272); ctx.stroke();
 
-  shareText(ctx, t("shareTop"), 56, 326, { size: 14, color: T.muted });
+  shareText(ctx, t("shareTop"), 56, 306, { size: 14, color: T.muted });
   data.top.forEach((row, i) => {
-    const y = 356 + i * 34;
+    const y = 338 + i * 30;
     const col = labelColor((state.labels || []).includes(row.cat) ? row.cat : "other",
                            (state.labels || []).indexOf(row.cat));
     ctx.beginPath();
     ctx.arc(62, y - 5, 5, 0, Math.PI * 2);
     ctx.fillStyle = col;
     ctx.fill();
-    const symbol = String(row.symbol || "").slice(0, 14);
-    shareText(ctx, symbol, 80, y, { size: 17, weight: 600 });
+    shareText(ctx, String(row.symbol || "").slice(0, 14), 80, y, { size: 17, weight: 600 });
     shareText(ctx, fmtUsd(row.usd), 608, y, { size: 17, weight: 600, align: "right" });
   });
 
-  // right column — asset-type donut with its legend beside it (stacking the two
-  // pushed the last legend rows into the footer pills)
-  const cx = 838, cy = 292, outer = 96, inner = 58;
+  // right column — asset-type donut with its legend beside it
+  const cx = 876, cy = 268, outer = 92, inner = 56;
   let angle = -Math.PI / 2;
   const donutTotal = data.pieTotal || 0;
   if (!donutTotal) {
@@ -1317,68 +1414,52 @@ function drawShareCard(ctx, data) {
     ctx.fill();
     angle += sweep;
   });
-  shareText(ctx, t("typeShareCap"), 960, 186, { size: 14, color: T.muted });
+  shareText(ctx, t("typeShareCap"), 966, 196, { size: 14, color: T.muted });
   data.pie.slice(0, 6).forEach((it, i) => {
-    const y = 216 + i * 26;
+    const y = 226 + i * 26;
     ctx.beginPath();
-    ctx.arc(966, y - 5, 5, 0, Math.PI * 2);
+    ctx.arc(972, y - 5, 5, 0, Math.PI * 2);
     ctx.fillStyle = it.color;
     ctx.fill();
-    shareText(ctx, String(it.name).slice(0, 12), 982, y, { size: 14 });
+    shareText(ctx, String(it.name).slice(0, 12), 988, y, { size: 14 });
     shareText(ctx, donutTotal ? ((it.value / donutTotal) * 100).toFixed(1) + "%" : "0%",
               SHARE_W - 56, y, { size: 14, color: T.muted, align: "right" });
   });
 
-  // footer — the health verdicts, so the card says something about risk too
-  const h = data.health;
-  if (h) {
-    const pills = [
-      { name: t("healthVolatility"), level: h.volatility.level },
-      { name: t("healthConcentration"), level: h.concentration.level },
-      { name: t("healthStorage"), level: h.storage.securityLevel },
-    ];
-    let x = 56;
-    pills.forEach((pl) => {
-      const label = pl.name + " · " + healthLevelLabel(pl.level);
-      ctx.font = "600 14px " + SHARE_FONT;
-      const w = ctx.measureText(label).width + 26;
-      shareRoundRect(ctx, x, SHARE_H - 76, w, 30, 15);
-      ctx.fillStyle = "rgba(255,255,255,.04)";
-      ctx.fill();
-      ctx.strokeStyle = shareLevelColor(pl.level);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      shareText(ctx, label, x + 13, SHARE_H - 56, { size: 14, weight: 600,
-                color: shareLevelColor(pl.level) });
-      x += w + 12;
-    });
-  }
+  // bottom strip — the same three checks the dashboard reports, as mini charts
+  drawHealthStrip(ctx, data.health, 496);
 }
 
-/* Public project page: the social intents need a URL to attach, and it is the
-   honest thing to share alongside a screenshot of your own numbers. */
+/* Public project page: the intent links need a URL to attach, and it is the honest
+   thing to share alongside a screenshot of your own numbers. */
 const SHARE_REPO = "https://github.com/0xRabit/dsh-crypto-portfolio";
 
 function shareFileName() {
   return "portfolio-" + (state.selectedDate || "snapshot") + ".png";
 }
 
-/** The text that goes with the card: facts first, no marketing. */
+/** The post that goes with the card: one line, at most one number (the total). */
 function shareTextFor(data) {
-  const up = (data.change || 0) >= 0;
-  const change = data.change == null ? ""
-    : (up ? "\u25b2 +" : "\u25bc ") + fmtUsd(Math.abs(data.change)) +
-      " (" + fmtPct(data.changePct || 0) + ")";
-  const top = (data.top || []).slice(0, 3)
-    .map((r) => r.symbol + " " + fmtUsd(r.usd)).join(" · ");
-  return t("shareTextTpl", fmtUsdFull(data.total), change, state.selectedDate || "", top, SHARE_REPO);
+  return t("shareTextTpl", fmtUsdFull(data.total), SHARE_REPO);
+}
+
+/* ---------- transient tip (clipboard feedback) ---------- */
+let _toastTimer = null;
+function toast(msg, ms) {
+  const el = $("toast");
+  if (!el || el.classList.remove === undefined) return;
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.add("hidden"), ms || 3200);
 }
 
 let _shareState = { blob: null, text: "" };
 
-function openShare() {
+async function openShare() {
   const data = shareCardData();
   if (!data) { alert(t("shareFail")); return; }
+  await loadBrandLogo();          // the card draws the brand mark in its header
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_W;
   canvas.height = SHARE_H;
@@ -1418,16 +1499,32 @@ function shareDownload() {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-async function shareCopyImage() {
-  // posting the picture directly is what most people want; the Clipboard API
-  // refuses anything but a user gesture, which this click is
+/** Copy the rendered PNG. True when the clipboard now holds the image. */
+async function copyShareImage() {
   try {
-    if (!navigator.clipboard || !window.ClipboardItem || !_shareState.blob) throw new Error("unsupported");
+    if (!navigator.clipboard || !window.ClipboardItem || !_shareState.blob) return false;
     await navigator.clipboard.write([new ClipboardItem({ "image/png": _shareState.blob })]);
-    $("shareMsg").textContent = t("shareCopied");
-  } catch (e) {
-    $("shareMsg").textContent = t("shareCopyImgFail");
+    return true;
+  } catch (e) { return false; }
+}
+
+async function shareCopyImage() {
+  // the Clipboard API only writes on a user gesture, which this click is
+  const ok = await copyShareImage();
+  toast(ok ? t("shareImgCopied") : t("shareCopyImgFail"));
+}
+
+/** A web intent cannot carry an image, so the picture is put on the clipboard
+ *  first and the composer then needs a single paste. */
+async function shareToSocial(ev) {
+  const copying = copyShareImage();
+  if (ev) {
+    const a = ev.currentTarget;
+    if (a && a.href) window.open(a.href, "_blank", "noopener");
+    ev.preventDefault();
   }
+  const ok = await copying;
+  toast(ok ? t("shareImgPasteTip") : t("shareCopyImgFail"), 5000);
 }
 
 /* bmc:start — author / donation dialog */
@@ -1442,12 +1539,12 @@ function closeDonate() {
 async function shareCopyText() {
   try {
     await navigator.clipboard.writeText($("shareText").value);
-    $("shareMsg").textContent = t("shareCopied");
+    toast(t("shareCopied"));
   } catch (e) {
     // clipboard can be blocked (insecure origin, permissions); the textarea is
     // already there, so selecting it is a usable fallback
     $("shareText").select();
-    $("shareMsg").textContent = t("shareCopyFail");
+    toast(t("shareCopyFail"));
   }
 }
 
