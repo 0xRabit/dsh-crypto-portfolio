@@ -126,13 +126,15 @@ const I18N = {
     shareBtn: "Share", shareTotal: "Total assets", shareTop: "Top holdings",
     shareSnapshot: "snapshot", shareFiltered: "filtered view", shareFail: "Could not build the share card.",
     shareTitle: "Share your portfolio", shareClose: "Close",
-    shareDownload: "Download PNG", shareCopyImg: "Copy image", shareCopyText: "Copy text",
+    shareDownload: "Download PNG", shareCopyText: "Copy text",
     shareCopied: "Copied.", shareCopyImgFail: "This browser did not allow copying the image — use Download PNG.",
+    shareCopyWorking: "Preparing the image…",
+    shareCopyOk: "✓ Image copied — just paste it",
+    shareCopyFailShort: "⚠ Copy blocked — use Download PNG",
     shareCopyFail: "Copy blocked — the text is selected, press \u2318/Ctrl+C.",
     shareTextTpl: (total, repo) =>
       "Found the perfect self-custody portfolio tracker. My multi-chain allocation: " + total +
       " with #SmartFolio!\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
-    shareImgCopied: "Screenshot copied — paste it anywhere with ⌘/Ctrl+V.",
     shareImgPasteTip: "Screenshot copied. In the composer press ⌘/Ctrl+V once to attach it.",
     shareOtherPct: (pct) => "Other " + pct + "%",
     shareColdPct: (pct) => "Cold " + pct + "%",
@@ -288,13 +290,15 @@ const I18N = {
     shareBtn: "分享", shareTotal: "总资产", shareTop: "主要持仓",
     shareSnapshot: "快照", shareFiltered: "筛选后的视图", shareFail: "生成分享卡片失败。",
     shareTitle: "分享你的资产组合", shareClose: "关闭",
-    shareDownload: "下载 PNG", shareCopyImg: "复制图片", shareCopyText: "复制文字",
+    shareDownload: "下载 PNG", shareCopyText: "复制文字",
     shareCopied: "已复制。", shareCopyImgFail: "当前浏览器不允许复制图片——请用「下载 PNG」。",
+    shareCopyWorking: "正在生成图片…",
+    shareCopyOk: "✓ 图片已复制，粘贴即可",
+    shareCopyFailShort: "⚠ 复制被拦截，请用「下载 PNG」",
     shareCopyFail: "复制被拦截——文字已选中，按 ⌘/Ctrl+C 即可。",
     shareTextTpl: (total, repo) =>
       "找到一个很顺手的自托管资产追踪工具，我的多链配置：" + total +
       " #SmartFolio\n\n#SelfCustody #DeFi #CryptoTracking\n" + repo,
-    shareImgCopied: "截图已复制到剪贴板——在任意位置 ⌘/Ctrl+V 即可粘贴。",
     shareImgPasteTip: "截图已复制。发推时在输入框按一次 ⌘/Ctrl+V 就能附上图片。",
     shareOtherPct: (pct) => "其他 " + pct + "%",
     shareColdPct: (pct) => "冷存储 " + pct + "%",
@@ -529,6 +533,8 @@ async function init() {
   $("hideZero").checked = state.filters.hideZero;
   restoreSectionState();
   applyHashRoute();
+  loadBrandLogo();          // warm the share card's mark: the clipboard write must
+                            // stay inside the gesture that opened the dialog
   initHeroStrip();
   try {
     const [cfg, history] = await Promise.all([api("/api/wallets"), api("/api/history?days=0")]);
@@ -603,7 +609,6 @@ function bindEvents() {
   $("btnShare").addEventListener("click", openShare);
   $("shareClose").addEventListener("click", closeShare);
   $("shareDownload").addEventListener("click", shareDownload);
-  $("shareCopyImg").addEventListener("click", shareCopyImage);
   $("shareCopyText").addEventListener("click", shareCopyText);
   document.querySelectorAll(".js-share-intent").forEach((a) => {
     a.addEventListener("click", shareToSocial);
@@ -1470,6 +1475,7 @@ async function openShare() {
   $("shareImg").src = canvas.toDataURL("image/png");
   $("shareText").value = text;
   $("shareMsg").textContent = "";
+  setShareCopyState(null);
   // intents: X and WhatsApp take the text, Facebook and Telegram want a URL too
   const enc = encodeURIComponent;
   $("shareX").href = "https://twitter.com/intent/tweet?text=" + enc(text);
@@ -1477,7 +1483,14 @@ async function openShare() {
   $("shareFb").href = "https://www.facebook.com/sharer/sharer.php?u=" + enc(SHARE_REPO) +
     "&quote=" + enc(text);
   $("shareTg").href = "https://t.me/share/url?url=" + enc(SHARE_REPO) + "&text=" + enc(text);
-  if (canvas.toBlob) canvas.toBlob((blob) => { _shareState.blob = blob; }, "image/png");
+  // generating the card IS the click that owns the clipboard gesture, so the PNG
+  // goes straight to the clipboard: the composer then needs one paste, nothing else
+  _shareState.blob = await new Promise((resolve) => {
+    if (canvas.toBlob) canvas.toBlob(resolve, "image/png");
+    else resolve(null);
+  });
+  const copied = await copyShareImage();
+  setShareCopyState(copied);
   $("shareModal").classList.remove("hidden");
   $("btnShare").setAttribute("aria-expanded", "true");
 }
@@ -1508,10 +1521,14 @@ async function copyShareImage() {
   } catch (e) { return false; }
 }
 
-async function shareCopyImage() {
-  // the Clipboard API only writes on a user gesture, which this click is
-  const ok = await copyShareImage();
-  toast(ok ? t("shareImgCopied") : t("shareCopyImgFail"));
+/** In-place status next to Download: null = working, true = on the clipboard,
+ *  false = the browser refused the write. */
+function setShareCopyState(ok) {
+  const el = $("shareCopyState");
+  if (!el || el.classList.remove === undefined) return;
+  el.classList.toggle("ok", ok === true);
+  el.classList.toggle("fail", ok === false);
+  el.textContent = ok === null ? t("shareCopyWorking") : (ok ? t("shareCopyOk") : t("shareCopyFailShort"));
 }
 
 /** A web intent cannot carry an image, so the picture is put on the clipboard
@@ -1524,6 +1541,7 @@ async function shareToSocial(ev) {
     ev.preventDefault();
   }
   const ok = await copying;
+  setShareCopyState(ok);
   toast(ok ? t("shareImgPasteTip") : t("shareCopyImgFail"), 5000);
 }
 

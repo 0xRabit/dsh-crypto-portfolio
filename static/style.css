@@ -737,3 +737,8 @@ summary:focus-visible {
 .toast.hidden { display: none; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* in-place clipboard status where the "Copy image" button used to sit */
+.share-copy-state { font-size: 12.5px; color: var(--muted); align-self: center; }
+.share-copy-state.ok { color: var(--success); font-weight: 600; }
+.share-copy-state.fail { color: var(--warning); font-weight: 600; }

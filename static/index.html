@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=55">
+<link rel="stylesheet" href="/static/style.css?v=56">
 </head>
 <body>
 <header>
@@ -72,7 +72,9 @@
     </div>
     <div class="share-actions">
       <button id="shareDownload" data-i18n="shareDownload">Download PNG</button>
-      <button id="shareCopyImg" class="btn-ghost" data-i18n="shareCopyImg">Copy image</button>
+      <!-- the card is copied to the clipboard the moment it is generated, so this
+           spot reports the state instead of offering a button -->
+      <span id="shareCopyState" class="share-copy-state" role="status" aria-live="polite"></span>
       <span class="share-social">
         <a id="shareX" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">X</a>
         <a id="shareFb" class="share-link js-share-intent" target="_blank" rel="noopener noreferrer">Facebook</a>
@@ -430,6 +432,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=59"></script>
+<script src="/static/app.js?v=60"></script>
 </body>
 </html>
