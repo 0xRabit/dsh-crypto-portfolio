@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <title>Chrome Web Store</title>
-  <path d="M12.0,12.0 L2.91,6.75 A10.5,10.5 0 0 1 21.09,6.75 Z" fill="#EA4335"/>
-  <path d="M12.0,12.0 L21.09,6.75 A10.5,10.5 0 0 1 12.00,22.50 Z" fill="#34A853"/>
-  <path d="M12.0,12.0 L12.00,22.50 A10.5,10.5 0 0 1 2.91,6.75 Z" fill="#FBBC05"/>
-  <circle cx="12.0" cy="12.0" r="5.0" fill="#ffffff"/>
-  <circle cx="12.0" cy="12.0" r="4.0" fill="#4285F4"/>
-</svg>

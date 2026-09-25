@@ -404,12 +404,18 @@ footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20
 @media (min-width: 1000px) {
   .settings-about > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
 }
-.settings-about .about-sibling { display: inline-flex; align-items: center; }
+.settings-about .about-sibling { display: inline-flex; align-items: center; gap: 6px; }
+.settings-about .sibling-label { color: var(--muted); }
+.settings-about .about-sibling a { display: inline-flex; align-items: center; }
+/* The store mark is a light-grey shopping bag on transparency: on the light theme
+   it would dissolve into the page, so it sits on a small white tile with a hairline
+   — the way an app-store badge is normally presented on any background. */
 .settings-about .sibling-icon {
-  width: 20px; height: 20px; display: block; opacity: .9;
-  transition: opacity .15s ease, transform .15s ease;
+  width: 20px; height: 20px; display: block; box-sizing: border-box;
+  padding: 1px; border-radius: 5px; background: #fff; border: 1px solid var(--border);
+  transition: transform .15s ease;
 }
-.settings-about .about-sibling a:hover .sibling-icon { opacity: 1; transform: scale(1.08); }
+.settings-about .about-sibling a:hover .sibling-icon { transform: scale(1.12); filter: brightness(1.05); }
 
 .hidden { display: none !important; }
 

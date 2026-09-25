@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=46">
+<link rel="stylesheet" href="/static/style.css?v=48">
 </head>
 <body>
 <header>
@@ -390,11 +390,13 @@
           <span class="hint">v<span id="versionTag"></span></span></span>
       </span>
       <span class="about-sibling">
-        <!-- one icon instead of "Sibling project: SmartFolio Chrome extension": the
-             tooltip and aria-label carry the wording -->
+        <!-- "Sibling extensions" + the official Chrome Web Store mark (shopping bag,
+             not the Chrome browser logo): a lone icon leaves people guessing, and the
+             full "Sibling project: SmartFolio Chrome extension" was too long -->
+        <span class="sibling-label" data-i18n="extLabel">Sibling extensions</span>
         <a href="https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin"
            target="_blank" rel="noopener noreferrer" data-i18n-title="extensionTitle"
-           aria-label="Chrome Web Store"><img src="/static/logos/chrome.svg" alt="" class="sibling-icon"></a>
+           aria-label="Chrome Web Store"><img src="/static/logos/chrome-webstore.png" alt="" class="sibling-icon"></a>
       </span>
       <!-- bmc:start
            Author / donation block, ported from the SmartFolio Chrome extension's
@@ -415,6 +417,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=50"></script>
+<script src="/static/app.js?v=51"></script>
 </body>
 </html>
