@@ -25,8 +25,10 @@ _user_cache = {"mtime": None, "data": None}
 
 
 def _file_mtime():
+    """mtime of the rules file, or None. One stat rather than exists()+getmtime():
+    this is consulted once per token row while a snapshot is filtered."""
     try:
-        return os.path.getmtime(profiles.blacklist_file()) if os.path.exists(profiles.blacklist_file()) else None
+        return os.stat(profiles.blacklist_file()).st_mtime
     except OSError:
         return None
 

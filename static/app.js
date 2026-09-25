@@ -539,11 +539,13 @@ async function init() {
                             // stay inside the gesture that opened the dialog
   initHeroStrip();
   try {
-    const [cfg, history] = await Promise.all([api("/api/wallets"), api("/api/history?days=0")]);
+    // First paint does NOT wait for the trend: /api/history is the heaviest call
+    // (it walks every snapshot) and blocking on it left the whole dashboard blank
+    // for seconds. The date list comes from /api/snapshots, which is tiny.
+    const [cfg, snapDates] = await Promise.all([api("/api/wallets"), api("/api/snapshots")]);
     state.wallets = cfg.wallets;
     state.chains = cfg.chains || {};
-    state.history = history;
-    const dates = history.dates;
+    const dates = snapDates.map((d) => d.date);
     state.dates = dates;
     fillDateSelect(dates);
     if (dates.length) {
@@ -553,12 +555,13 @@ async function init() {
     } else {
       showEmpty();
     }
-    renderChart();
     fillFilterSelects();
     renderBlacklist();
     renderStablecoins();
     renderWalletMgmt();
     renderProfiles();   // populate header profile dropdown
+    // the trend arrives last, on its own
+    loadHistory();
   } catch (e) {
     showError(t("loadingFailed") + e.message);
   }
@@ -983,6 +986,16 @@ function filteredView(opts) {
   return { date: state.view.date, created_at: state.view.created_at,
            total_usd: total, by_chain: byChain, wallets,
            filtered: f.category !== "all" || !!f.wallet || !!f.chain };
+}
+
+/** Load the trend series in the background and draw it when it arrives. */
+async function loadHistory() {
+  try {
+    const h = await api("/api/history?days=0");
+    state.history = h;
+    renderChart();
+    try { performance.mark("trend-drawn"); } catch (e) { /* ignore */ }
+  } catch (e) { /* the trend is optional: the rest of the dashboard still works */ }
 }
 
 function filteredHistory() {
@@ -1569,6 +1582,12 @@ async function shareCopyText() {
 }
 
 function renderAll() {
+  // first full render of the dashboard: the mark lets a load be profiled from the
+  // outside (the interesting number is this one vs. navigationStart)
+  if (!window.__firstPaintMarked) {
+    window.__firstPaintMarked = true;
+    try { performance.mark("dashboard-first-paint"); } catch (e) { /* ignore */ }
+  }
   updateFilterChips();
   renderTypePie();
   renderSummary();
@@ -2800,9 +2819,7 @@ async function reloadViewData() {
   } else {
     showEmpty();
   }
-  const h = await api("/api/history?days=0");
-  state.history = h;
-  renderChart();
+  await loadHistory();
   await renderBlacklist();
   await renderStablecoins();
   await renderWalletMgmt();
@@ -2866,14 +2883,14 @@ async function refresh() {
     }
     $("progressFill").style.width = "100%";
     $("progressMsg").textContent = t("doneUpdating");
-    const [history, dates] = await Promise.all([api("/api/history?days=0"), api("/api/snapshots")]);
-    state.history = history;
+    // render the fresh snapshot first, then let the trend catch up
+    const dates = await api("/api/snapshots");
     state.dates = dates.map((d) => d.date);
     fillDateSelect(state.dates);
     state.selectedDate = dates[dates.length - 1].date;
     $("dateSelect").value = state.selectedDate;
     await loadDate(state.selectedDate);
-    renderChart();
+    loadHistory();
   } catch (e) {
     $("progressMsg").textContent = t("refreshFailed") + e.message;
     setTimeout(() => prog.classList.add("hidden"), 4000);

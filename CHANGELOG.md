@@ -54,6 +54,24 @@ First public release.
   (including refresh) are fenced against cross-site requests — non-JSON bodies are
   refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
   is rate-limited to one run per minute.
+- **Page loads are ~50× faster.** Every path helper (`blacklist.json`, `labels.json`,
+  `wallets.json`, …) resolved the active profile by opening and reading
+  `profiles/.active` — ~85 µs per call, against ~1 µs for a bare stat — and a trend
+  rebuild called it once per token row. The pointer is now cached against the file's
+  (mtime, size) and invalidated by every profile mutation, which alone took
+  `/api/current` from 360 ms to 56 ms and the history call from 5.8 s to 0.9 s.
+- **The trend reads aggregates, not every snapshot.** `get_history` re-parsed all
+  snapshots and re-filtered every token row on each page load, so its cost grew with
+  the portfolio rather than with the number of days. A per-date `history_totals`
+  table (written incrementally on refresh) is now the source, rebuilt once when
+  something that rewrites history changes — a new snapshot, the blacklist, or the
+  label rules. `/api/history` went from 5.8 s to **2 ms**, and the blacklist still
+  retroactively rewrites past totals, which is what the old approach was protecting.
+- **The first paint no longer waits for the trend.** The dashboard, wallet cards,
+  donuts and health report render from the snapshot, and the trend arrives on its
+  own; the date list comes from the tiny `/api/snapshots`. First wallet card:
+  **7.5 s → 140 ms** (measured with `performance.mark` hooks, which now exist for
+  exactly this kind of profiling).
 - **Snapshot retention.** A profile keeps a dense 90-day window plus one snapshot per
   month for the tail (`PORTFOLIO_KEEP_DAILY_DAYS` / `PORTFOLIO_KEEP_MONTHLY`), instead
   of growing by ~0.75 MB/day forever.

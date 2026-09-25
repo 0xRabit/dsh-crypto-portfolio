@@ -61,16 +61,50 @@ def exists(name):
     return os.path.isdir(profile_dir(name))
 
 
-def active():
+# `.active` is read through a cache: every path helper (blacklist/wallets/labels/
+# sources/health...) calls active(), and a history rebuild calls those once per
+# token row — opening and reading the file each time measured ~85 µs per call
+# against ~1 µs for a bare stat, and made up most of a 6 s page load.
+_active_cache = {"key": None, "name": None}
+
+
+def _active_key():
+    """Identity of the .active pointer: (mtime_ns, size), or None when absent."""
+    try:
+        st = os.stat(ACTIVE_FILE)
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
+def invalidate_active_cache():
+    """Drop the cached name. Called from every profile mutation, so a rename or a
+    delete is visible immediately instead of at the next mtime change."""
     with _lock:
-        try:
-            with open(ACTIVE_FILE, "r", encoding="utf-8") as f:
-                name = f.read().strip()
-            if name and exists(name):
-                return name
-        except Exception:  # noqa: BLE001
-            pass
-        return "default" if exists("default") else (list_profiles() or [None])[0]
+        _active_cache["key"] = None
+        _active_cache["name"] = None
+
+
+def _read_active():
+    try:
+        with open(ACTIVE_FILE, "r", encoding="utf-8") as f:
+            name = f.read().strip()
+        if name and exists(name):
+            return name
+    except Exception:  # noqa: BLE001
+        pass
+    return "default" if exists("default") else (list_profiles() or [None])[0]
+
+
+def active():
+    global _active_cache
+    with _lock:
+        key = _active_key()
+        if _active_cache["name"] is not None and _active_cache["key"] == key:
+            return _active_cache["name"]
+        name = _read_active()
+        _active_cache = {"key": key, "name": name}
+        return name
 
 
 def set_active(name):
@@ -82,6 +116,7 @@ def set_active(name):
         # 11 bytes, but an empty or torn .active sends the dashboard to the wrong
         # profile — and the scheduler flips this around every refresh
         atomicio.write_text(ACTIVE_FILE, name)
+        invalidate_active_cache()
 
 
 # Interrupted-refresh recovery -------------------------------------------------
@@ -202,6 +237,7 @@ def delete_profile(name):
     if name == active():
         raise ValueError("cannot delete the active profile")
     shutil.rmtree(profile_dir(name), ignore_errors=True)
+    invalidate_active_cache()
 
 
 def rename_profile(old, new):
@@ -224,6 +260,7 @@ def rename_profile(old, new):
         raise ValueError(f"profile {new!r} already exists")
     was_active = (active() == old)
     os.rename(profile_dir(old), profile_dir(new))
+    invalidate_active_cache()       # the old name is gone even when it was not active
     if was_active:
         set_active(new)
     return new

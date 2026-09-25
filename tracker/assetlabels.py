@@ -67,10 +67,10 @@ def _migrate_legacy_file():
 
 
 def _file_mtime():
-    _migrate_legacy_file()
+    """mtime of the rules file, or None. One stat rather than exists()+getmtime():
+    this is consulted once per token row while a snapshot is filtered."""
     try:
-        f = profiles.asset_labels_file()
-        return os.path.getmtime(f) if os.path.exists(f) else None
+        return os.stat(profiles.asset_labels_file()).st_mtime
     except OSError:
         return None
 

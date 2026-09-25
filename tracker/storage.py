@@ -7,6 +7,7 @@ import threading
 from datetime import datetime, timedelta
 
 from . import config, profiles
+from . import blacklist as blacklist_mod
 from .blacklist import filter_rows
 from . import assetlabels as assetlabels
 from .views import view_of
@@ -43,6 +44,22 @@ CREATE TABLE IF NOT EXISTS tokens (
 );
 CREATE INDEX IF NOT EXISTS idx_tokens_date ON tokens(date);
 CREATE INDEX IF NOT EXISTS idx_wt_date ON wallet_totals(date);
+-- Trend aggregates, one row per (date, kind, name). The trend is read from here
+-- instead of re-parsing every snapshot's raw JSON: the page-load cost then depends
+-- on the number of *dates*, not on the number of token rows (which grows with the
+-- portfolio). Rebuilt wholesale when the blacklist or the label rules change, since
+-- those rewrite history retroactively.
+CREATE TABLE IF NOT EXISTS history_totals (
+    date  TEXT NOT NULL,
+    kind  TEXT NOT NULL,          -- 'total' | 'wallet' | 'chain'
+    name  TEXT NOT NULL DEFAULT '',
+    usd   REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (date, kind, name)
+);
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+);
 """
 
 _lock = threading.RLock()
@@ -52,13 +69,28 @@ def _db_path():
     return config.DB_PATH or profiles.db_path()
 
 
+_schema_done = set()
+
+
 def _connect():
-    conn = sqlite3.connect(_db_path(), timeout=30)
+    """Open the profile DB, making sure this process has created the schema.
+
+    Older databases predate history_totals/meta, and any code path may be the first
+    to touch the DB (tests, CLI fetch, the server), so the migration is applied here
+    once per file instead of relying on the caller.
+    """
+    path = _db_path()
+    conn = sqlite3.connect(path, timeout=30)
     conn.row_factory = sqlite3.Row
+    if path not in _schema_done:
+        conn.executescript(SCHEMA)
+        conn.commit()
+        _schema_done.add(path)
     return conn
 
 
 def init_db():
+    """Create the schema for the active profile (idempotent)."""
     with _lock:
         conn = _connect()
         try:
@@ -95,6 +127,12 @@ def save_snapshot(data):
                         (date, t["wallet"], t.get("chain", ""), t.get("token_id", ""),
                          t.get("symbol", ""), t.get("name", ""), t.get("amount", 0.0),
                          t.get("price", 0.0), t.get("usd", 0.0), t.get("logo", "")))
+            # trend aggregates for this date, from the same filtered view the UI uses
+            snap = dict(data)
+            snap["date"] = date
+            _write_history_rows(conn, date, _history_rows_for(snap))
+            conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('history_sig', ?)",
+                         (_history_sig(conn),))
             conn.commit()
         finally:
             conn.close()
@@ -136,6 +174,65 @@ def get_snapshot_dates():
             conn.close()
 
 
+def _history_sig(conn):
+    """Identity of everything the aggregates depend on.
+
+    Snapshot set + the two rule files: a blacklist or label change rewrites history,
+    so the signature changes and the next read rebuilds once.
+    """
+    row = conn.execute(
+        "SELECT COUNT(*) AS n, COALESCE(MAX(date), '') AS d, "
+        "COALESCE(MAX(created_at), '') AS c FROM snapshots").fetchone()
+    return "%s|%s|%s|%s|%s" % (
+        row["n"], row["d"], row["c"],
+        blacklist_mod._file_mtime() or "", assetlabels._file_mtime() or "")
+
+
+def _history_rows_for(snap):
+    """Aggregate rows for one snapshot, from the same filtered view the UI shows."""
+    view = view_of(snap)
+    rows = [("total", "", view["total_usd"])]
+    for w in view["wallets"]:
+        rows.append(("wallet", w["wallet"], w["total_usd"]))
+    for chain, usd in view["by_chain"].items():
+        rows.append(("chain", chain, usd))
+    return rows
+
+
+def _write_history_rows(conn, date, rows):
+    conn.execute("DELETE FROM history_totals WHERE date=?", (date,))
+    conn.executemany(
+        "INSERT OR REPLACE INTO history_totals(date, kind, name, usd) VALUES (?,?,?,?)",
+        [(date, kind, name, usd) for kind, name, usd in rows])
+
+
+def rebuild_history(conn):
+    """Recompute every date's aggregates from the stored snapshots (one pass)."""
+    conn.execute("DELETE FROM history_totals")
+    dates = [r["date"] for r in conn.execute("SELECT date FROM snapshots ORDER BY date")]
+    for d in dates:
+        raw = conn.execute("SELECT raw FROM snapshots WHERE date=?", (d,)).fetchone()
+        if not raw:
+            continue
+        snap = json.loads(raw["raw"])
+        snap["date"] = d
+        _write_history_rows(conn, d, _history_rows_for(snap))
+    conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('history_sig', ?)",
+                 (_history_sig(conn),))
+    conn.commit()          # the read path calls this: without a commit the rebuild
+    return len(dates)      # is rolled back on close and repeats on every request
+
+
+def _ensure_history(conn):
+    """Rebuild the aggregates when the rules or the snapshot set changed."""
+    sig = _history_sig(conn)
+    row = conn.execute("SELECT value FROM meta WHERE key='history_sig'").fetchone()
+    if row is None or row["value"] != sig:
+        rebuild_history(conn)
+        return True
+    return False
+
+
 def get_history(days=None):
     """Trend data: dates, total per day, per-wallet and per-chain series.
 
@@ -154,19 +251,21 @@ def get_history(days=None):
             dates.reverse()
             if not dates:
                 return {"dates": [], "totals": [], "wallets": {}, "chains": {}}
-            totals = []
+            _ensure_history(conn)
+            wanted = set(dates)
+            totals_by_date = {}
             wallets = {}
             chains = {}
-            for d in dates:
-                raw = conn.execute("SELECT raw FROM snapshots WHERE date=?", (d,)).fetchone()
-                snap = json.loads(raw["raw"]) if raw else {"date": d, "wallets": []}
-                snap["date"] = d
-                v = view_of(snap)
-                totals.append(v["total_usd"])
-                for w in v["wallets"]:
-                    wallets.setdefault(w["wallet"], {})[d] = w["total_usd"]
-                for c, val in v["by_chain"].items():
-                    chains.setdefault(c, {})[d] = val
+            for r in conn.execute("SELECT date, kind, name, usd FROM history_totals"):
+                if r["date"] not in wanted:
+                    continue
+                if r["kind"] == "total":
+                    totals_by_date[r["date"]] = r["usd"]
+                elif r["kind"] == "wallet":
+                    wallets.setdefault(r["name"], {})[r["date"]] = r["usd"]
+                else:
+                    chains.setdefault(r["name"], {})[r["date"]] = r["usd"]
+            totals = [totals_by_date.get(d, 0.0) for d in dates]
             return {
                 "dates": dates,
                 "totals": totals,
@@ -255,8 +354,11 @@ def prune_snapshots(today=None, keep_days=None, keep_monthly=None):
             for d in drop:
                 conn.execute("DELETE FROM tokens WHERE date=?", (d,))
                 conn.execute("DELETE FROM wallet_totals WHERE date=?", (d,))
+                conn.execute("DELETE FROM history_totals WHERE date=?", (d,))
                 conn.execute("DELETE FROM snapshots WHERE date=?", (d,))
             if drop:
+                conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('history_sig', ?)",
+                             (_history_sig(conn),))
                 conn.commit()
             return {"kept": len(keep), "dropped": len(drop), "dropped_dates": drop}
         finally:
