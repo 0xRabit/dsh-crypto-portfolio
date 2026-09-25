@@ -380,7 +380,9 @@ td.muted { color: var(--muted); max-width: 220px; overflow: hidden; text-overflo
 .amount { font-variant-numeric: tabular-nums; }
 .usd-pos { color: #7ee787; } .usd-neg { color: var(--red); }
 
-footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20px 0 8px; line-height: 1.8; }
+footer { color: var(--muted); font-size: 11.5px; text-align: center; line-height: 1.8; }
+/* the page footer is the last thing on the page, so it owns the bottom spacing */
+.page-footer-end { padding: var(--sp-5) 0 var(--sp-4); margin-top: var(--sp-5); }
 
 /* build/about line at the bottom of the settings page */
 /* One footer row: app identity · sibling project · author + tip jar. The three
