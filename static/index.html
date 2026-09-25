@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=38">
+<link rel="stylesheet" href="/static/style.css?v=40">
 </head>
 <body>
 <header>
@@ -34,6 +34,7 @@
     <label class="pf-switch"><span class="fb-label" data-i18n="profileActive">Profile</span>
       <select id="profileSelect" data-i18n-title="profileSwitchTitle"></select></label>
     <select id="dateSelect" data-i18n-title="viewDateTitle"></select>
+    <button id="btnShare" class="btn-ghost" data-i18n="shareBtn" data-i18n-title="shareHint" title="Draw a PNG summary of what you are looking at (no addresses)">Share</button>
     <button id="btnRefresh" data-i18n="btnRefresh">Refresh</button>
   </div>
 </header>
@@ -42,6 +43,33 @@
   <button class="tab active" data-tab="pageDashboard" data-i18n="tabDashboard">Dashboard</button>
   <button class="tab" data-tab="pageSettings" data-i18n="tabSettings">Settings</button>
 </nav>
+
+<div id="shareModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="shareTitle" data-i18n="shareTitle">Share your portfolio</span>
+      <button id="shareClose" class="btn-ghost" data-i18n-title="shareClose" title="Close">✕</button>
+    </div>
+    <div class="share-preview"><img id="shareImg" alt=""></div>
+    <div class="share-textrow">
+      <textarea id="shareText" rows="4" spellcheck="false"></textarea>
+      <div class="share-textbtns">
+        <button id="shareCopyText" class="btn-ghost" data-i18n="shareCopyText">Copy text</button>
+      </div>
+    </div>
+    <div class="share-actions">
+      <button id="shareDownload" data-i18n="shareDownload">Download PNG</button>
+      <button id="shareCopyImg" class="btn-ghost" data-i18n="shareCopyImg">Copy image</button>
+      <span class="share-social">
+        <a id="shareX" class="share-link" target="_blank" rel="noopener noreferrer">X</a>
+        <a id="shareFb" class="share-link" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a id="shareWa" class="share-link" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a id="shareTg" class="share-link" target="_blank" rel="noopener noreferrer">Telegram</a>
+      </span>
+    </div>
+    <div id="shareMsg" class="hint share-msg"></div>
+  </div>
+</div>
 
 <div id="progress" class="progress hidden">
   <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
@@ -87,7 +115,6 @@
             <div id="totalChange" class="change"></div>
             <div id="lastUpdated" class="sub"></div>
             <div id="historyNote" class="history-note hidden" data-i18n="viewingHistory"></div>
-            <button id="btnShare" class="btn-ghost btn-share" data-i18n="shareBtn" data-i18n-title="shareHint" title="Draw a PNG summary of what you are looking at (no addresses)">Share card</button>
           </div>
           <div class="pie-block">
             <div class="pie-cap" data-i18n="walletShareCap">By wallet</div>
@@ -117,6 +144,17 @@
     <!-- Token details sits directly under the pie + wallet cards: clicking a
          wallet card narrows this table, and the two must be adjacent for that
          to be visible. -->
+    <section class="panel" id="secHealth">
+      <!-- Health is a property of the WHOLE portfolio, not of the current filter:
+           hiding the CEX wallets would change the tiering maths and turn a real
+           risk figure into a misleading one. So no filter chip here, and the hint
+           says as much. -->
+      <div class="panel-title"><span data-i18n="healthTitle">Asset Health</span>
+        <span class="hint" data-i18n="healthScope">whole portfolio, independent of the filters above</span></div>
+      <div id="healthGrid" class="health-grid"></div>
+      <div id="healthAdvice" class="health-advice"></div>
+    </section>
+
     <section class="panel">
       <div class="panel-title">
         <span data-i18n="tokensTitle">Token Details</span> <span class="hint" id="tokenDate"></span><span class="hint filter-chip" data-filter-chip></span>
@@ -161,17 +199,6 @@
     <section class="panel">
       <div class="panel-title"><span data-i18n="chainTitle">Chain Distribution (USD)</span><span class="hint filter-chip" data-filter-chip></span></div>
       <div id="chainBars"></div>
-    </section>
-
-    <section class="panel" id="secHealth">
-      <!-- Health is a property of the WHOLE portfolio, not of the current filter:
-           hiding the CEX wallets would change the tiering maths and turn a real
-           risk figure into a misleading one. So no filter chip here, and the hint
-           says as much. -->
-      <div class="panel-title"><span data-i18n="healthTitle">Asset Health</span>
-        <span class="hint" data-i18n="healthScope">whole portfolio, independent of the filters above</span></div>
-      <div id="healthGrid" class="health-grid"></div>
-      <div id="healthAdvice" class="health-advice"></div>
     </section>
 
     <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack/OKX/Bitget (CEX). Refresh saves the last snapshot of the day and builds trend charts.</footer>
@@ -298,6 +325,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=37"></script>
+<script src="/static/app.js?v=39"></script>
 </body>
 </html>

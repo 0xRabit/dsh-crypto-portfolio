@@ -107,7 +107,7 @@ First public release.
   ticker at all; their price comes from the collateral view's `assetMarkPrice`.
   A native asset whose on-chain price is unavailable now falls back to the
   exchange's own price instead of being reported as worth nothing.
-- **Asset health report.** A panel under the chain distribution grades the
+- **Asset health report.** A panel directly above the token table grades the
   portfolio on the three questions a reviewer actually asks — **on-chain risk**
   (share held on-chain outside BTC, 60/70 %), **concentration** (largest single
   wallet, 50/75 %) and **storage security** (cold share, 50/20 %) — each with a
@@ -115,16 +115,23 @@ First public release.
   sentence per failing check. Figures come from the blacklist-filtered snapshot, so
   they can never disagree with the totals above; the report is deliberately not
   filter-aware, because hiding the CEX wallets would change the tiering maths.
-  Thresholds and formulas live in `tracker/health.py`.
+  Thresholds and formulas live in `tracker/health.py`. The hot/cold class follows
+  the **live** wallet list rather than the value frozen into the snapshot, so
+  marking a wallet cold moves the panel immediately instead of at the next refresh
+  (a wallet removed from the live list keeps the class its snapshots recorded).
 - **Wallets know where their keys live.** Each wallet is *hot* or *cold* (Settings →
   Wallet Management, or on creation); exchange accounts are always exchange custody.
   Cold wallets are marked with a ❄ on their card. The class is stored with the
   snapshot, so a historical snapshot's health report reflects what was cold at the
   time rather than what is cold now.
-- **Share card.** One button draws a 1200×630 PNG of the current view — total,
-  change vs the previous day, top five holdings (aggregated by symbol), the asset-label
-  donut with its legend and the three health verdicts. Drawn by hand on a canvas:
-  no `html2canvas`, no CDN, and no address ever reaches the image.
+- **Share card.** A *Share* button in the header opens a dialog with a live
+  preview of a 1200×630 PNG — total, change vs the previous day, top five holdings
+  (aggregated by symbol), the asset-label donut with its legend and the three health
+  verdicts — plus **Download PNG**, **Copy image**, **Copy text** and share intents
+  for **X / Facebook / WhatsApp / Telegram**. The image is drawn by hand on a canvas:
+  no `html2canvas`, no CDN, and no address ever reaches it. The text is generated
+  from the same figures, states nothing it cannot back up, and is editable before
+  copying.
 - **Linkable pages.** `#pageSettings` opens the settings page and
   `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
 - Light and dark themes; English and 中文.

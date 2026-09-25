@@ -120,8 +120,17 @@ const I18N = {
     healthStorageAdvice: (pct) => "Only " + pct + "% sits in cold storage; long-term holdings belong on a hardware wallet.",
     healthStorageAdviceNone: "Nothing is in cold storage yet; long-term holdings belong on a hardware wallet.",
     healthNoData: "No snapshot yet — run a refresh to compute the health report.",
-    shareBtn: "Share card", shareTotal: "Total assets", shareTop: "Top holdings",
+    shareBtn: "Share", shareTotal: "Total assets", shareTop: "Top holdings",
     shareSnapshot: "snapshot", shareFiltered: "filtered view", shareFail: "Could not build the share card.",
+    shareTitle: "Share your portfolio", shareClose: "Close",
+    shareDownload: "Download PNG", shareCopyImg: "Copy image", shareCopyText: "Copy text",
+    shareCopied: "Copied.", shareCopyImgFail: "This browser did not allow copying the image — use Download PNG.",
+    shareCopyFail: "Copy blocked — the text is selected, press \u2318/Ctrl+C.",
+    shareTextTpl: (total, change, date, top, repo) =>
+      "My portfolio (" + date + "): " + total + (change ? " · " + change : "") +
+      "\nTop holdings: " + top +
+      "\nTracked with dsh-crypto-portfolio — self-hosted, no CDN, keys stay local: " + repo +
+      "\n#crypto #portfolio",
     shareHint: "Draw a PNG summary of what you are looking at (no addresses).",
     healthTier1: "BTC", healthTier2: "On-chain", healthTier3: "CEX", healthRest: "other wallets",
     storageHot: "Hot wallet", storageCold: "Cold wallet",
@@ -262,8 +271,17 @@ const I18N = {
     healthStorageAdvice: (pct) => "只有 " + pct + "% 放在冷存储，长期持有的部分建议放进硬件钱包。",
     healthStorageAdviceNone: "目前还没有冷存储，长期持有的部分建议放进硬件钱包。",
     healthNoData: "还没有快照——先刷新一次即可生成健康度报告。",
-    shareBtn: "分享卡片", shareTotal: "总资产", shareTop: "主要持仓",
+    shareBtn: "分享", shareTotal: "总资产", shareTop: "主要持仓",
     shareSnapshot: "快照", shareFiltered: "筛选后的视图", shareFail: "生成分享卡片失败。",
+    shareTitle: "分享你的资产组合", shareClose: "关闭",
+    shareDownload: "下载 PNG", shareCopyImg: "复制图片", shareCopyText: "复制文字",
+    shareCopied: "已复制。", shareCopyImgFail: "当前浏览器不允许复制图片——请用「下载 PNG」。",
+    shareCopyFail: "复制被拦截——文字已选中，按 ⌘/Ctrl+C 即可。",
+    shareTextTpl: (total, change, date, top, repo) =>
+      "我的资产组合（" + date + "）：" + total + (change ? " · " + change : "") +
+      "\n主要持仓：" + top +
+      "\n用 dsh-crypto-portfolio 自建追踪，全本地、无 CDN、私钥不出本机：" + repo +
+      "\n#crypto #portfolio",
     shareHint: "把当前视图画成一张 PNG（不含任何地址）。",
     healthTier1: "BTC", healthTier2: "链上", healthTier3: "CEX", healthRest: "其他钱包",
     storageHot: "热钱包", storageCold: "冷钱包",
@@ -423,6 +441,8 @@ function refreshLanguage() {
       (state.view.created_at || "").replace("T", " ");
   }
   renderAll();
+  // an open share dialog holds generated text; re-render it in the new language
+  if ($("shareModal") && !$("shareModal").classList.contains("hidden")) openShare();
   if (!$("pageSettings").classList.contains("hidden")) renderSettings();
 }
 
@@ -552,7 +572,18 @@ function bindEvents() {
     document.documentElement.setAttribute("data-theme", theme);
     $("btnTheme").textContent = themeBtnIcon();
   });
-  if ($("btnShare")) $("btnShare").addEventListener("click", makeShareCard);
+  // share dialog: open from the header, close with ✕, Escape or a click outside
+  $("btnShare").addEventListener("click", openShare);
+  $("shareClose").addEventListener("click", closeShare);
+  $("shareDownload").addEventListener("click", shareDownload);
+  $("shareCopyImg").addEventListener("click", shareCopyImage);
+  $("shareCopyText").addEventListener("click", shareCopyText);
+  $("shareModal").addEventListener("click", (ev) => {
+    if (ev.target === $("shareModal")) closeShare();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !$("shareModal").classList.contains("hidden")) closeShare();
+  });
   $("btnLang").addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";
     try { localStorage.setItem("pt_lang", lang); } catch (e) { /* ignore */ }
@@ -1230,31 +1261,91 @@ function drawShareCard(ctx, data) {
   }
 }
 
+/* Public project page: the social intents need a URL to attach, and it is the
+   honest thing to share alongside a screenshot of your own numbers. */
+const SHARE_REPO = "https://github.com/0xRabit/dsh-crypto-portfolio";
+
 function shareFileName() {
   return "portfolio-" + (state.selectedDate || "snapshot") + ".png";
 }
 
-function makeShareCard() {
+/** The text that goes with the card: facts first, no marketing. */
+function shareTextFor(data) {
+  const up = (data.change || 0) >= 0;
+  const change = data.change == null ? ""
+    : (up ? "\u25b2 +" : "\u25bc ") + fmtUsd(Math.abs(data.change)) +
+      " (" + fmtPct(data.changePct || 0) + ")";
+  const top = (data.top || []).slice(0, 3)
+    .map((r) => r.symbol + " " + fmtUsd(r.usd)).join(" · ");
+  return t("shareTextTpl", fmtUsdFull(data.total), change, state.selectedDate || "", top, SHARE_REPO);
+}
+
+let _shareState = { blob: null, text: "" };
+
+function openShare() {
   const data = shareCardData();
-  if (!data) return;
+  if (!data) { alert(t("shareFail")); return; }
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_W;
   canvas.height = SHARE_H;
-  const ctx = canvas.getContext("2d");
-  drawShareCard(ctx, data);
-  const done = (blob) => {
-    if (!blob) { alert(t("shareFail")); return; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = shareFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  };
-  if (canvas.toBlob) canvas.toBlob(done, "image/png");
-  else alert(t("shareFail"));
+  drawShareCard(canvas.getContext("2d"), data);
+
+  const text = shareTextFor(data);
+  _shareState = { blob: null, text: text };
+  $("shareImg").src = canvas.toDataURL("image/png");
+  $("shareText").value = text;
+  $("shareMsg").textContent = "";
+  // intents: X and WhatsApp take the text, Facebook and Telegram want a URL too
+  const enc = encodeURIComponent;
+  $("shareX").href = "https://twitter.com/intent/tweet?text=" + enc(text);
+  $("shareWa").href = "https://wa.me/?text=" + enc(text);
+  $("shareFb").href = "https://www.facebook.com/sharer/sharer.php?u=" + enc(SHARE_REPO) +
+    "&quote=" + enc(text);
+  $("shareTg").href = "https://t.me/share/url?url=" + enc(SHARE_REPO) + "&text=" + enc(text);
+  if (canvas.toBlob) canvas.toBlob((blob) => { _shareState.blob = blob; }, "image/png");
+  $("shareModal").classList.remove("hidden");
+  $("btnShare").setAttribute("aria-expanded", "true");
+}
+
+function closeShare() {
+  $("shareModal").classList.add("hidden");
+  if ($("btnShare").setAttribute) $("btnShare").setAttribute("aria-expanded", "false");
+}
+
+function shareDownload() {
+  if (!_shareState.blob) { alert(t("shareFail")); return; }
+  const url = URL.createObjectURL(_shareState.blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = shareFileName();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function shareCopyImage() {
+  // posting the picture directly is what most people want; the Clipboard API
+  // refuses anything but a user gesture, which this click is
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem || !_shareState.blob) throw new Error("unsupported");
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": _shareState.blob })]);
+    $("shareMsg").textContent = t("shareCopied");
+  } catch (e) {
+    $("shareMsg").textContent = t("shareCopyImgFail");
+  }
+}
+
+async function shareCopyText() {
+  try {
+    await navigator.clipboard.writeText($("shareText").value);
+    $("shareMsg").textContent = t("shareCopied");
+  } catch (e) {
+    // clipboard can be blocked (insecure origin, permissions); the textarea is
+    // already there, so selecting it is a usable fallback
+    $("shareText").select();
+    $("shareMsg").textContent = t("shareCopyFail");
+  }
 }
 
 function renderAll() {

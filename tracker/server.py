@@ -429,9 +429,14 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- helpers -----------------------------------------------------------
 
+    def _storage_map(self):
+        """{wallet name: hot|cold} from the live wallet list (see views.view_of)."""
+        return {w["name"]: w.get("storage")
+                for w in walletstore.user_wallets() if w.get("storage")}
+
     def _view_of(self, snap):
         """Snapshot view with blacklisted (phishing/fake) tokens excluded."""
-        return view_of(snap)
+        return view_of(snap, storage_map=self._storage_map())
 
     def _snapshot_view(self, snap):
         view = self._view_of(snap)

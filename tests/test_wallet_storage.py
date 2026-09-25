@@ -168,5 +168,50 @@ class ViewToHealthTest(_TempProfileTest):
         self.assertEqual(data["storage"]["storage"]["cold"]["balance"], 0.0)
 
 
+class LiveStorageWinsTest(_TempProfileTest):
+    """The reported bug: marking a wallet cold in Settings left the health panel
+    showing the old split, because the view read the class out of the stored
+    snapshot (frozen at the last refresh)."""
+
+    SNAP = {"date": "2026-01-01", "created_at": "2026-01-01T00:00:00", "wallets": [
+        {"wallet": "ledger", "type": "btc", "storage": None,
+         "tokens": [{"chain": "btc", "symbol": "BTC", "usd": 60.0}]},
+        {"wallet": "hot-1", "type": "evm", "storage": None,
+         "tokens": [{"chain": "eth", "symbol": "ETH", "usd": 40.0}]},
+    ]}
+
+    def test_the_live_setting_overrides_the_snapshot(self):
+        view = views.view_of(self.SNAP, storage_map={"ledger": "cold"})
+        data = health.analyze(view["wallets"])
+        self.assertEqual(data["storage"]["storage"]["cold"]["balance"], 60.0)
+        self.assertEqual(data["storage"]["securityLevel"], health.SAFE)
+
+    def test_without_the_map_the_snapshot_value_is_used(self):
+        self.assertEqual(health.analyze(views.view_of(self.SNAP)["wallets"])["storage"]["securityLevel"],
+                         health.HIGH_RISK)
+
+    def test_a_wallet_missing_from_the_map_keeps_its_stored_class(self):
+        snap = json.loads(json.dumps(self.SNAP))
+        snap["wallets"][0]["storage"] = "cold"
+        view = views.view_of(snap, storage_map={"hot-1": "hot"})
+        by_name = {w["wallet"]: w["storage"] for w in view["wallets"]}
+        self.assertEqual(by_name["ledger"], "cold")
+
+    def test_a_removed_wallet_keeps_the_class_it_was_snapshotted_with(self):
+        """Deleting a wallet from the live list must not silently reclassify the
+        history it is still part of."""
+        snap = json.loads(json.dumps(self.SNAP))
+        snap["wallets"][0]["storage"] = "cold"
+        view = views.view_of(snap, storage_map={})     # wallet no longer configured
+        by_name = {w["wallet"]: w["storage"] for w in view["wallets"]}
+        self.assertEqual(by_name["ledger"], "cold")
+
+    def test_switching_a_wallet_back_to_hot_is_reflected_too(self):
+        snap = json.loads(json.dumps(self.SNAP))
+        snap["wallets"][0]["storage"] = "cold"
+        view = views.view_of(snap, storage_map={"ledger": "hot"})
+        self.assertEqual({w["wallet"]: w["storage"] for w in view["wallets"]}["ledger"], "hot")
+
+
 if __name__ == "__main__":
     unittest.main()

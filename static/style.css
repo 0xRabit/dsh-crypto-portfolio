@@ -575,3 +575,33 @@ summary:focus-visible {
 }
 /* share-card button: secondary action inside the totals block */
 .btn-share { margin-top: 10px; font-size: 12.5px; padding: 4px 12px; }
+
+/* ---------- share dialog ---------- */
+.modal {
+  position: fixed; inset: 0; z-index: 40; display: flex; align-items: center;
+  justify-content: center; padding: 24px; background: rgba(0,0,0,.55);
+}
+.modal.hidden { display: none; }
+.modal-box {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  width: min(920px, 100%); max-height: 100%; overflow: auto; padding: var(--sp-4);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+.modal-head span { font-size: 15px; font-weight: 700; }
+.share-preview { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #0d1117; }
+.share-preview img { display: block; width: 100%; height: auto; }
+.share-textrow { display: flex; gap: var(--sp-2); align-items: flex-start; margin-top: var(--sp-3); }
+.share-textrow textarea {
+  flex: 1; background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font: 12.5px/1.5 -apple-system, "PingFang SC", sans-serif; resize: vertical;
+}
+.share-textbtns { display: flex; flex-direction: column; gap: 6px; }
+.share-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin-top: var(--sp-3); }
+.share-actions .share-social { display: inline-flex; gap: 6px; margin-left: auto; }
+.share-link {
+  display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--panel2); color: var(--text);
+  font-size: 12.5px; text-decoration: none;
+}
+.share-link:hover { border-color: var(--accent); color: var(--accent); }
+.share-msg { margin-top: var(--sp-2); display: block; }
