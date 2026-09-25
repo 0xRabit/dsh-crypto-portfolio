@@ -107,11 +107,10 @@ const I18N = {
     healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
     healthVolatility: "Volatility risk", healthConcentration: "Concentration",
     healthStorage: "Storage security",
-    healthVolatilityHint2: (warn, pct) => "Stablecoins barely move, BTC is the benchmark; the volatile share is " +
-      pct + " (watch above " + warn + "%).",
-    healthConcentrationHint: "Share of the largest single wallet.",
     healthConcentrationSub: (wallet, usd) => "max wallet: " + wallet + " (" + usd + ")",
-    healthStorageHint2: (safe) => "Cold-storage share; " + safe + "% or more is healthy.",
+    hcVolHint: "share that is neither a stablecoin nor BTC",
+    hcConHint: "share of the largest single wallet",
+    hcStoHint: "share held in cold storage (higher is safer)",
     healthLevelSafe: "Healthy", healthLevelWarning: "Warning", healthLevelHighRisk: "High Risk",
     healthOk: "Nothing to act on — the three checks all pass.",
     healthVolatilityRisk: (pct) => pct + "% of the portfolio is in coins that are neither stablecoins nor BTC; moving part of it into BTC lowers that exposure.",
@@ -265,10 +264,10 @@ const I18N = {
     healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
     healthVolatility: "波动性风险", healthConcentration: "集中度",
     healthStorage: "托管安全",
-    healthVolatilityHint2: (warn, pct) => "稳定币几乎不波动，BTC 是基准；当前高波动占比 " + pct + "（超过 " + warn + "% 需留意）。",
-    healthConcentrationHint: "单一钱包占总额的比例。",
     healthConcentrationSub: (wallet, usd) => "最大钱包：" + wallet + "（" + usd + "）",
-    healthStorageHint2: (safe) => "冷存储占比；达到 " + safe + "% 及以上为健康。",
+    hcVolHint: "既不是稳定币也不是 BTC 的占比",
+    hcConHint: "单一钱包占总额的比例",
+    hcStoHint: "冷存储占比（越高越安全）",
     healthLevelSafe: "健康", healthLevelWarning: "注意", healthLevelHighRisk: "高风险",
     healthOk: "三项检查都通过，暂无需调整。",
     healthVolatilityRisk: (pct) => "有 " + pct + "% 的资产既不是稳定币也不是 BTC；把其中一部分换成 BTC 可降低波动风险。",
@@ -1082,21 +1081,19 @@ function renderHealth() {
       healthRow("stable", "catStable", buckets.stable.balance, buckets.stable.percent, vol.total) +
       healthRow("btc", "catBtc", buckets.btc.balance, buckets.btc.percent, vol.total) +
       healthRow("other", "catOther", buckets.other.balance, buckets.other.percent, vol.total) +
-      '<div class="health-hint">' + esc(t("healthVolatilityHint2", vol.thresholds.warning, pct(buckets.other.percent))) + "</div>" +
     "</div>" +
     '<div class="health-card" data-level="' + esc(conc.level) + '">' +
       healthHead("healthConcentration", conc.level, pct(conc.percent)) +
       healthGauge(conc.percent, conc.thresholds) +
+      // the only caption kept: which wallet the figure is about
       '<div class="health-sub">' + esc(conc.maxWallet
         ? t("healthConcentrationSub", conc.maxWallet, fmtUsd(conc.maxWalletUsd || 0)) : t("noData")) + "</div>" +
-      '<div class="health-hint">' + esc(t("healthConcentrationHint")) + "</div>" +
     "</div>" +
     '<div class="health-card" data-level="' + esc(store.securityLevel) + '">' +
       healthHead("healthStorage", store.securityLevel, "") +
       healthRow("cold", "storageCold", cold.balance, cold.percent, store.total) +
       healthRow("hot", "storageHot", store.storage.hot.balance, store.storage.hot.percent, store.total) +
       healthRow("cex", "storageCex", store.storage.cex.balance, store.storage.cex.percent, store.total) +
-      '<div class="health-hint">' + esc(t("healthStorageHint2", store.thresholds.safe)) + "</div>" +
     "</div>";
 
   // each suggestion key is an i18n function taking what its sentence needs; the
