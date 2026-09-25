@@ -399,8 +399,11 @@ footer { color: var(--muted); font-size: 11.5px; text-align: center; padding: 20
 }
 .settings-about .brand-logo { width: 18px; height: 18px; vertical-align: middle; margin: 0; }
 .settings-about .hint { margin-left: 0; }
-/* every group after the first is set off by a hairline */
-.settings-about > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
+/* Hairlines only where the whole row fits on one line: once it wraps, a trailing
+   divider would start the next line with a dangling "|". */
+@media (min-width: 1000px) {
+  .settings-about > * + * { border-left: 1px solid var(--border); padding-left: 14px; }
+}
 .settings-about .about-sibling {
   display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
