@@ -40,7 +40,7 @@ const I18N = {
     srcTitle: "Data Source Configuration",
     srcDesc: "All APIs (URL + keys) are configured here: each source can have multiple providers, tried in order with automatic failover to the next working one (last successful provider is remembered). Save to apply without restart.\nYou can also edit portfolio_sources.json directly (hot-reload). Env vars DEBANK_API_KEY / BIRDEYE_API_KEY / COINGECKO_API_KEY / SOLANA_RPC have highest priority.",
     btnSaveSrc: "Save & Apply", btnExport: "Export Config", btnImport: "Import Config",
-    footer: "Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack (CEX), CoinGecko/DexScreener/OKX (prices). Refresh saves the last snapshot of the day and builds trend charts.",
+    footer: "Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack/OKX/Bitget (CEX). Refresh saves the last snapshot of the day and builds trend charts.",
     noData: "No data yet — click Refresh to fetch all wallets (first run ~30-60s)",
     noMatch: "No matching tokens",
     noSnapshot: "No snapshots yet, please click Refresh",
@@ -105,6 +105,28 @@ const I18N = {
     pfSchedHint: "Each profile keeps its own daily auto-refresh schedule — click the clock tag on a profile to edit it. The scheduler runs every profile independently.",
     paidBadge: "PAID", lastOk: "last ok", never: "never",
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
+    healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
+    healthTiering: "On-chain risk", healthConcentration: "Concentration", healthStorage: "Storage security",
+    healthTieringHint: "Share of the portfolio held on-chain outside BTC — the part a compromised hot wallet can reach.",
+    healthTieringSub: (btc, onchain, cex) => "BTC " + btc + " · on-chain " + onchain + " · CEX " + cex,
+    healthConcentrationHint: "Share of the largest single wallet.",
+    healthConcentrationSub: (wallet, usd) => "largest: " + wallet + " (" + usd + ")",
+    healthStorageHint: "Share held in cold storage; higher is safer.",
+    healthStorageSub: (cold, hot, cex) => "cold " + cold + " · hot " + hot + " · exchange " + cex,
+    healthLevelSafe: "Healthy", healthLevelWarning: "Watch", healthLevelHighRisk: "High risk",
+    healthOk: "Nothing to act on — the three checks all pass.",
+    healthOnChainRisk: (pct) => pct + "% of the portfolio is in on-chain assets outside BTC; moving part of it into BTC lowers that exposure.",
+    healthConcentrationAdvice: (pct, wallet) => wallet + " alone holds " + pct + "% of the portfolio; spreading it across wallets (or converting part to BTC) lowers that risk.",
+    healthStorageAdvice: (pct) => "Only " + pct + "% sits in cold storage; long-term holdings belong on a hardware wallet.",
+    healthStorageAdviceNone: "Nothing is in cold storage yet; long-term holdings belong on a hardware wallet.",
+    healthNoData: "No snapshot yet — run a refresh to compute the health report.",
+    shareBtn: "Share card", shareTotal: "Total assets", shareTop: "Top holdings",
+    shareSnapshot: "snapshot", shareFiltered: "filtered view", shareFail: "Could not build the share card.",
+    shareHint: "Draw a PNG summary of what you are looking at (no addresses).",
+    healthTier1: "BTC", healthTier2: "On-chain", healthTier3: "CEX", healthRest: "other wallets",
+    storageHot: "Hot wallet", storageCold: "Cold wallet",
+    storageTitle: "Where the keys live: cold = hardware/offline, hot = browser or app wallet. Exchange accounts are always counted as exchange custody.",
+    storageCex: "Exchange", storageCol: "Storage", storageMark: "cold storage",
     providersHint: "providers (paid first, free fallback)",
     getKey: "get API key",
     debankHint: "EVM source = DeBank. Fields: base_url = API endpoint (the paid pro provider needs the pro host); key = AccessKey for the paid provider, leave empty to use the free public API; chain_list_url = DeBank-specific endpoint that lists all supported chains (switch to a mirror if blocked); chains = optional comma-separated chain ids to fetch (e.g. eth,bsc,arb,base), empty = all.",
@@ -112,6 +134,7 @@ const I18N = {
     profileActive: "Profile",
     apiKey: "API Key", enabled: "启用", rpcLabel: "RPC 节点", splPricesLabel: "SPL 价格",
     birdeyeLabel: "Birdeye", srcKeyPh: "key（可选）", cexKeyPh: "api key", cexSecretPh: "api secret",
+    cexPassPh: "passphrase",
     apiKey: "API Key", enabled: "enabled", rpcLabel: "RPC nodes", splPricesLabel: "SPL prices",
     birdeyeLabel: "Birdeye", srcKeyPh: "key (optional)", cexKeyPh: "api key", cexSecretPh: "api secret",
     profileSwitchTitle: "切换配置文件",
@@ -159,7 +182,7 @@ const I18N = {
     srcTitle: "数据源配置",
     srcDesc: "所有 API（URL + key）集中配置：每个 source 可配置多个 provider，抓取时按顺序尝试，失败自动切换下一个（记住最近成功者）。保存即生效，无需重启。\n也可直接编辑 portfolio_sources.json（热生效）。环境变量 DEBANK_API_KEY / BIRDEYE_API_KEY / COINGECKO_API_KEY / SOLANA_RPC 优先级最高。",
     btnSaveSrc: "💾 保存并生效", btnExport: "导出配置", btnImport: "导入配置",
-    footer: "数据来源：DeBank（EVM）、Hyperliquid L1、blockchain.info/mempool（BTC）、Solana RPC（SOL/SPL/质押）、Binance/Bybit/Backpack（CEX）、CoinGecko/DexScreener/OKX（价格）。刷新即保存当天最后一次快照并形成趋势图。",
+    footer: "数据来源：DeBank（EVM）、Hyperliquid L1、blockchain.info/mempool（BTC）、Solana RPC（SOL/SPL/质押）、Binance/Bybit/Backpack/OKX/Bitget（CEX）、CoinGecko/DexScreener（价格）。刷新即保存当天最后一次快照并形成趋势图。",
     noData: "暂无数据，请点击右上角「刷新数据」抓取全部钱包（首次约需 30~60 秒）",
     noMatch: "没有符合条件的代币",
     noSnapshot: "暂无快照，请先点击「刷新数据」",
@@ -224,6 +247,28 @@ const I18N = {
     pfSchedHint: "每个 Profile 各自维护独立的每日定时刷新——点击对应 Profile 上的时钟标签即可编辑。调度器会独立运行每个 Profile 的定时任务。",
     paidBadge: "付费", lastOk: "上次成功", never: "从未",
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
+    healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
+    healthTiering: "链上风险", healthConcentration: "集中度", healthStorage: "托管安全",
+    healthTieringHint: "除 BTC 外的链上资产占比——这部分最容易被盗（热钱包/授权风险）。",
+    healthTieringSub: (btc, onchain, cex) => "BTC " + btc + " · 链上 " + onchain + " · CEX " + cex,
+    healthConcentrationHint: "单一钱包占总额的比例。",
+    healthConcentrationSub: (wallet, usd) => "最大：" + wallet + "（" + usd + "）",
+    healthStorageHint: "冷存储的占比，越高越安全。",
+    healthStorageSub: (cold, hot, cex) => "冷 " + cold + " · 热 " + hot + " · 交易所 " + cex,
+    healthLevelSafe: "健康", healthLevelWarning: "注意", healthLevelHighRisk: "高风险",
+    healthOk: "三项检查都通过，暂无需调整。",
+    healthOnChainRisk: (pct) => "链上资产占 " + pct + "%，建议把其中一部分换成 BTC 以降低链上暴露。",
+    healthConcentrationAdvice: (pct, wallet) => wallet + " 一个钱包就占 " + pct + "%，建议分散到多个钱包，或把一部分换成 BTC。",
+    healthStorageAdvice: (pct) => "只有 " + pct + "% 放在冷存储，长期持有的部分建议放进硬件钱包。",
+    healthStorageAdviceNone: "目前还没有冷存储，长期持有的部分建议放进硬件钱包。",
+    healthNoData: "还没有快照——先刷新一次即可生成健康度报告。",
+    shareBtn: "分享卡片", shareTotal: "总资产", shareTop: "主要持仓",
+    shareSnapshot: "快照", shareFiltered: "筛选后的视图", shareFail: "生成分享卡片失败。",
+    shareHint: "把当前视图画成一张 PNG（不含任何地址）。",
+    healthTier1: "BTC", healthTier2: "链上", healthTier3: "CEX", healthRest: "其他钱包",
+    storageHot: "热钱包", storageCold: "冷钱包",
+    storageTitle: "私钥放在哪里：冷 = 硬件/离线，热 = 浏览器或 App 钱包。交易所账户一律按交易所托管计算。",
+    storageCex: "交易所", storageCol: "托管", storageMark: "冷存储",
     providersHint: "providers（付费优先，免费兜底）",
     getKey: "获取 API key",
     debankHint: "EVM 数据源 = DeBank。字段说明：base_url = API 地址（付费 pro 需要 pro 域名）；key = 付费源的 AccessKey，留空则走免费公开 API；chain_list_url = DeBank 特有的链列表接口（被墙/失效可换镜像）；chains = 可选，逗号分隔要抓取的链（如 eth,bsc,arb,base），留空抓全部。",
@@ -231,6 +276,7 @@ const I18N = {
     profileActive: "Profile",
     apiKey: "API Key", enabled: "启用", rpcLabel: "RPC 节点", splPricesLabel: "SPL 价格",
     birdeyeLabel: "Birdeye", srcKeyPh: "key（可选）", cexKeyPh: "api key", cexSecretPh: "api secret",
+    cexPassPh: "passphrase",
     apiKey: "API Key", enabled: "enabled", rpcLabel: "RPC nodes", splPricesLabel: "SPL prices",
     birdeyeLabel: "Birdeye", srcKeyPh: "key (optional)", cexKeyPh: "api key", cexSecretPh: "api secret",
     profileSwitchTitle: "切换配置文件",
@@ -380,6 +426,19 @@ function refreshLanguage() {
   if (!$("pageSettings").classList.contains("hidden")) renderSettings();
 }
 
+/* URL routing: #pageSettings opens the settings page, #pageSettings/secWallets
+   also opens that section — so a page or a single settings section is linkable
+   and a refresh lands back where the user was. Runs AFTER the remembered
+   <details> state, otherwise the restore would close the linked section again. */
+function applyHashRoute() {
+  const parts = location.hash.replace(/^#/, "").split("/");
+  if (parts[0] !== "pageSettings") return;
+  const tab = document.querySelector('.tabs .tab[data-tab="pageSettings"]');
+  if (tab) tab.click();
+  const sec = parts[1] ? document.getElementById(parts[1]) : null;
+  if (sec) { sec.open = true; sec.scrollIntoView(); }
+}
+
 /* Settings sections are native <details>; remember which were left open so the
    page keeps a user's working layout between visits. */
 const SECTION_KEY = "pt_sections";
@@ -422,6 +481,7 @@ async function init() {
   }
   $("hideZero").checked = state.filters.hideZero;
   restoreSectionState();
+  applyHashRoute();
   initHeroStrip();
   try {
     const [cfg, history] = await Promise.all([api("/api/wallets"), api("/api/history?days=0")]);
@@ -492,6 +552,7 @@ function bindEvents() {
     document.documentElement.setAttribute("data-theme", theme);
     $("btnTheme").textContent = themeBtnIcon();
   });
+  if ($("btnShare")) $("btnShare").addEventListener("click", makeShareCard);
   $("btnLang").addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";
     try { localStorage.setItem("pt_lang", lang); } catch (e) { /* ignore */ }
@@ -522,7 +583,8 @@ function bindEvents() {
       renderTable();
     });
   });
-  // tabs
+  // tabs. The chosen page lives in the URL fragment so a refresh (or a link to
+  // #pageSettings) lands back on the same page instead of resetting to the dashboard.
   document.querySelectorAll(".tabs .tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tabs .tab").forEach((x) => x.classList.remove("active"));
@@ -531,6 +593,7 @@ function bindEvents() {
       $("pageDashboard").classList.toggle("hidden", page !== "pageDashboard");
       $("pageSettings").classList.toggle("hidden", page !== "pageSettings");
       $("filterbar").classList.toggle("hidden", page !== "pageDashboard");
+      try { history.replaceState(null, "", "#" + page); } catch (e) { /* ignore */ }
       if (page === "pageSettings") renderSettings();
     });
   });
@@ -682,6 +745,7 @@ function bindEvents() {
       name: $("wlName").value.trim(),
       type: $("wlType").value,
       address: $("wlAddress").value.trim(),
+      storage: $("wlStorage") ? $("wlStorage").value : "hot",
     };
     if (!wallet.name || !wallet.address) { alert(t("walletFields")); return; }
     try {
@@ -904,12 +968,302 @@ function updateFilterChips() {
   });
 }
 
+/* ---------- asset health (server-computed: tracker/health.py) ---------- */
+// The report is computed from the blacklist-filtered snapshot on the server, so
+// the three figures here always agree with the dashboard totals. It is
+// deliberately NOT filter-aware: hiding the CEX wallets would change the tiering
+// maths and turn a real risk figure into a misleading one.
+const HEALTH_COLORS = { tier1: "#f7931a", tier2: "#627eea", tier3: "#8b5cf6",
+                        cold: "#3fb950", hot: "#d29922", cex: "#f85149",
+                        rest: "#30363d" };
+
+function healthLevelLabel(level) {
+  if (level === "highRisk") return t("healthLevelHighRisk");
+  if (level === "warning") return t("healthLevelWarning");
+  return t("healthLevelSafe");
+}
+
+// Every card's bar is a composition, not a repeat of the headline figure: the
+// figure says how much of the risky thing there is, the bar says where it sits.
+function healthSegments(parts) {
+  return '<div class="health-stack">' + parts.map((seg) =>
+    '<div class="health-seg" style="width:' + (seg.pct || 0).toFixed(1) + "%;background:" +
+      seg.color + '" title="' + esc(seg.title + " " + (seg.pct || 0).toFixed(1) + "%" +
+      (seg.usd ? " · " + seg.usd : "")) + '"></div>').join("") + "</div>";
+}
+
+function healthCard(nameKey, level, figure, segments, hint, sub) {
+  return '<div class="health-card" data-level="' + esc(level) + '">' +
+    '<div class="health-head"><span class="health-name">' + esc(t(nameKey)) + "</span>" +
+      '<span class="health-pill ' + esc(level) + '">' + esc(healthLevelLabel(level)) + "</span></div>" +
+    '<div class="health-figure">' + esc(figure) + "</div>" +
+    healthSegments(segments) +
+    '<div class="health-sub">' + esc(sub) + "</div>" +
+    '<div class="health-hint">' + esc(t(hint)) + "</div></div>";
+}
+
+function renderHealth() {
+  const grid = $("healthGrid");
+  const advice = $("healthAdvice");
+  if (!grid || !advice) return;
+  const h = state.view && state.view.health;
+  if (!h) { grid.innerHTML = ""; advice.innerHTML = '<span class="hint">' + t("healthNoData") + "</span>"; return; }
+
+  const pct = (x) => (x || 0).toFixed(1) + "%";
+  const tiers = h.tiering.tiers;
+  const store = h.storage.storage;
+  const conc = h.concentration;
+
+  grid.innerHTML =
+    healthCard("healthTiering", h.tiering.onChainRiskLevel, pct(tiers.tier2.percent),
+      [{ pct: tiers.tier1.percent, color: HEALTH_COLORS.tier1, title: t("healthTier1"), usd: fmtUsd(tiers.tier1.balance) },
+       { pct: tiers.tier2.percent, color: HEALTH_COLORS.tier2, title: t("healthTier2"), usd: fmtUsd(tiers.tier2.balance) },
+       { pct: tiers.tier3.percent, color: HEALTH_COLORS.tier3, title: t("healthTier3"), usd: fmtUsd(tiers.tier3.balance) }],
+      "healthTieringHint",
+      t("healthTieringSub", fmtUsd(tiers.tier1.balance), fmtUsd(tiers.tier2.balance),
+        fmtUsd(tiers.tier3.balance))) +
+    healthCard("healthConcentration", conc.level, pct(conc.percent),
+      [{ pct: conc.percent, color: conc.maxWalletIsBtc ? HEALTH_COLORS.tier1 : HEALTH_COLORS.tier2,
+         title: conc.maxWallet || t("noData"), usd: fmtUsd(conc.maxWalletUsd || 0) },
+       { pct: 100 - conc.percent, color: HEALTH_COLORS.rest, title: t("healthRest") }],
+      "healthConcentrationHint",
+      conc.maxWallet ? t("healthConcentrationSub", conc.maxWallet, fmtUsd(conc.maxWalletUsd || 0))
+                     : t("noData")) +
+    healthCard("healthStorage", h.storage.securityLevel, pct(store.cold.percent),
+      [{ pct: store.cold.percent, color: HEALTH_COLORS.cold, title: t("storageCold"), usd: fmtUsd(store.cold.balance) },
+       { pct: store.hot.percent, color: HEALTH_COLORS.hot, title: t("storageHot"), usd: fmtUsd(store.hot.balance) },
+       { pct: store.cex.percent, color: HEALTH_COLORS.cex, title: t("storageCex"), usd: fmtUsd(store.cex.balance) }],
+      "healthStorageHint",
+      t("healthStorageSub", pct(store.cold.percent), pct(store.hot.percent), pct(store.cex.percent)));
+
+  // each suggestion key is an i18n function taking what its sentence needs; the
+  // "%" belongs to the sentence, so the number is passed on its own
+  const num = (x) => (x || 0).toFixed(1);
+  advice.innerHTML = h.suggestions.map((sg) => {
+    let body;
+    if (sg.key === "healthOk") body = t(sg.key);
+    else if (sg.key === "healthConcentrationAdvice") body = t(sg.key, num(sg.pct), sg.wallet);
+    else if (sg.key === "healthStorageAdvice" && !(sg.pct > 0.05)) body = t("healthStorageAdviceNone");
+    else body = t(sg.key, num(sg.pct));
+    return '<div class="health-item ' + esc(sg.level) + '">' +
+      '<span class="health-dot"></span><span>' + esc(body) + "</span></div>";
+  }).join("");
+}
+
+/* ---------- share card (hand-drawn PNG, no html2canvas) ---------- */
+// 1200x630 is the link-preview / X card ratio. Everything is drawn with the 2D
+// context on an offscreen canvas, so there is no library to vendor and no DOM to
+// screenshot: the card is deterministic and works in any browser.
+// Privacy: the card carries totals, symbols and label names — never an address.
+const SHARE_W = 1200, SHARE_H = 630;
+const SHARE_THEME = { bg: "#0d1117", panel: "#161b22", border: "#2a3242",
+                      text: "#e6edf3", muted: "#8b98a9", accent: "#58a6ff",
+                      success: "#3fb950", danger: "#f85149", warning: "#d29922" };
+const SHARE_FONT = '-apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+
+function shareRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function shareText(ctx, text, x, y, opts) {
+  const o = opts || {};
+  ctx.font = (o.weight || 400) + " " + (o.size || 14) + "px " + SHARE_FONT;
+  ctx.fillStyle = o.color || SHARE_THEME.text;
+  ctx.textAlign = o.align || "left";
+  ctx.textBaseline = o.baseline || "alphabetic";
+  ctx.fillText(text, x, y);
+  return ctx.measureText(text).width;
+}
+
+function shareLevelColor(level) {
+  return level === "highRisk" ? SHARE_THEME.danger
+    : (level === "warning" ? SHARE_THEME.warning : SHARE_THEME.success);
+}
+
+/** Everything the card shows, derived from the same view the dashboard renders. */
+function shareCardData() {
+  const v = filteredView();
+  if (!v) return null;
+  const byCat = typeTotals();
+  const order = state.labels || ["other"];
+  const pie = order.map((k, i) => ({ name: labelText(k), value: byCat[k] || 0, color: labelColor(k, i) }))
+    .filter((it) => it.value > 0).sort((a, b) => b.value - a.value);
+  const pieTotal = pie.reduce((a, it) => a + it.value, 0);
+  return {
+    total: v.total_usd,
+    change: state.view.change_usd,
+    changePct: state.view.change_pct,
+    prevDate: state.view.prev_date,
+    created: state.view.created_at,
+    filtered: !!v.filtered,
+    pie: pie, pieTotal: pieTotal,
+    top: topHoldings(5),
+    health: state.view.health || null,
+  };
+}
+
+/** Largest holdings by SYMBOL (not by row): the same coin in two wallets is one
+ *  line on the card. The label colour comes from the row's asset label. */
+function topHoldings(limit) {
+  const bySymbol = new Map();
+  (state.tokens || []).forEach((x) => {
+    if (!(x.usd > 0)) return;
+    const key = String(x.symbol || "");
+    const prev = bySymbol.get(key);
+    if (prev) prev.usd += x.usd;
+    else bySymbol.set(key, { symbol: key, usd: x.usd, cat: x.cat, chain: x.chain });
+  });
+  return Array.from(bySymbol.values()).sort((a, b) => b.usd - a.usd).slice(0, limit || 5);
+}
+
+function drawShareCard(ctx, data) {
+  const T = SHARE_THEME;
+  ctx.clearRect(0, 0, SHARE_W, SHARE_H);
+  // card body
+  shareRoundRect(ctx, 0, 0, SHARE_W, SHARE_H, 28);
+  ctx.fillStyle = T.bg;
+  ctx.fill();
+  ctx.strokeStyle = T.border;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // header
+  shareText(ctx, t("brand"), 56, 74, { size: 20, weight: 700 });
+  shareText(ctx, t("shareSnapshot") + " " + state.selectedDate, SHARE_W - 56, 74,
+            { size: 15, color: T.muted, align: "right" });
+  shareText(ctx, APP_VERSION ? "dsh-crypto-portfolio " + APP_VERSION : "dsh-crypto-portfolio",
+            SHARE_W - 56, 98, { size: 12, color: T.muted, align: "right" });
+
+  // left column — the number a share card is about
+  shareText(ctx, t("shareTotal"), 56, 158, { size: 14, color: T.muted });
+  shareText(ctx, fmtUsdFull(data.total), 56, 218, { size: 52, weight: 700 });
+  if (data.filtered) {
+    shareText(ctx, t("shareFiltered"), 56, 254, { size: 16, color: T.accent });
+  } else if (data.change != null) {
+    const up = data.change >= 0;
+    shareText(ctx, (up ? "▲ +" : "▼ ") + fmtUsd(Math.abs(data.change)) +
+      "  (" + fmtPct(data.changePct || 0) + ")   vs " + data.prevDate, 56, 254,
+      { size: 17, weight: 600, color: up ? T.success : T.danger });
+  }
+  ctx.strokeStyle = T.border;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(56, 288); ctx.lineTo(608, 288); ctx.stroke();
+
+  shareText(ctx, t("shareTop"), 56, 326, { size: 14, color: T.muted });
+  data.top.forEach((row, i) => {
+    const y = 356 + i * 34;
+    const col = labelColor((state.labels || []).includes(row.cat) ? row.cat : "other",
+                           (state.labels || []).indexOf(row.cat));
+    ctx.beginPath();
+    ctx.arc(62, y - 5, 5, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    const symbol = String(row.symbol || "").slice(0, 14);
+    shareText(ctx, symbol, 80, y, { size: 17, weight: 600 });
+    shareText(ctx, fmtUsd(row.usd), 608, y, { size: 17, weight: 600, align: "right" });
+  });
+
+  // right column — asset-type donut with its legend beside it (stacking the two
+  // pushed the last legend rows into the footer pills)
+  const cx = 838, cy = 292, outer = 96, inner = 58;
+  let angle = -Math.PI / 2;
+  const donutTotal = data.pieTotal || 0;
+  if (!donutTotal) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, (outer + inner) / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(120,140,170,.3)";
+    ctx.lineWidth = outer - inner;
+    ctx.stroke();
+  }
+  data.pie.forEach((it) => {
+    const sweep = (it.value / donutTotal) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer, angle, angle + sweep);
+    ctx.arc(cx, cy, inner, angle + sweep, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = it.color;
+    ctx.fill();
+    angle += sweep;
+  });
+  shareText(ctx, t("typeShareCap"), 960, 186, { size: 14, color: T.muted });
+  data.pie.slice(0, 6).forEach((it, i) => {
+    const y = 216 + i * 26;
+    ctx.beginPath();
+    ctx.arc(966, y - 5, 5, 0, Math.PI * 2);
+    ctx.fillStyle = it.color;
+    ctx.fill();
+    shareText(ctx, String(it.name).slice(0, 12), 982, y, { size: 14 });
+    shareText(ctx, donutTotal ? ((it.value / donutTotal) * 100).toFixed(1) + "%" : "0%",
+              SHARE_W - 56, y, { size: 14, color: T.muted, align: "right" });
+  });
+
+  // footer — the health verdicts, so the card says something about risk too
+  const h = data.health;
+  if (h) {
+    const pills = [
+      { name: t("healthTiering"), level: h.tiering.onChainRiskLevel },
+      { name: t("healthConcentration"), level: h.concentration.level },
+      { name: t("healthStorage"), level: h.storage.securityLevel },
+    ];
+    let x = 56;
+    pills.forEach((pl) => {
+      const label = pl.name + " · " + healthLevelLabel(pl.level);
+      ctx.font = "600 14px " + SHARE_FONT;
+      const w = ctx.measureText(label).width + 26;
+      shareRoundRect(ctx, x, SHARE_H - 76, w, 30, 15);
+      ctx.fillStyle = "rgba(255,255,255,.04)";
+      ctx.fill();
+      ctx.strokeStyle = shareLevelColor(pl.level);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      shareText(ctx, label, x + 13, SHARE_H - 56, { size: 14, weight: 600,
+                color: shareLevelColor(pl.level) });
+      x += w + 12;
+    });
+  }
+}
+
+function shareFileName() {
+  return "portfolio-" + (state.selectedDate || "snapshot") + ".png";
+}
+
+function makeShareCard() {
+  const data = shareCardData();
+  if (!data) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = SHARE_W;
+  canvas.height = SHARE_H;
+  const ctx = canvas.getContext("2d");
+  drawShareCard(ctx, data);
+  const done = (blob) => {
+    if (!blob) { alert(t("shareFail")); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = shareFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+  if (canvas.toBlob) canvas.toBlob(done, "image/png");
+  else alert(t("shareFail"));
+}
+
 function renderAll() {
   updateFilterChips();
   renderTypePie();
   renderSummary();
   renderWalletCards();
   renderChainBars();
+  renderHealth();
   renderPie();
   renderTable();
   renderChart();
@@ -969,7 +1323,11 @@ function renderWalletCards() {
       // row 1 — name only: with the badge gone the name gets the full card width.
       // It truncates rather than wraps, so the full name is also the tooltip.
       '<div class="w-name"><img class="logo-img" src="/static/logos/' + wlogo + '.svg" alt="">' +
-        '<span class="w-name-txt" title="' + esc(w.wallet) + '">' + esc(w.wallet) + "</span></div>" +
+        '<span class="w-name-txt" title="' + esc(w.wallet) + '">' + esc(w.wallet) + "</span>" +
+        // cold storage is worth a mark; hot is the default and stays unmarked so
+        // the row keeps the width it needs for long wallet names
+        (w.storage === "cold" ? '<span class="w-cold" title="' + esc(t("storageMark")) + '">❄</span>' : "") +
+        "</div>" +
       // row 2 — balance, with this wallet's share of the total right after it
       '<div class="w-usd">' + fmtUsd(w.total_usd) +
         '<span class="w-share">' + (shares[w.wallet] || 0).toFixed(1) + "%</span></div>" +
@@ -1750,12 +2108,33 @@ async function renderWalletMgmt() {
       const right = w.source === "user"
         ? '<button class="bl-del" data-index="' + w.index + '" title="' + t("delete") + '">✕ ' + t("delete") + "</button>"
         : '<span class="bl-tag config">' + t("builtin") + "</span>";
+      // A CEX account is custody by definition, so it gets a fixed label instead
+      // of a selector that the server would ignore anyway.
+      const storage = w.type === "cex"
+        ? '<span class="bl-tag config" title="' + esc(t("storageTitle")) + '">' + t("storageCex") + "</span>"
+        : (w.source === "user"
+            ? '<select class="wl-storage" data-index="' + w.index + '" title="' + esc(t("storageTitle")) + '">' +
+              ["hot", "cold"].map((k) => '<option value="' + k + '"' +
+                ((w.storage || "hot") === k ? " selected" : "") + ">" +
+                t(k === "cold" ? "storageCold" : "storageHot") + "</option>").join("") +
+              "</select>"
+            : "");
       return '<div class="bl-item">' +
         '<img class="logo-img bl-logo" src="' + typeLogo(w.type) + '" alt="">' +
         '<span class="bl-sym">' + esc(w.name) + "</span>" +
         '<span class="bl-tag ' + esc(w.type) + '">' + (TYPE_LABEL[w.type] || w.type) + "</span>" +
+        storage +
         '<span class="bl-meta">' + esc(w.address) + "</span>" + right + "</div>";
     }).join("");
+    list.querySelectorAll(".wl-storage").forEach((sel) => {
+      sel.addEventListener("change", async () => {
+        try {
+          await postJSON("/api/wallets/storage", { index: Number(sel.dataset.index),
+                                                   storage: sel.value });
+          await reloadViewData();
+        } catch (e) { alert(t("walletAddFail") + e.message); sel.value = sel.dataset.prev || "hot"; }
+      });
+    });
     list.querySelectorAll(".bl-del").forEach((b) => {
       b.addEventListener("click", async () => {
         if (!confirm(t("confirmDelWallet"))) return;
@@ -1823,11 +2202,14 @@ const SRC_LINKS = {
   binance: "https://www.binance.com/en/my/settings/api-management",
   bybit: "https://www.bybit.com/app/user/api-management",
   backpack: "https://app.backpack.exchange/settings/api-keys",
+  okx: "https://www.okx.com/account/my-api",
+  bitget: "https://www.bitget.com/account/newapi",
 };
 
 function chainLogo(cid) {
   const map = { btc: "btc", eth: "eth", sol: "sol", hyperliquid: "hyperliquid",
                 binance: "binance", bybit: "bybit", backpack: "backpack",
+                okx: "okx", bitget: "bitget",
                 doge: "doge", ada: "ada" };
   return map[cid] ? '/static/logos/' + map[cid] + '.svg' : '/static/logos/evm.svg';
 }
@@ -1924,7 +2306,8 @@ async function renderSources() {
     }
     if (cfg.cex) {
       const b = blockOf("cex");
-      // always show the supported exchanges (binance / bybit / backpack); keys default empty.
+      // always show the supported exchanges (binance / bybit / backpack / okx / bitget);
+      // keys default empty.
       // merged rows are written back into the config so name/exchange persist on save.
       const byEx = {};
       (cfg.cex.accounts || []).forEach((a) => { if (a.exchange) byEx[a.exchange] = a; });
@@ -1932,7 +2315,11 @@ async function renderSources() {
         { exchange: "binance", name: "binance_read" },
         { exchange: "bybit", name: "bybit_read" },
         { exchange: "backpack", name: "backpack_read" },
+        { exchange: "okx", name: "okx_read" },
+        { exchange: "bitget", name: "bitget_read" },
       ];
+      // OKX and Bitget also require the passphrase that was set with the API key
+      const NEEDS_PASSPHRASE = { okx: true, bitget: true };
       const extra = (cfg.cex.accounts || []).filter((a) => !defaults.some((d) => d.exchange === a.exchange));
       const rows = defaults.map((dflt) => byEx[dflt.exchange] ||
         Object.assign({}, dflt, { key: "", secret: "", enabled: true })).concat(extra);
@@ -1949,6 +2336,10 @@ async function renderSources() {
             (a.enabled !== false ? " checked" : "") + "></label>" +
           '<input data-path="cex.accounts.' + i + '.key" value="' + esc(a.key || "") + '" class="src-key" placeholder="' + t("cexKeyPh") + '">' +
           '<input data-path="cex.accounts.' + i + '.secret" value="' + esc(a.secret || "") + '" class="src-key" placeholder="' + t("cexSecretPh") + '">' +
+          (NEEDS_PASSPHRASE[a.exchange]
+            ? '<input data-path="cex.accounts.' + i + '.passphrase" value="' + esc(a.passphrase || "") +
+              '" class="src-key" placeholder="' + t("cexPassPh") + '">'
+            : "") +
           (SRC_LINKS[a.exchange]
             ? '<a class="src-link" href="' + esc(SRC_LINKS[a.exchange]) + '" target="_blank" rel="noopener noreferrer">' + t("getKey") + " ↗</a>"
             : "") +

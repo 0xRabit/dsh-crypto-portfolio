@@ -20,6 +20,7 @@ from . import status
 from . import walletstore
 from .debank import chain_names
 from .views import view_of
+from . import health
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _STATIC = os.path.join(os.path.dirname(_HERE), "static")
@@ -285,6 +286,10 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("wallet must be a JSON object")
                 walletstore.add_wallet(wallet)
                 self._reply_json(self._wallet_view())
+            elif path == "/api/wallets/storage":
+                index = int((body or {}).get("index", -1))
+                walletstore.set_storage(index, (body or {}).get("storage"))
+                self._reply_json(self._wallet_view())
             elif path == "/api/wallets/remove":
                 index = int((body or {}).get("index", -1))
                 if not walletstore.remove_wallet(index):
@@ -430,6 +435,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _snapshot_view(self, snap):
         view = self._view_of(snap)
+        view["health"] = health.analyze(view["wallets"])
         # change vs previous day snapshot (previous day also blacklist-filtered)
         prev = storage.get_snapshot_dates()
         prev_dates = [p["date"] for p in prev if p["date"] < snap["date"]]
@@ -481,6 +487,7 @@ class Handler(BaseHTTPRequestHandler):
                              "type": w.get("type", ""), "total_usd": w.get("total_usd", 0.0),
                              "token_count": len(w.get("tokens", []))} for w in data["wallets"]]}
                 view["token_count"] = sum(w["token_count"] for w in view["wallets"])
+                view["health"] = health.analyze(view["wallets"])
             else:
                 data, prev = portfolio.refresh_snapshot(progress=progress)
                 view = self._snapshot_view(data)

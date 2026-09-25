@@ -15,7 +15,11 @@ First public release.
 - **Solana** — native SOL, native stake accounts, and SPL tokens.
 - **Dogecoin** — via BlockCypher (no API key required).
 - **Cardano** — via Koios (no API key required); payment addresses and stake addresses.
-- **CEX** — read-only keys for Binance, Bybit and Backpack.
+- **CEX** — read-only keys for Binance, Bybit, Backpack, **OKX** and **Bitget**.
+  OKX reads the trading *and* funding sub-accounts (deposits sit in funding, and
+  the exchange's own total adds them up); Bitget sums the spot account with the
+  real USDT/USDC/coin-margined futures accounts, and deliberately ignores the
+  `S*` demo products, which answer with play money on a live key.
 - **Prices** — CoinGecko → Binance → Coinbase → OKX, with automatic failover.
 
 ### Dashboard
@@ -103,6 +107,26 @@ First public release.
   ticker at all; their price comes from the collateral view's `assetMarkPrice`.
   A native asset whose on-chain price is unavailable now falls back to the
   exchange's own price instead of being reported as worth nothing.
+- **Asset health report.** A panel under the chain distribution grades the
+  portfolio on the three questions a reviewer actually asks — **on-chain risk**
+  (share held on-chain outside BTC, 60/70 %), **concentration** (largest single
+  wallet, 50/75 %) and **storage security** (cold share, 50/20 %) — each with a
+  composition bar (BTC/on-chain/CEX, largest/rest, cold/hot/exchange) and a plain
+  sentence per failing check. Figures come from the blacklist-filtered snapshot, so
+  they can never disagree with the totals above; the report is deliberately not
+  filter-aware, because hiding the CEX wallets would change the tiering maths.
+  Thresholds and formulas live in `tracker/health.py`.
+- **Wallets know where their keys live.** Each wallet is *hot* or *cold* (Settings →
+  Wallet Management, or on creation); exchange accounts are always exchange custody.
+  Cold wallets are marked with a ❄ on their card. The class is stored with the
+  snapshot, so a historical snapshot's health report reflects what was cold at the
+  time rather than what is cold now.
+- **Share card.** One button draws a 1200×630 PNG of the current view — total,
+  change vs the previous day, top five holdings (aggregated by symbol), the asset-label
+  donut with its legend and the three health verdicts. Drawn by hand on a canvas:
+  no `html2canvas`, no CDN, and no address ever reaches the image.
+- **Linkable pages.** `#pageSettings` opens the settings page and
+  `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

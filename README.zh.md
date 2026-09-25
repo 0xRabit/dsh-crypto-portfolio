@@ -23,7 +23,7 @@ dsh --profile demo                                    # 仪表盘 http://127.0.0
 
 ### 一、我的钱散在七个地方，想看个总数要开六个页面
 
-EVM 资产在 DeBank、SOL 和质押在 Solana 链上、BTC 在区块浏览器、还有 Binance / Bybit / Backpack 三个交易所各一套 App。每次想看"我到底有多少钱"，都得打开 DeBank 翻几个链、再去查质押、最后挨个登录三个交易所——手一抖还容易看漏钱包。
+EVM 资产在 DeBank、SOL 和质押在 Solana 链上、BTC 在区块浏览器、还有 Binance / Bybit / Backpack / OKX / Bitget 五个交易所各一套 App。每次想看"我到底有多少钱"，都得打开 DeBank 翻几个链、再去查质押、最后挨个登录三个交易所——手一抖还容易看漏钱包。
 
 **这个插件把这些全拼到一张图上。**
 
@@ -52,13 +52,16 @@ DeBank 会把一堆假代币也列出来，比如 ETHG 这种**价格被操纵�
 ## 它做了什么
 
 - **一个 DSH 插件，拉起一个零依赖的 Web 仪表盘。** 没有框架、没有 CDN，Python 标准库 + 原生 JS。
-- **覆盖 BTC / EVM / Solana / 狗狗币 / 艾达币 / Hyperliquid L1 / CEX。** DeBank 全 73 条链、BTC 双地址（P2SH + P2TR）、Solana 原生质押、狗狗币（BlockCypher）、艾达币（Koios，支持 stake 地址）、Hyperliquid 官方 API（质押 HYPE + 现货 + 永续权益 + 金库权益）、三家交易所只读 key（命名 `<交易所>_read`）。
+- **覆盖 BTC / EVM / Solana / 狗狗币 / 艾达币 / Hyperliquid L1 / CEX。** DeBank 全 73 条链、BTC 双地址（P2SH + P2TR）、Solana 原生质押、狗狗币（BlockCypher）、艾达币（Koios，支持 stake 地址）、Hyperliquid 官方 API（质押 HYPE + 现货 + 永续权益 + 金库权益）、五个交易所只读 key（Binance / Bybit / Backpack / OKX / Bitget，命名 `<交易所>_read`）；OKX 同时读交易账户与资金账户，Bitget 汇总现货与真实合约账户（跳过 S 开头的模拟盘，避免把「练习钱」算进总资产）。
 - **全局筛选。** 分类（BTC / EVM / Solana / 狗狗币 / 艾达币 / CEX）、钱包、网络三个下拉作用于所有面板——总额、钱包占比饼图、趋势、网络分布、代币表一起联动。
 - **每个钱包最多 5 个区块浏览器。** 钱包卡片底部是一排浏览器图标：排第一的是本程序实际取数的来源（DeBank · bitaps · Jupiter · Dogechain · Cardanoscan），后面按知名度依次是 Etherscan、mempool.space、Solscan、Blockchair、CExplorer 等。狗狗币只有 3 个、艾达币只有 4 个——这两个生态确实凑不满 5 个可信浏览器。交易所账户没有链上浏览器页面，因此只显示交易所图标。
-- **免费 + 付费数据源，显著区分。** EVM 走 DeBank 双 provider：付费 `debank-pro`（标注「付费」，带注册链接）与免费免 key 的 `debank-public` 兜底；CEX 三行（Binance/Bybit/Backpack）常驻显示并带各家「获取 API key」链接；每个数据源显示最近一次成功时间。
+- **免费 + 付费数据源，显著区分。** EVM 走 DeBank 双 provider：付费 `debank-pro`（标注「付费」，带注册链接）与免费免 key 的 `debank-public` 兜底；CEX 五行（Binance/Bybit/Backpack/OKX/Bitget）常驻显示并带各家「获取 API key」链接（OKX、Bitget 还需填 passphrase）；每个数据源显示最近一次成功时间。
 - **多 API 源自动切换。** 每个数据源配了多个 provider（价格：CoinGecko → Binance → Coinbase → OKX；BTC：blockchain.info → mempool.space；Solana RPC 多节点；Hyperliquid 双端点），挂了自动切下一个，并记住最近能用的。
 - **定时每日刷新。** 每个 Profile 可设置本地时间自动刷新（服务端守护线程，关闭网页不影响）；设置页显示各数据源最后成功时间。
 - **多 Profile 配置隔离。** `default` Profile 内置公开模板钱包（vitalik.eth、创世 BTC、公开 SOL、公开 DOGE、公开 ADA）与空 key；你的私人钱包和 key 放在独立命名的 Profile 里，拥有各自的快照历史。每个 Profile 可重命名（快照随之迁移），并各自维护独立的每日定时刷新时间。
+- **资产健康度。** 一个面板用三个指标给组合打分——链上（非 BTC）占比、单一钱包集中度、冷存储占比——每个指标配一条构成条和一句人话建议。阈值写在 `tracker/health.py`（60/70 %、50/75 %、50/20 %），数据取自同一份已过滤黑名单的快照，因此永远和上面的总额一致。在设置里把钱包标成「冷钱包」，托管安全那项立刻跟着变；托管类型随快照存储，历史数据也一样真实。
+- **分享卡片。** 一键把当前视图画成 1200×630 的 PNG——总额、日环比、按币种合并的前五大持仓、资产类别甜甜圈、以及三条健康度结论。全部用 canvas 手绘：不引入 `html2canvas`、不依赖 CDN，图片里也不含任何钱包地址。
+- **可链接的页面。** `#pageSettings` 直达设置页，`#pageSettings/secWallets` 直达某个设置分区——刷新或收藏后回到原处。
 - **主题与多语言。** 深/浅色主题切换、中英双语（默认英文）、全站链与交易所图标。
 
 

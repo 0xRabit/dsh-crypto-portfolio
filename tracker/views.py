@@ -3,7 +3,8 @@
 
 Totals (wallet / total / by-chain) are always recomputed from the filtered
 token rows, so blacklist changes apply to every historical snapshot, not only
-newly fetched ones.
+newly fetched ones. The health report is built on top of this view, so its
+numbers can never disagree with the dashboard.
 """
 from .blacklist import is_blacklisted
 
@@ -22,6 +23,9 @@ def view_of(snap):
                 by_chain[c] = round(by_chain.get(c, 0.0) + float(t["usd"]), 2)
         wallets.append({"wallet": w.get("wallet") or w.get("name", ""),
                         "address": w.get("address", ""), "type": w.get("type", ""),
+                        # storage class (cold/hot/cex) drives the health report; a
+                        # snapshot taken before this field existed simply has none
+                        "storage": w.get("storage"),
                         "total_usd": wt, "token_count": len(tokens)})
     return {"date": snap.get("date", ""), "created_at": snap.get("created_at"),
             "total_usd": round(total, 2), "by_chain": by_chain,

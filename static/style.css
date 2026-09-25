@@ -536,3 +536,42 @@ summary:focus-visible {
 .st-chip.eth { color: #8b7cf6; border-color: rgba(139,124,246,.4); }
 .st-chip.sol { color: #14f195; border-color: rgba(20,241,149,.4); }
 .st-chip.hype { color: #2dd4bf; border-color: rgba(45,212,191,.4); }
+
+/* ---------- asset health (3 indicators + advice) ---------- */
+#secHealth .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--sp-3); }
+.health-card {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-3);
+}
+.health-card .health-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.health-card .health-name { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.health-card .health-figure { font-size: 24px; font-weight: 700; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
+/* level is carried by the pill's word AND colour; the word is never dropped, so
+   the meaning survives for a colour-blind reader and in a screenshot */
+.health-pill { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 20px; white-space: nowrap; }
+.health-pill.safe { background: rgba(63,185,80,.16); color: var(--success); }
+.health-pill.warning { background: rgba(210,153,34,.18); color: var(--warning); }
+.health-pill.highRisk { background: rgba(248,81,73,.16); color: var(--danger); }
+.health-card[data-level="highRisk"] { border-color: rgba(248,81,73,.5); }
+.health-card .bar-track { background: var(--bg); border-radius: 4px; height: 8px; overflow: hidden; }
+.health-card .bar-fill { height: 100%; border-radius: 4px; min-width: 2px; }
+.health-card .health-sub { color: var(--text); font-size: 12px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.health-card .health-hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+/* composition split inside a card (BTC/on-chain/CEX, cold/hot/exchange, …) */
+.health-card .health-stack { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg); }
+.health-stack .health-seg { height: 100%; min-width: 0; }
+.health-advice { margin-top: var(--sp-3); display: flex; flex-direction: column; gap: 6px; }
+.health-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; }
+.health-item .health-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--success); }
+.health-item.warning .health-dot { background: var(--warning); }
+.health-item.highRisk .health-dot { background: var(--danger); }
+.health-item.safe { color: var(--success); }
+/* cold marker on a wallet card; hot is the default and stays unmarked */
+.card .w-cold { color: var(--accent); font-size: 11px; margin-left: 4px; flex: none; }
+/* storage selector in the wallet management list */
+.bl-item .wl-storage {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 6px; font-size: 11.5px;
+}
+/* share-card button: secondary action inside the totals block */
+.btn-share { margin-top: 10px; font-size: 12.5px; padding: 4px 12px; }

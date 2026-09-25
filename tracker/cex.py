@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-"""CEX wallet fetchers: Binance / Bybit / Backpack.
+"""CEX wallet fetchers: Binance / Bybit / Backpack / OKX / Bitget.
 
 Accounts are configured in portfolio_sources.json -> "cex" -> "accounts":
-  [{"name", "exchange": "binance"|"bybit"|"backpack", "key", "secret", "enabled"}]
+  [{"name", "exchange": "binance"|"bybit"|"backpack"|"okx"|"bitget",
+    "key", "secret", "passphrase"?, "enabled"}]
+
+OKX and Bitget additionally need a passphrase (created alongside the API key), so
+their account entries carry a third field.
 
 Each account becomes a portfolio wallet (type "cex", chain = exchange name).
 Balances are priced with the exchange's own tickers, falling back to native
@@ -13,6 +17,10 @@ import hashlib
 import hmac
 import json
 import time
+import urllib.parse
+from datetime import datetime, timezone
+
+import requests
 
 from . import sources
 from .api import http_get_json
@@ -20,7 +28,7 @@ from .api import http_get_json
 STABLES = {"USDT", "USDC", "BUSD", "FDUSD", "DAI", "TUSD", "USDP", "PYUSD",
            "EUR", "USD", "LDUSDT", "LDFDUSD"}
 NATIVE_SYMBOL = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "HYPE": "hyperliquid"}
-EXCHANGES = ("binance", "bybit", "backpack")
+EXCHANGES = ("binance", "bybit", "backpack", "okx", "bitget")
 
 
 def cex_accounts():
@@ -207,6 +215,189 @@ def _backpack_state(acc):
 
 
 # --------------------------------------------------------------------------
+# OKX
+#
+# Signature (v5 REST): base64(HMAC-SHA256(timestamp + method + requestPath, secret))
+# where requestPath INCLUDES the query string ("/api/v5/account/balance?ccy=BTC"),
+# and the timestamp is ISO-8601 with milliseconds (2020-12-08T09:08:57.715Z).
+# Three headers are needed: key, sign and the passphrase set with the API key.
+# --------------------------------------------------------------------------
+OKX_BASE = "https://www.okx.com"
+
+
+def _signed_get(url, headers, timeout=20):
+    """http_get_json, but an HTTP error body is parsed instead of thrown away.
+
+    OKX and Bitget report a bad key or passphrase as HTTP 401 with the actual reason
+    ("Invalid API Key", "Invalid Passphrase") only inside the JSON body; surfacing the
+    bare "HTTPError: 401" would leave the user guessing which of the three fields to fix.
+    """
+    try:
+        return http_get_json(url, headers=headers, timeout=timeout, retries=0)
+    except requests.exceptions.HTTPError as e:
+        resp = getattr(e, "response", None)
+        if resp is not None:
+            try:
+                return resp.json()
+            except ValueError:
+                pass
+        raise
+
+
+def _okx_request(acc, method, path, query=None):
+    query = query or {}
+    secret = str(acc.get("secret") or "").strip()
+    # ISO-8601 with milliseconds, UTC — OKX rejects a plain epoch
+    now = datetime.now(timezone.utc)
+    ts = now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+    request_path = path
+    if query:
+        request_path += "?" + urllib.parse.urlencode(sorted(query.items()))
+    prehash = ts + method.upper() + request_path
+    sign = base64.b64encode(
+        hmac.new(secret.encode(), prehash.encode(), hashlib.sha256).digest()).decode()
+    return _signed_get(OKX_BASE + request_path, {
+        "OK-ACCESS-KEY": str(acc.get("key") or "").strip(),
+        "OK-ACCESS-SIGN": sign,
+        "OK-ACCESS-TIMESTAMP": ts,
+        "OK-ACCESS-PASSPHRASE": str(acc.get("passphrase") or "").strip(),
+    })
+
+
+def _okx_balances(acc):
+    """(balances, prices). OKX reports `eqUsd` per currency, so the price is implied
+    by eqUsd/eq and needs no extra call.
+
+    /account/balance only covers the *trading* sub-account; deposits sit in the
+    funding sub-account, which OKX itself counts as part of the same total assets.
+    The two are distinct balances of the same currency, so they are summed.
+    """
+    d = _okx_request(acc, "GET", "/api/v5/account/balance") or {}
+    if str(d.get("code")) not in ("0", ""):
+        raise RuntimeError(f"OKX: {d.get('msg') or d.get('code')}")
+    data = (d.get("data") or [{}])[0]
+    balances, prices = {}, {}
+    try:
+        f = _okx_request(acc, "GET", "/api/v5/asset/balances") or {}
+        if str(f.get("code")) in ("0", ""):
+            for row in f.get("data") or []:
+                ccy = str(row.get("ccy") or "").upper()
+                try:
+                    qty = float(row.get("bal") or 0)
+                except (TypeError, ValueError):
+                    qty = 0.0
+                if ccy and qty > 0:
+                    balances[ccy] = balances.get(ccy, 0.0) + qty
+    except Exception:  # noqa: BLE001
+        pass   # a key without funding read permission still gets the trading account
+    for row in data.get("details") or []:
+        ccy = str(row.get("ccy") or "").upper()
+        if not ccy:
+            continue
+        try:
+            qty = float(row.get("eq") or 0)      # equity: cash + unrealised PnL
+        except (TypeError, ValueError):
+            qty = 0.0
+        if qty <= 0:
+            continue
+        balances[ccy] = balances.get(ccy, 0.0) + qty
+        try:
+            usd = float(row.get("eqUsd") or 0)
+        except (TypeError, ValueError):
+            usd = 0.0
+        if usd > 0:
+            prices[ccy] = usd / qty
+    return balances, prices
+
+
+# --------------------------------------------------------------------------
+# Bitget
+#
+# Signature (v2 REST): base64(HMAC-SHA256(timestamp + method + requestPath, secret)),
+# timestamp in milliseconds. The query string is signed in a stable key order and,
+# per Bitget's own docs, the signature uses the RAW (non-percent-encoded) values
+# while the URL uses the encoded ones — identical for plain values like
+# "productType=USDT-FUTURES", so both are built the same way here.
+# --------------------------------------------------------------------------
+BITGET_BASE = "https://api.bitget.com"
+
+
+def _bitget_request(acc, method, path, query=None):
+    query = query or {}
+    secret = str(acc.get("secret") or "").strip()
+    ts = str(int(time.time() * 1000))
+    request_path = path
+    if query:
+        ordered = sorted(query.items())
+        request_path += "?" + urllib.parse.urlencode(ordered)
+    prehash = ts + method.upper() + request_path
+    sign = base64.b64encode(
+        hmac.new(secret.encode(), prehash.encode(), hashlib.sha256).digest()).decode()
+    return _signed_get(BITGET_BASE + request_path, {
+        "ACCESS-KEY": str(acc.get("key") or "").strip(),
+        "ACCESS-SIGN": sign,
+        "ACCESS-TIMESTAMP": ts,
+        "ACCESS-PASSPHRASE": str(acc.get("passphrase") or "").strip(),
+    })
+
+
+def _bitget_balances(acc):
+    """(balances, prices) summed across the spot account and the futures accounts.
+
+    A Bitget API key can be scoped to one account type, so a failure on one call is
+    not fatal as long as the other answered.
+    """
+    balances, prices, errors = {}, {}, []
+
+    # spot
+    try:
+        d = _bitget_request(acc, "GET", "/api/v2/spot/account/assets") or {}
+        if str(d.get("code")) == "00000":
+            for row in d.get("data") or []:
+                coin = str(row.get("coin") or "").upper()
+                if not coin:
+                    continue
+                qty = 0.0
+                for field in ("available", "frozen", "locked"):
+                    try:
+                        qty += float(row.get(field) or 0)
+                    except (TypeError, ValueError):
+                        pass
+                if qty > 0:
+                    balances[coin] = balances.get(coin, 0.0) + qty
+        else:
+            errors.append(f"spot: {d.get('msg') or d.get('code')}")
+    except Exception as e:  # noqa: BLE001
+        errors.append(f"spot: {type(e).__name__}")
+
+    # futures: accountEquity is the whole position value in the margin coin.
+    # The S-prefixed products (SUSDT-FUTURES/SUSDC-FUTURES/SCOIN-FUTURES) are the
+    # *simulated* demo accounts: they answer with a 3000-each play-money balance on
+    # a real read-only key, so including them would add $6000 of money that does
+    # not exist.
+    for product in ("USDT-FUTURES", "USDC-FUTURES", "COIN-FUTURES"):
+        try:
+            d = _bitget_request(acc, "GET", "/api/v2/mix/account/accounts",
+                                {"productType": product}) or {}
+            if str(d.get("code")) != "00000":
+                continue
+            for row in d.get("data") or []:
+                coin = str(row.get("marginCoin") or "").upper()
+                try:
+                    qty = float(row.get("accountEquity") or 0)
+                except (TypeError, ValueError):
+                    qty = 0.0
+                if coin and qty > 0:
+                    balances[coin] = balances.get(coin, 0.0) + qty
+        except Exception:  # noqa: BLE001
+            continue
+
+    if not balances and errors:
+        raise RuntimeError("Bitget: " + "; ".join(errors))
+    return balances, prices
+
+
+# --------------------------------------------------------------------------
 # ticker pricing
 # --------------------------------------------------------------------------
 
@@ -246,6 +437,36 @@ def _ticker_map(exchange, assets):
                     prices[a] = float(lst[0]["lastPrice"])
             except Exception:  # noqa: BLE001
                 pass
+    elif exchange == "okx":
+        # OKX's own spot tickers, so an asset outside the account's implied prices
+        # still gets a live price
+        try:
+            d = http_get_json("https://www.okx.com/api/v5/market/tickers",
+                              params={"instType": "SPOT"}, timeout=15, retries=0)
+            for t in (d or {}).get("data") or []:
+                inst = str(t.get("instId") or "")
+                if not inst.endswith("-USDT"):
+                    continue
+                try:
+                    prices[inst[:-5]] = float(t["last"])
+                except (KeyError, ValueError):
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
+    elif exchange == "bitget":
+        try:
+            d = http_get_json("https://api.bitget.com/api/v2/spot/market/tickers",
+                              timeout=15, retries=0)
+            for t in (d or {}).get("data") or []:
+                sym = str(t.get("symbol") or "")
+                if not sym.endswith("USDT"):
+                    continue
+                try:
+                    prices[sym[:-4]] = float(t["lastPr"])
+                except (KeyError, ValueError):
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
     elif exchange == "backpack":
         try:
             d = http_get_json("https://api.backpack.exchange/api/v1/tickers", timeout=12, retries=0)
@@ -287,12 +508,17 @@ def fetch_cex_accounts(accounts, native):
                 balances = _bybit_balances(acc)
             elif ex == "backpack":
                 balances, mark_prices = _backpack_state(acc)
+            elif ex == "okx":
+                balances, mark_prices = _okx_balances(acc)
+            elif ex == "bitget":
+                balances, mark_prices = _bitget_balances(acc)
             else:
                 raise ValueError(f"未知交易所: {ex}（支持 {'/'.join(EXCHANGES)}）")
             ticker = _ticker_map(ex, list(balances.keys()))
-            if ex == "backpack":
-                # a *_USDC lastPrice is the better price for a spot balance;
-                # the collateral mark fills in anything with no pair (stocks)
+            if ex in ("backpack", "okx", "bitget"):
+                # a *_USDC lastPrice is the better price for a spot balance; the
+                # account-implied price fills in anything with no pair (OKX reports
+                # eqUsd per currency, Backpack marks tokenised stocks)
                 ticker = dict(mark_prices, **ticker)
             rows = []
             for asset, amount in sorted(balances.items()):

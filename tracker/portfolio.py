@@ -220,6 +220,9 @@ def fetch_all(progress=None):
     wallet_objs = []
     for w in walletstore.all_wallets():
         obj = {"wallet": w["name"], "address": w["address"], "type": w["type"],
+               # stored with the snapshot so a historical health report still knows
+               # which wallets were cold at the time
+               "storage": w.get("storage") or "hot",
                "tokens": [], "total_usd": 0.0}
         if w["type"] == "btc":
             obj["tokens"] = [r for r in btc_rows_all if r["wallet"] == w["name"]]
@@ -244,7 +247,7 @@ def fetch_all(progress=None):
     for res in cex_results:
         acc = res["account"]
         obj = {"wallet": acc["name"], "address": str(acc.get("exchange") or ""),
-               "type": "cex", "tokens": filter_rows(res["rows"]),
+               "type": "cex", "storage": "cex", "tokens": filter_rows(res["rows"]),
                "total_usd": round(sum(r["usd"] for r in res["rows"]), 2),
                "error": res["error"]}
         if res["error"]:

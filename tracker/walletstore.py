@@ -12,6 +12,10 @@ import threading
 from . import atomicio, profiles
 
 VALID_TYPES = ("evm", "btc", "sol", "doge", "ada")
+# Where the keys live. "cex" is not listed: an exchange account is custody by
+# definition, and health.py derives that from the wallet type instead.
+VALID_STORAGE = ("hot", "cold")
+DEFAULT_STORAGE = "hot"
 
 _lock = threading.Lock()
 _user_cache = {"mtime": None, "data": None}
@@ -60,8 +64,16 @@ def all_wallets():
     return user_wallets()
 
 
+def normalize_storage(value):
+    """`hot` unless the caller said otherwise; an unknown value is rejected."""
+    kind = str(value if value is not None else DEFAULT_STORAGE).strip().lower()
+    if kind not in VALID_STORAGE:
+        raise ValueError(f"storage must be one of {'/'.join(VALID_STORAGE)}")
+    return kind
+
+
 def add_wallet(wallet):
-    """Add a wallet to the active profile. wallet: {name, type, address}."""
+    """Add a wallet to the active profile. wallet: {name, type, address, storage?}."""
     global _user_cache
     name = str(wallet.get("name") or "").strip()
     wtype = str(wallet.get("type") or "").strip().lower()
@@ -72,12 +84,28 @@ def add_wallet(wallet):
         raise ValueError(f"type must be one of {'/'.join(VALID_TYPES)}")
     if not address:
         raise ValueError("address is required")
+    storage = normalize_storage(wallet.get("storage"))
     with _lock:
         entries = _load_user_wallets()
         for w in entries:
             if w.get("address", "").lower() == address.lower() and w.get("type") == wtype:
                 raise ValueError("address already in the wallet list")
-        entries.append({"name": name, "type": wtype, "address": address})
+        entries.append({"name": name, "type": wtype, "address": address,
+                        "storage": storage})
+        _save_user_wallets(entries)
+        _user_cache = {"mtime": _file_mtime(), "data": entries}
+        return list(entries)
+
+
+def set_storage(index, kind):
+    """Set the storage class of one wallet. Returns the new wallet list."""
+    global _user_cache
+    kind = normalize_storage(kind)
+    with _lock:
+        entries = _load_user_wallets()
+        if not (0 <= index < len(entries)):
+            raise ValueError("invalid index")
+        entries[index]["storage"] = kind
         _save_user_wallets(entries)
         _user_cache = {"mtime": _file_mtime(), "data": entries}
         return list(entries)

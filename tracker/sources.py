@@ -188,15 +188,20 @@ def _apply_env(data):
                 p["key"] = env["COINGECKO_API_KEY"].strip()
     if env.get("SOLANA_RPC"):
         data["solana"]["rpc"].insert(0, {"name": "env", "url": env["SOLANA_RPC"].strip(), "enabled": True})
-    # CEX account env overrides: BINANCE_API_KEY/SECRET, BYBIT_API_KEY/SECRET, BACKPACK_API_KEY/SECRET
+    # CEX account env overrides: <EX>_API_KEY/SECRET (+ _PASSPHRASE for OKX/Bitget)
     cex_accounts = data.get("cex", {}).get("accounts", [])
-    for ex, envk, envs in (("binance", "BINANCE_API_KEY", "BINANCE_API_SECRET"),
-                           ("bybit", "BYBIT_API_KEY", "BYBIT_API_SECRET"),
-                           ("backpack", "BACKPACK_API_KEY", "BACKPACK_API_SECRET")):
+    for ex, envk, envs, envp in (("binance", "BINANCE_API_KEY", "BINANCE_API_SECRET", None),
+                                 ("bybit", "BYBIT_API_KEY", "BYBIT_API_SECRET", None),
+                                 ("backpack", "BACKPACK_API_KEY", "BACKPACK_API_SECRET", None),
+                                 ("okx", "OKX_API_KEY", "OKX_API_SECRET", "OKX_API_PASSPHRASE"),
+                                 ("bitget", "BITGET_API_KEY", "BITGET_API_SECRET",
+                                  "BITGET_API_PASSPHRASE")):
         if env.get(envk) and env.get(envs):
             found = next((a for a in cex_accounts if a.get("exchange") == ex), None)
             entry = {"name": f"{ex}_env", "exchange": ex,
                      "key": env[envk].strip(), "secret": env[envs].strip(), "enabled": True}
+            if envp and env.get(envp):
+                entry["passphrase"] = env[envp].strip()
             if found:
                 found.update(entry)
             else:

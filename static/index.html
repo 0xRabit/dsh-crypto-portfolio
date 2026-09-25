@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=35">
+<link rel="stylesheet" href="/static/style.css?v=38">
 </head>
 <body>
 <header>
@@ -87,6 +87,7 @@
             <div id="totalChange" class="change"></div>
             <div id="lastUpdated" class="sub"></div>
             <div id="historyNote" class="history-note hidden" data-i18n="viewingHistory"></div>
+            <button id="btnShare" class="btn-ghost btn-share" data-i18n="shareBtn" data-i18n-title="shareHint" title="Draw a PNG summary of what you are looking at (no addresses)">Share card</button>
           </div>
           <div class="pie-block">
             <div class="pie-cap" data-i18n="walletShareCap">By wallet</div>
@@ -162,7 +163,18 @@
       <div id="chainBars"></div>
     </section>
 
-    <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack (CEX), CoinGecko/DexScreener/OKX (prices). Refresh saves the last snapshot of the day and builds trend charts.</footer>
+    <section class="panel" id="secHealth">
+      <!-- Health is a property of the WHOLE portfolio, not of the current filter:
+           hiding the CEX wallets would change the tiering maths and turn a real
+           risk figure into a misleading one. So no filter chip here, and the hint
+           says as much. -->
+      <div class="panel-title"><span data-i18n="healthTitle">Asset Health</span>
+        <span class="hint" data-i18n="healthScope">whole portfolio, independent of the filters above</span></div>
+      <div id="healthGrid" class="health-grid"></div>
+      <div id="healthAdvice" class="health-advice"></div>
+    </section>
+
+    <footer data-i18n="footer">Data sources: DeBank (EVM), Hyperliquid L1, blockchain.info/mempool (BTC), Solana RPC (SOL/SPL/staked), Binance/Bybit/Backpack/OKX/Bitget (CEX). Refresh saves the last snapshot of the day and builds trend charts.</footer>
   </main>
 </div>
 
@@ -199,6 +211,10 @@
           <option value="sol" data-i18n="wlTypeSol">Solana</option>
           <option value="doge" data-i18n="wlTypeDoge">Dogecoin</option>
           <option value="ada" data-i18n="wlTypeAda">Cardano</option>
+        </select>
+        <select id="wlStorage" data-i18n-title="storageTitle" title="Where the keys live: cold = hardware/offline, hot = browser or app wallet. Exchange accounts are always counted as exchange custody.">
+          <option value="hot" data-i18n="storageHot">Hot wallet</option>
+          <option value="cold" data-i18n="storageCold">Cold wallet</option>
         </select>
         <input id="wlAddress" data-i18n-placeholder="wlAddrPh" placeholder="Address" style="flex:2">
         <button id="btnAddWallet" data-i18n="btnAddWallet">+ Add Wallet</button>
@@ -282,6 +298,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=27"></script>
+<script src="/static/app.js?v=37"></script>
 </body>
 </html>
