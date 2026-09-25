@@ -605,3 +605,47 @@ summary:focus-visible {
 }
 .share-link:hover { border-color: var(--accent); color: var(--accent); }
 .share-msg { margin-top: var(--sp-2); display: block; }
+
+/* ---------- asset health cards (volatility / concentration / storage) ---------- */
+#secHealth .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--sp-3); }
+.health-card {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+}
+.health-card[data-level="highRisk"] { border-color: rgba(248,81,73,.55); }
+.health-card .health-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.health-card .health-name { font-size: 13px; font-weight: 700; }
+.health-pill { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 20px; white-space: nowrap; }
+.health-pill.safe { background: rgba(63,185,80,.16); color: var(--success); }
+.health-pill.warning { background: rgba(210,153,34,.18); color: var(--warning); }
+.health-pill.highRisk { background: rgba(248,81,73,.16); color: var(--danger); }
+.health-card .health-figure { font-size: 26px; font-weight: 700; margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
+.health-card .health-hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.health-card .health-sub { color: var(--text); font-size: 12.5px; margin-top: 8px; }
+/* icon · label · bar · "$23,030 (32.5%)" */
+.h-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; font-size: 12.5px; }
+.h-row .h-ico { width: 18px; text-align: center; flex: none; font-size: 14px; }
+.h-row .h-lbl { width: 84px; flex: none; color: var(--text); }
+.h-row .h-bar { flex: 1; height: 12px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.h-row .h-bar i { display: block; height: 100%; border-radius: 4px; }
+.h-row .h-val { width: 132px; flex: none; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.h-row .h-val .h-pct { color: var(--muted); font-weight: 400; }
+/* concentration gauge: 0 → warning → danger → 100 with a marker at the value */
+.h-gauge { margin-top: 10px; }
+.h-gauge-track { position: relative; height: 14px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+.h-gauge-track .h-zone { position: absolute; top: 0; height: 100%; left: 0; }
+.h-gauge-track .h-zone.ok { background: rgba(63,185,80,.75); }
+.h-gauge-track .h-zone.warn { background: rgba(210,153,34,.8); }
+.h-gauge-track .h-zone.risk { background: rgba(248,81,73,.8); }
+.h-gauge-track .h-mark {
+  position: absolute; top: -2px; width: 3px; height: 18px; background: var(--text);
+  border-radius: 2px; transform: translateX(-1.5px); box-shadow: 0 0 0 1px var(--bg);
+}
+.h-scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 3px; }
+/* thresholds form */
+.hc-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--sp-3); }
+.hc-group { background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3); }
+.hc-group .hc-title { font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
+.hc-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.hc-field input { width: 92px; }
+.hc-group .hint { margin-left: 0; display: block; margin-top: 6px; }

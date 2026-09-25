@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
-<link rel="icon" type="image/svg+xml" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=40">
+<link rel="icon" type="image/png" href="/static/logos/logo.svg">
+<link rel="stylesheet" href="/static/style.css?v=42">
 </head>
 <body>
 <header>
@@ -149,7 +149,7 @@
            hiding the CEX wallets would change the tiering maths and turn a real
            risk figure into a misleading one. So no filter chip here, and the hint
            says as much. -->
-      <div class="panel-title"><span data-i18n="healthTitle">Asset Health</span>
+      <div class="panel-title"><span data-i18n="healthTitle">🩺 Asset Health</span>
         <span class="hint" data-i18n="healthScope">whole portfolio, independent of the filters above</span></div>
       <div id="healthGrid" class="health-grid"></div>
       <div id="healthAdvice" class="health-advice"></div>
@@ -292,6 +292,45 @@
         </div>
       </div>
     </details>
+    <details class="panel" id="secHealthCfg">
+      <summary class="panel-title"><span data-i18n="healthCfgTitle">Health Thresholds</span>
+        <span class="hint" id="healthCfgFile"></span>
+      </summary>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="healthCfgDesc">Each check turns yellow at its warning line and red at its danger line. Values are a percentage of the portfolio; storage security is inverted — more cold storage is better, so its safe line sits above its warning line. Every profile keeps its own numbers.</p>
+        <div id="healthCfgForm" class="hc-form">
+          <div class="hc-group">
+            <div class="hc-title" data-i18n="healthVolatility">Volatility risk</div>
+            <label class="hc-field"><span data-i18n="hcWarn">warning %</span>
+              <input id="hcVolWarn" type="number" min="0" max="100" step="0.5"></label>
+            <label class="hc-field"><span data-i18n="hcDanger">danger %</span>
+              <input id="hcVolDanger" type="number" min="0" max="100" step="0.5"></label>
+            <div class="hint" data-i18n="healthVolatilityHint">share that is neither a stablecoin nor BTC</div>
+          </div>
+          <div class="hc-group">
+            <div class="hc-title" data-i18n="healthConcentration">Concentration</div>
+            <label class="hc-field"><span data-i18n="hcWarn">warning %</span>
+              <input id="hcConWarn" type="number" min="0" max="100" step="0.5"></label>
+            <label class="hc-field"><span data-i18n="hcDanger">danger %</span>
+              <input id="hcConDanger" type="number" min="0" max="100" step="0.5"></label>
+            <div class="hint" data-i18n="healthConcentrationHint">share of the largest single wallet</div>
+          </div>
+          <div class="hc-group">
+            <div class="hc-title" data-i18n="healthStorage">Storage security</div>
+            <label class="hc-field"><span data-i18n="hcSafe">safe %</span>
+              <input id="hcStoSafe" type="number" min="0" max="100" step="0.5"></label>
+            <label class="hc-field"><span data-i18n="hcWarn">warning %</span>
+              <input id="hcStoWarn" type="number" min="0" max="100" step="0.5"></label>
+            <div class="hint" data-i18n="healthStorageHint">share held in cold storage (higher is safer)</div>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top:10px">
+          <button id="btnSaveHealthCfg" data-i18n="btnSaveHealthCfg">Save Thresholds</button>
+          <button id="btnResetHealthCfg" class="btn-ghost" data-i18n="btnResetHealthCfg">Restore Defaults</button>
+          <span id="healthCfgMsg" class="hint"></span>
+        </div>
+      </div>
+    </details>
     <details class="panel" id="secBlacklist">
       <summary class="panel-title"><span data-i18n="blTitle">Token Blacklist</span>
         <span class="hint" id="blacklistFile"></span>
@@ -318,13 +357,11 @@
         <span data-i18n="siblingLabel">Sibling project</span>
         <a href="https://chromewebstore.google.com/detail/smartfolio/ogiijkjoahbekjnjhnchjefllioelcin"
            target="_blank" rel="noopener noreferrer">SmartFolio <span data-i18n="chromeExt">Chrome extension</span> ↗</a>
-        <a class="about-src" href="https://github.com/0xRabit/SmartFolio"
-           target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">source</a>
       </span>
     </footer>
   </main>
 </div>
 
-<script src="/static/app.js?v=39"></script>
+<script src="/static/app.js?v=43"></script>
 </body>
 </html>

@@ -106,20 +106,28 @@ const I18N = {
     paidBadge: "PAID", lastOk: "last ok", never: "never",
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
     healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
-    healthTiering: "On-chain risk", healthConcentration: "Concentration", healthStorage: "Storage security",
-    healthTieringHint: "Share of the portfolio held on-chain outside BTC — the part a compromised hot wallet can reach.",
-    healthTieringSub: (btc, onchain, cex) => "BTC " + btc + " · on-chain " + onchain + " · CEX " + cex,
+    healthVolatility: "Volatility risk", healthConcentration: "Concentration",
+    healthStorage: "Storage security",
+    healthVolatilityHint2: (warn, pct) => "Stablecoins barely move, BTC is the benchmark; the volatile share is " +
+      pct + " (watch above " + warn + "%).",
     healthConcentrationHint: "Share of the largest single wallet.",
-    healthConcentrationSub: (wallet, usd) => "largest: " + wallet + " (" + usd + ")",
-    healthStorageHint: "Share held in cold storage; higher is safer.",
-    healthStorageSub: (cold, hot, cex) => "cold " + cold + " · hot " + hot + " · exchange " + cex,
-    healthLevelSafe: "Healthy", healthLevelWarning: "Watch", healthLevelHighRisk: "High risk",
+    healthConcentrationSub: (wallet, usd) => "max wallet: " + wallet + " (" + usd + ")",
+    healthStorageHint2: (safe) => "Cold-storage share; " + safe + "% or more is healthy.",
+    healthLevelSafe: "Healthy", healthLevelWarning: "Warning", healthLevelHighRisk: "High Risk",
     healthOk: "Nothing to act on — the three checks all pass.",
-    healthOnChainRisk: (pct) => pct + "% of the portfolio is in on-chain assets outside BTC; moving part of it into BTC lowers that exposure.",
+    healthVolatilityRisk: (pct) => pct + "% of the portfolio is in coins that are neither stablecoins nor BTC; moving part of it into BTC lowers that exposure.",
     healthConcentrationAdvice: (pct, wallet) => wallet + " alone holds " + pct + "% of the portfolio; spreading it across wallets (or converting part to BTC) lowers that risk.",
     healthStorageAdvice: (pct) => "Only " + pct + "% sits in cold storage; long-term holdings belong on a hardware wallet.",
     healthStorageAdviceNone: "Nothing is in cold storage yet; long-term holdings belong on a hardware wallet.",
     healthNoData: "No snapshot yet — run a refresh to compute the health report.",
+    healthCfgTitle: "Health Thresholds", hcWarn: "warning %", hcDanger: "danger %", hcSafe: "safe %",
+    healthCfgDesc: "Each check turns yellow at its warning line and red at its danger line. Values are a percentage of the portfolio; storage security is inverted — more cold storage is better, so its safe line sits above its warning line. Every profile keeps its own numbers.",
+    btnSaveHealthCfg: "Save Thresholds", btnResetHealthCfg: "Restore Defaults",
+    healthCfgSaved: "Thresholds saved.", healthCfgReset: "Defaults restored.",
+    healthCfgFailed: "Could not save: ",
+    storageHot: "Hot wallet", storageCold: "Cold wallet",
+    storageTitle: "Where the keys live: cold = hardware/offline, hot = browser or app wallet. Exchange accounts are always counted as exchange custody.",
+    storageCex: "Exchange", storageCol: "Storage", storageMark: "cold storage",
     shareBtn: "Share", shareTotal: "Total assets", shareTop: "Top holdings",
     shareSnapshot: "snapshot", shareFiltered: "filtered view", shareFail: "Could not build the share card.",
     shareTitle: "Share your portfolio", shareClose: "Close",
@@ -257,20 +265,27 @@ const I18N = {
     paidBadge: "付费", lastOk: "上次成功", never: "从未",
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
     healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
-    healthTiering: "链上风险", healthConcentration: "集中度", healthStorage: "托管安全",
-    healthTieringHint: "除 BTC 外的链上资产占比——这部分最容易被盗（热钱包/授权风险）。",
-    healthTieringSub: (btc, onchain, cex) => "BTC " + btc + " · 链上 " + onchain + " · CEX " + cex,
+    healthVolatility: "波动性风险", healthConcentration: "集中度",
+    healthStorage: "托管安全",
+    healthVolatilityHint2: (warn, pct) => "稳定币几乎不波动，BTC 是基准；当前高波动占比 " + pct + "（超过 " + warn + "% 需留意）。",
     healthConcentrationHint: "单一钱包占总额的比例。",
-    healthConcentrationSub: (wallet, usd) => "最大：" + wallet + "（" + usd + "）",
-    healthStorageHint: "冷存储的占比，越高越安全。",
-    healthStorageSub: (cold, hot, cex) => "冷 " + cold + " · 热 " + hot + " · 交易所 " + cex,
+    healthConcentrationSub: (wallet, usd) => "最大钱包：" + wallet + "（" + usd + "）",
+    healthStorageHint2: (safe) => "冷存储占比；达到 " + safe + "% 及以上为健康。",
     healthLevelSafe: "健康", healthLevelWarning: "注意", healthLevelHighRisk: "高风险",
     healthOk: "三项检查都通过，暂无需调整。",
-    healthOnChainRisk: (pct) => "链上资产占 " + pct + "%，建议把其中一部分换成 BTC 以降低链上暴露。",
+    healthVolatilityRisk: (pct) => "有 " + pct + "% 的资产既不是稳定币也不是 BTC；把其中一部分换成 BTC 可降低波动风险。",
     healthConcentrationAdvice: (pct, wallet) => wallet + " 一个钱包就占 " + pct + "%，建议分散到多个钱包，或把一部分换成 BTC。",
     healthStorageAdvice: (pct) => "只有 " + pct + "% 放在冷存储，长期持有的部分建议放进硬件钱包。",
     healthStorageAdviceNone: "目前还没有冷存储，长期持有的部分建议放进硬件钱包。",
     healthNoData: "还没有快照——先刷新一次即可生成健康度报告。",
+    healthCfgTitle: "健康度阈值", hcWarn: "注意 %", hcDanger: "危险 %", hcSafe: "安全 %",
+    healthCfgDesc: "三项检查分别在「注意」线与「危险」线变色。数值是占资产组合的百分比；托管安全是反过来的——冷存储越多越好，所以「安全」线在「注意」线之上。每个 Profile 各自保存自己的数值。",
+    btnSaveHealthCfg: "保存阈值", btnResetHealthCfg: "恢复默认",
+    healthCfgSaved: "阈值已保存。", healthCfgReset: "已恢复默认值。",
+    healthCfgFailed: "保存失败：",
+    storageHot: "热钱包", storageCold: "冷钱包",
+    storageTitle: "私钥放在哪里：冷 = 硬件/离线，热 = 浏览器或 App 钱包。交易所账户一律按交易所托管计算。",
+    storageCex: "交易所", storageCol: "托管", storageMark: "冷存储",
     shareBtn: "分享", shareTotal: "总资产", shareTop: "主要持仓",
     shareSnapshot: "快照", shareFiltered: "筛选后的视图", shareFail: "生成分享卡片失败。",
     shareTitle: "分享你的资产组合", shareClose: "关闭",
@@ -771,6 +786,8 @@ function bindEvents() {
     } catch (e) { alert(t("blAddFail") + e.message); }
   });
   // wallet management (settings page)
+  $("btnSaveHealthCfg").addEventListener("click", saveHealthCfg);
+  $("btnResetHealthCfg").addEventListener("click", resetHealthCfg);
   $("btnAddWallet").addEventListener("click", async () => {
     const wallet = {
       name: $("wlName").value.trim(),
@@ -1001,12 +1018,12 @@ function updateFilterChips() {
 
 /* ---------- asset health (server-computed: tracker/health.py) ---------- */
 // The report is computed from the blacklist-filtered snapshot on the server, so
-// the three figures here always agree with the dashboard totals. It is
-// deliberately NOT filter-aware: hiding the CEX wallets would change the tiering
-// maths and turn a real risk figure into a misleading one.
-const HEALTH_COLORS = { tier1: "#f7931a", tier2: "#627eea", tier3: "#8b5cf6",
-                        cold: "#3fb950", hot: "#d29922", cex: "#f85149",
-                        rest: "#30363d" };
+// the figures here always agree with the dashboard totals. It is deliberately NOT
+// filter-aware: hiding the CEX wallets would change the maths and turn a real risk
+// figure into a misleading one.
+const HEALTH_COLORS = { stable: "#3fb950", btc: "#f7931a", other: "#58a6ff",
+                        cold: "#3fb950", hot: "#d29922", cex: "#8b5cf6" };
+const HEALTH_ICONS = { stable: "💵", btc: "₿", other: "🪙", cold: "❄️", hot: "🔥", cex: "🏦" };
 
 function healthLevelLabel(level) {
   if (level === "highRisk") return t("healthLevelHighRisk");
@@ -1014,23 +1031,40 @@ function healthLevelLabel(level) {
   return t("healthLevelSafe");
 }
 
-// Every card's bar is a composition, not a repeat of the headline figure: the
-// figure says how much of the risky thing there is, the bar says where it sits.
-function healthSegments(parts) {
-  return '<div class="health-stack">' + parts.map((seg) =>
-    '<div class="health-seg" style="width:' + (seg.pct || 0).toFixed(1) + "%;background:" +
-      seg.color + '" title="' + esc(seg.title + " " + (seg.pct || 0).toFixed(1) + "%" +
-      (seg.usd ? " · " + seg.usd : "")) + '"></div>').join("") + "</div>";
+/** One "icon · name · bar · $value (pct)" row — the shape of cards 1 and 3. */
+function healthRow(iconKey, nameKey, balance, percent, total) {
+  const pct = total > 0 ? percent : 0;
+  return '<div class="h-row">' +
+    '<span class="h-ico">' + HEALTH_ICONS[iconKey] + "</span>" +
+    '<span class="h-lbl">' + esc(t(nameKey)) + "</span>" +
+    '<span class="h-bar"><i style="width:' + Math.max(pct, pct > 0 ? 1.5 : 0).toFixed(1) +
+      "%;background:" + HEALTH_COLORS[iconKey] + '"></i></span>' +
+    '<span class="h-val">' + esc(fmtUsd(balance)) +
+      ' <span class="h-pct">(' + pct.toFixed(1) + "%)</span></span></div>";
 }
 
-function healthCard(nameKey, level, figure, segments, hint, sub) {
-  return '<div class="health-card" data-level="' + esc(level) + '">' +
-    '<div class="health-head"><span class="health-name">' + esc(t(nameKey)) + "</span>" +
-      '<span class="health-pill ' + esc(level) + '">' + esc(healthLevelLabel(level)) + "</span></div>" +
-    '<div class="health-figure">' + esc(figure) + "</div>" +
-    healthSegments(segments) +
-    '<div class="health-sub">' + esc(sub) + "</div>" +
-    '<div class="health-hint">' + esc(t(hint)) + "</div></div>";
+function healthHead(nameKey, level, figure) {
+  return '<div class="health-head"><span class="health-name">' + esc(t(nameKey)) + "</span>" +
+    '<span class="health-pill ' + esc(level) + '">' + esc(healthLevelLabel(level)) + "</span></div>" +
+    (figure ? '<div class="health-figure">' + esc(figure) + "</div>" : "");
+}
+
+/** The concentration card is a 0 → 100 gauge with the two thresholds drawn in. */
+function healthGauge(percent, th) {
+  const w = th && th.warning, d = th && th.danger;
+  const mark = Math.min(Math.max(percent, 0), 100);
+  return '<div class="h-gauge">' +
+    '<div class="h-gauge-track">' +
+      (w != null ? '<span class="h-zone ok" style="width:' + w + '%"></span>' : "") +
+      (w != null && d != null
+        ? '<span class="h-zone warn" style="left:' + w + "%;width:" + Math.max(d - w, 0) + '%"></span>' : "") +
+      (d != null ? '<span class="h-zone risk" style="left:' + d + "%;width:" + Math.max(100 - d, 0) + '%"></span>' : "") +
+      '<span class="h-mark" style="left:' + mark + '%"></span>' +
+    "</div>" +
+    '<div class="h-scale">' +
+      "<span>0%</span><span>" + (w != null ? w + "%" : "") + "</span>" +
+      "<span>" + (d != null ? d + "%" : "") + "</span><span>100%</span>" +
+    "</div></div>";
 }
 
 function renderHealth() {
@@ -1041,31 +1075,31 @@ function renderHealth() {
   if (!h) { grid.innerHTML = ""; advice.innerHTML = '<span class="hint">' + t("healthNoData") + "</span>"; return; }
 
   const pct = (x) => (x || 0).toFixed(1) + "%";
-  const tiers = h.tiering.tiers;
-  const store = h.storage.storage;
-  const conc = h.concentration;
+  const vol = h.volatility, conc = h.concentration, store = h.storage;
+  const buckets = vol.buckets, cold = store.storage.cold;
 
   grid.innerHTML =
-    healthCard("healthTiering", h.tiering.onChainRiskLevel, pct(tiers.tier2.percent),
-      [{ pct: tiers.tier1.percent, color: HEALTH_COLORS.tier1, title: t("healthTier1"), usd: fmtUsd(tiers.tier1.balance) },
-       { pct: tiers.tier2.percent, color: HEALTH_COLORS.tier2, title: t("healthTier2"), usd: fmtUsd(tiers.tier2.balance) },
-       { pct: tiers.tier3.percent, color: HEALTH_COLORS.tier3, title: t("healthTier3"), usd: fmtUsd(tiers.tier3.balance) }],
-      "healthTieringHint",
-      t("healthTieringSub", fmtUsd(tiers.tier1.balance), fmtUsd(tiers.tier2.balance),
-        fmtUsd(tiers.tier3.balance))) +
-    healthCard("healthConcentration", conc.level, pct(conc.percent),
-      [{ pct: conc.percent, color: conc.maxWalletIsBtc ? HEALTH_COLORS.tier1 : HEALTH_COLORS.tier2,
-         title: conc.maxWallet || t("noData"), usd: fmtUsd(conc.maxWalletUsd || 0) },
-       { pct: 100 - conc.percent, color: HEALTH_COLORS.rest, title: t("healthRest") }],
-      "healthConcentrationHint",
-      conc.maxWallet ? t("healthConcentrationSub", conc.maxWallet, fmtUsd(conc.maxWalletUsd || 0))
-                     : t("noData")) +
-    healthCard("healthStorage", h.storage.securityLevel, pct(store.cold.percent),
-      [{ pct: store.cold.percent, color: HEALTH_COLORS.cold, title: t("storageCold"), usd: fmtUsd(store.cold.balance) },
-       { pct: store.hot.percent, color: HEALTH_COLORS.hot, title: t("storageHot"), usd: fmtUsd(store.hot.balance) },
-       { pct: store.cex.percent, color: HEALTH_COLORS.cex, title: t("storageCex"), usd: fmtUsd(store.cex.balance) }],
-      "healthStorageHint",
-      t("healthStorageSub", pct(store.cold.percent), pct(store.hot.percent), pct(store.cex.percent)));
+    '<div class="health-card" data-level="' + esc(vol.level) + '">' +
+      healthHead("healthVolatility", vol.level, "") +
+      healthRow("stable", "catStable", buckets.stable.balance, buckets.stable.percent, vol.total) +
+      healthRow("btc", "catBtc", buckets.btc.balance, buckets.btc.percent, vol.total) +
+      healthRow("other", "catOther", buckets.other.balance, buckets.other.percent, vol.total) +
+      '<div class="health-hint">' + esc(t("healthVolatilityHint2", vol.thresholds.warning, pct(buckets.other.percent))) + "</div>" +
+    "</div>" +
+    '<div class="health-card" data-level="' + esc(conc.level) + '">' +
+      healthHead("healthConcentration", conc.level, pct(conc.percent)) +
+      healthGauge(conc.percent, conc.thresholds) +
+      '<div class="health-sub">' + esc(conc.maxWallet
+        ? t("healthConcentrationSub", conc.maxWallet, fmtUsd(conc.maxWalletUsd || 0)) : t("noData")) + "</div>" +
+      '<div class="health-hint">' + esc(t("healthConcentrationHint")) + "</div>" +
+    "</div>" +
+    '<div class="health-card" data-level="' + esc(store.securityLevel) + '">' +
+      healthHead("healthStorage", store.securityLevel, "") +
+      healthRow("cold", "storageCold", cold.balance, cold.percent, store.total) +
+      healthRow("hot", "storageHot", store.storage.hot.balance, store.storage.hot.percent, store.total) +
+      healthRow("cex", "storageCex", store.storage.cex.balance, store.storage.cex.percent, store.total) +
+      '<div class="health-hint">' + esc(t("healthStorageHint2", store.thresholds.safe)) + "</div>" +
+    "</div>";
 
   // each suggestion key is an i18n function taking what its sentence needs; the
   // "%" belongs to the sentence, so the number is passed on its own
@@ -1079,6 +1113,51 @@ function renderHealth() {
     return '<div class="health-item ' + esc(sg.level) + '">' +
       '<span class="health-dot"></span><span>' + esc(body) + "</span></div>";
   }).join("");
+}
+
+/* ---------- health thresholds (Settings) ---------- */
+async function renderHealthCfg() {
+  try {
+    const d = await api("/api/health");
+    state.healthCfg = d;
+    const th = d.thresholds;
+    $("hcVolWarn").value = th.volatility.warning;
+    $("hcVolDanger").value = th.volatility.danger;
+    $("hcConWarn").value = th.concentration.warning;
+    $("hcConDanger").value = th.concentration.danger;
+    $("hcStoSafe").value = th.storage.safe;
+    $("hcStoWarn").value = th.storage.warning;
+    const fn = d.file ? d.file.split(/[\\/]/).pop() : "";
+    $("healthCfgFile").textContent = fn ? "(" + fn + ")" : "";
+    $("healthCfgMsg").textContent = "";
+  } catch (e) { /* ignore — the section still shows the fields */ }
+}
+
+function healthCfgPayload() {
+  const num = (id) => Number($(id).value);
+  return { volatility: { warning: num("hcVolWarn"), danger: num("hcVolDanger") },
+           concentration: { warning: num("hcConWarn"), danger: num("hcConDanger") },
+           storage: { safe: num("hcStoSafe"), warning: num("hcStoWarn") } };
+}
+
+async function saveHealthCfg() {
+  try {
+    await postJSON("/api/health", { thresholds: healthCfgPayload() });
+    $("healthCfgMsg").textContent = t("healthCfgSaved");
+    await reloadViewData();
+    await renderHealthCfg();
+  } catch (e) { $("healthCfgMsg").textContent = t("healthCfgFailed") + e.message; }
+}
+
+async function resetHealthCfg() {
+  const d = state.healthCfg || {};
+  if (!d.defaults) return;
+  try {
+    await postJSON("/api/health", { thresholds: d.defaults });
+    $("healthCfgMsg").textContent = t("healthCfgReset");
+    await reloadViewData();
+    await renderHealthCfg();
+  } catch (e) { $("healthCfgMsg").textContent = t("healthCfgFailed") + e.message; }
 }
 
 /* ---------- share card (hand-drawn PNG, no html2canvas) ---------- */
@@ -1168,7 +1247,7 @@ function drawShareCard(ctx, data) {
   shareText(ctx, t("brand"), 56, 74, { size: 20, weight: 700 });
   shareText(ctx, t("shareSnapshot") + " " + state.selectedDate, SHARE_W - 56, 74,
             { size: 15, color: T.muted, align: "right" });
-  shareText(ctx, APP_VERSION ? "dsh-crypto-portfolio " + APP_VERSION : "dsh-crypto-portfolio",
+  shareText(ctx, t("brand") + (APP_VERSION ? " " + APP_VERSION : ""),
             SHARE_W - 56, 98, { size: 12, color: T.muted, align: "right" });
 
   // left column — the number a share card is about
@@ -1239,7 +1318,7 @@ function drawShareCard(ctx, data) {
   const h = data.health;
   if (h) {
     const pills = [
-      { name: t("healthTiering"), level: h.tiering.onChainRiskLevel },
+      { name: t("healthVolatility"), level: h.volatility.level },
       { name: t("healthConcentration"), level: h.concentration.level },
       { name: t("healthStorage"), level: h.storage.securityLevel },
     ];
@@ -2524,6 +2603,7 @@ async function renderSettings() {
   await renderSources();
   await renderBlacklist();
   await renderStablecoins();
+  await renderHealthCfg();
 }
 
 /* ---------------- config export / import ---------------- */
@@ -2677,4 +2757,9 @@ function showError(msg) {
 }
 
 window.addEventListener("resize", () => { if (state.history) renderChart(); });
-init();
+// A rejection here used to leave a silently blank dashboard; record it so the page
+// (and anyone debugging it) can see what went wrong instead of guessing.
+init().catch((e) => {
+  console.error("init failed:", e);
+  document.body.dataset.initError = (e && e.message) || String(e);
+});

@@ -108,17 +108,25 @@ First public release.
   A native asset whose on-chain price is unavailable now falls back to the
   exchange's own price instead of being reported as worth nothing.
 - **Asset health report.** A panel directly above the token table grades the
-  portfolio on the three questions a reviewer actually asks — **on-chain risk**
-  (share held on-chain outside BTC, 60/70 %), **concentration** (largest single
-  wallet, 50/75 %) and **storage security** (cold share, 50/20 %) — each with a
-  composition bar (BTC/on-chain/CEX, largest/rest, cold/hot/exchange) and a plain
-  sentence per failing check. Figures come from the blacklist-filtered snapshot, so
-  they can never disagree with the totals above; the report is deliberately not
-  filter-aware, because hiding the CEX wallets would change the tiering maths.
-  Thresholds and formulas live in `tracker/health.py`. The hot/cold class follows
-  the **live** wallet list rather than the value frozen into the snapshot, so
-  marking a wallet cold moves the panel immediately instead of at the next refresh
-  (a wallet removed from the live list keeps the class its snapshots recorded).
+  portfolio on the three questions a reviewer actually asks, one card each:
+  **volatility risk** (💵 stablecoins · ₿ bitcoin · 🪙 everything else, scored on the
+  third bucket), **concentration** (the largest single wallet, drawn as a gauge with
+  both thresholds marked on it) and **storage security** (❄️ cold · 🔥 hot · 🏦
+  exchange custody). Every row carries its balance *and* its share, and each failing
+  check adds one plain sentence below the cards. Figures come from the
+  blacklist-filtered snapshot, so they can never disagree with the totals above; the
+  report is deliberately not filter-aware, because hiding the CEX wallets would
+  change the maths. The maths lives in `tracker/health.py`.
+- **The thresholds are yours to set.** Settings → *Health Thresholds* edits the
+  warning/danger lines for all three checks (storage is inverted: its safe line sits
+  above its warning line) and stores them per profile in `health.json`. They are
+  validated on the way in — range, ordering, junk values — and a corrupt file falls
+  back to the defaults rather than taking the report down. The volatility split is
+  computed from the token labels, so your own label rules move it too. The hot/cold
+  class follows the **live** wallet list rather than the value frozen into the
+  snapshot: marking a wallet cold moves the panel immediately instead of at the next
+  refresh (a wallet removed from the live list keeps the class its snapshots
+  recorded).
 - **Wallets know where their keys live.** Each wallet is *hot* or *cold* (Settings →
   Wallet Management, or on creation); exchange accounts are always exchange custody.
   Cold wallets are marked with a ❄ on their card. The class is stored with the
@@ -134,6 +142,8 @@ First public release.
   copying.
 - **Linkable pages.** `#pageSettings` opens the settings page and
   `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
+- **No silent failures on start.** A rejected `init()` used to leave a blank
+  dashboard with nothing in the console; it is now logged and recorded on the page.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

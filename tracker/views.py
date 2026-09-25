@@ -6,6 +6,7 @@ token rows, so blacklist changes apply to every historical snapshot, not only
 newly fetched ones. The health report is built on top of this view, so its
 numbers can never disagree with the dashboard.
 """
+from . import assetlabels
 from .blacklist import is_blacklisted
 
 
@@ -38,4 +39,29 @@ def view_of(snap, storage_map=None):
                         "total_usd": wt, "token_count": len(tokens)})
     return {"date": snap.get("date", ""), "created_at": snap.get("created_at"),
             "total_usd": round(total, 2), "by_chain": by_chain,
+            "by_volatility": volatility_totals(snap),
             "wallets": wallets, "token_count": sum(w["token_count"] for w in wallets)}
+
+
+def volatility_totals(snap):
+    """{"stable": usd, "btc": usd, "other": usd} over the blacklist-filtered rows.
+
+    The volatility card needs the *token* labels — one wallet can hold both a
+    stablecoin and an alt — so the rows go through the same label engine the token
+    table uses. "other" is everything that is neither a stablecoin nor BTC: the
+    part of the portfolio whose price actually swings.
+    """
+    out = {assetlabels.STABLE: 0.0, assetlabels.BTC: 0.0, assetlabels.OTHER: 0.0}
+    for w in snap.get("wallets", []):
+        for t in w.get("tokens", []):
+            if is_blacklisted(t):
+                continue
+            usd = float(t.get("usd") or 0.0)
+            if not usd:
+                continue
+            label = assetlabels.classify(t)
+            if label in (assetlabels.STABLE, assetlabels.BTC):
+                out[label] = round(out[label] + usd, 2)
+            else:
+                out[assetlabels.OTHER] = round(out[assetlabels.OTHER] + usd, 2)
+    return out

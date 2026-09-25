@@ -153,6 +153,11 @@ def legacy_asset_labels_file():
     return os.path.join(profile_dir(active()), "stablecoins.json")
 
 
+def health_file():
+    """Per-profile health thresholds (see tracker/healthconfig.py)."""
+    return os.path.join(profile_dir(active()), "health.json")
+
+
 def blacklist_file():
     return os.path.join(profile_dir(active()), "blacklist.json")
 

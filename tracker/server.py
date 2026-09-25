@@ -19,8 +19,9 @@ from . import assetlabels as assetlabels
 from . import status
 from . import walletstore
 from .debank import chain_names
+from . import views
 from .views import view_of
-from . import health
+from . import health, healthconfig
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _STATIC = os.path.join(os.path.dirname(_HERE), "static")
@@ -117,6 +118,8 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     code, body = _json(self._snapshot_view(snap))
                 self._reply(code, body, "application/json; charset=utf-8")
+            elif path == "/api/health":
+                self._reply_json(self._health_view())
             elif path == "/api/history":
                 days = int(qs.get("days", ["0"])[0] or 0) or None
                 code, body = _json(storage.get_history(days))
@@ -308,6 +311,12 @@ class Handler(BaseHTTPRequestHandler):
                                   "config": sources.mask_config(sources.load()),
                                   "masked": True,
                                   "last_ok": sources.failover_state()})
+            elif path == "/api/health":
+                cfg = (body or {}).get("thresholds")
+                if not isinstance(cfg, dict):
+                    raise ValueError("thresholds must be a JSON object")
+                healthconfig.save(cfg)
+                self._reply_json(self._health_view())
             elif path == "/api/refresh/cancel":
                 _refresh_cancel.set()
                 self._reply_json({"cancel_requested": True})
@@ -389,6 +398,7 @@ class Handler(BaseHTTPRequestHandler):
         """Re-point all config modules at the newly active profile and make
         sure the new profile's database schema exists."""
         bl.reset_cache()
+        healthconfig.reset_cache()
         assetlabels.reset_cache()
         assetlabels.reset_names_cache()
         walletstore.reset_cache()
@@ -427,6 +437,12 @@ class Handler(BaseHTTPRequestHandler):
         return {"entries": config_entries + user_entries,
                 "file": bl.blacklist_file()}
 
+    def _health_view(self):
+        thresholds = healthconfig.load()
+        return {"thresholds": thresholds, "defaults": healthconfig.defaults(),
+                "file": healthconfig.health_file(),
+                "note": "percent of the portfolio; storage is inverted (safe > warning)"}
+
     # -- helpers -----------------------------------------------------------
 
     def _storage_map(self):
@@ -438,9 +454,14 @@ class Handler(BaseHTTPRequestHandler):
         """Snapshot view with blacklisted (phishing/fake) tokens excluded."""
         return view_of(snap, storage_map=self._storage_map())
 
+    def _health_of(self, view):
+        """The health report for a view, using this profile's thresholds."""
+        return health.analyze(view["wallets"], view.get("by_volatility"),
+                              healthconfig.load())
+
     def _snapshot_view(self, snap):
         view = self._view_of(snap)
-        view["health"] = health.analyze(view["wallets"])
+        view["health"] = self._health_of(view)
         # change vs previous day snapshot (previous day also blacklist-filtered)
         prev = storage.get_snapshot_dates()
         prev_dates = [p["date"] for p in prev if p["date"] < snap["date"]]
@@ -492,7 +513,8 @@ class Handler(BaseHTTPRequestHandler):
                              "type": w.get("type", ""), "total_usd": w.get("total_usd", 0.0),
                              "token_count": len(w.get("tokens", []))} for w in data["wallets"]]}
                 view["token_count"] = sum(w["token_count"] for w in view["wallets"])
-                view["health"] = health.analyze(view["wallets"])
+                view["by_volatility"] = views.volatility_totals(data)
+                view["health"] = self._health_of(view)
             else:
                 data, prev = portfolio.refresh_snapshot(progress=progress)
                 view = self._snapshot_view(data)
