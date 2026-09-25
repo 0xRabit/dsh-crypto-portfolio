@@ -140,6 +140,11 @@ First public release.
   no `html2canvas`, no CDN, and no address ever reaches it. The text is generated
   from the same figures, states nothing it cannot back up, and is editable before
   copying.
+- **Author links + a tip jar in Settings.** The footer of the settings page carries
+  the author's avatar, handle and social links (X / Discord / GitHub) plus a *Buy me a
+  coffee* button that opens a small dialog with the **tip.md** badge and a **Binance
+  Pay** QR. The badge is vendored as a local SVG rather than hot-linked, so the page
+  still makes no outbound requests of its own.
 - **Linkable pages.** `#pageSettings` opens the settings page and
   `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
 - **No silent failures on start.** A rejected `init()` used to leave a blank

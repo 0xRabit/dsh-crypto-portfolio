@@ -138,6 +138,12 @@ const I18N = {
       "\nTracked with dsh-crypto-portfolio — self-hosted, no CDN, keys stay local: " + repo +
       "\n#crypto #portfolio",
     shareHint: "Draw a PNG summary of what you are looking at (no addresses).",
+    /* bmc:start — personal author block; stripped from the public bundle */
+    buyMeCoffee: "Buy me a coffee ☕", donateTitle: "☕ Buy Me a Coffee",
+    tipHint: "Tip with any crypto via tip.md", binancePay: "🟡 Binance Pay",
+    scanHint: "Scan with the Binance App", madeBy: "Made with ❤️ by @CryptoRabit",
+    socialX: "Follow on X", socialDiscord: "Join the Discord", socialGithub: "Source on GitHub",
+    /* bmc:end */
     healthTier1: "BTC", healthTier2: "On-chain", healthTier3: "CEX", healthRest: "other wallets",
     storageHot: "Hot wallet", storageCold: "Cold wallet",
     storageTitle: "Where the keys live: cold = hardware/offline, hot = browser or app wallet. Exchange accounts are always counted as exchange custody.",
@@ -295,6 +301,12 @@ const I18N = {
       "\n用 dsh-crypto-portfolio 自建追踪，全本地、无 CDN、私钥不出本机：" + repo +
       "\n#crypto #portfolio",
     shareHint: "把当前视图画成一张 PNG（不含任何地址）。",
+    /* bmc:start */
+    buyMeCoffee: "请我喝杯咖啡 ☕", donateTitle: "☕ 请我喝杯咖啡",
+    tipHint: "用任意币种通过 tip.md 打赏", binancePay: "🟡 币安支付",
+    scanHint: "用币安 App 扫码", madeBy: "Made with ❤️ by @CryptoRabit",
+    socialX: "在 X 上关注", socialDiscord: "加入 Discord", socialGithub: "GitHub 源码",
+    /* bmc:end */
     healthTier1: "BTC", healthTier2: "链上", healthTier3: "CEX", healthRest: "其他钱包",
     storageHot: "热钱包", storageCold: "冷钱包",
     storageTitle: "私钥放在哪里：冷 = 硬件/离线，热 = 浏览器或 App 钱包。交易所账户一律按交易所托管计算。",
@@ -593,8 +605,17 @@ function bindEvents() {
   $("shareModal").addEventListener("click", (ev) => {
     if (ev.target === $("shareModal")) closeShare();
   });
+  /* bmc:start */
+  $("btnDonate").addEventListener("click", openDonate);
+  $("donateClose").addEventListener("click", closeDonate);
+  $("donateModal").addEventListener("click", (ev) => {
+    if (ev.target === $("donateModal")) closeDonate();
+  });
+  /* bmc:end */
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && !$("shareModal").classList.contains("hidden")) closeShare();
+    if (ev.key !== "Escape") return;
+    if (!$("shareModal").classList.contains("hidden")) closeShare();
+    if (typeof closeDonate === "function" && !$("donateModal").classList.contains("hidden")) closeDonate();
   });
   $("btnLang").addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";
@@ -1409,6 +1430,15 @@ async function shareCopyImage() {
     $("shareMsg").textContent = t("shareCopyImgFail");
   }
 }
+
+/* bmc:start — author / donation dialog */
+function openDonate() {
+  $("donateModal").classList.remove("hidden");
+}
+function closeDonate() {
+  $("donateModal").classList.add("hidden");
+}
+/* bmc:end */
 
 async function shareCopyText() {
   try {

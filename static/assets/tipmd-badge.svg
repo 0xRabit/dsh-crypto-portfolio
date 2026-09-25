@@ -1,0 +1,6 @@
+<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="160" height="40" rx="8" fill="#161622"/>
+  <circle cx="24" cy="20" r="12" fill="#7E62E7"/>
+  <text x="24" y="22" font-family="JetBrains Mono" font-size="28" fill="white" text-anchor="middle" dominant-baseline="middle">t</text>
+  <text x="44" y="26" font-family="Arial, sans-serif" font-size="18" font-weight="500" fill="white">Tip in Crypto</text>
+</svg>

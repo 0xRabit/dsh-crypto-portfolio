@@ -649,3 +649,42 @@ summary:focus-visible {
 .hc-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
 .hc-field input { width: 92px; }
 .hc-group .hint { margin-left: 0; display: block; margin-top: 6px; }
+
+/* bmc:start — author / donation styling, stripped from the public bundle */
+/* ---------- author + Buy Me a Coffee (settings footer) ---------- */
+.about-author {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--border);
+}
+.author-avatar {
+  width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--border);
+}
+.author-handle { font-size: 13px; font-weight: 600; }
+.author-social { display: inline-flex; gap: 4px; align-items: center; }
+.author-social a {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 6px; color: var(--muted);
+  border: 1px solid transparent;
+}
+.author-social a:hover { color: var(--accent); border-color: var(--border); background: var(--panel2); }
+.btn-donate {
+  border: none; border-radius: 8px; padding: 6px 14px; font-size: 12.5px; font-weight: 600;
+  color: #3a2400; background: linear-gradient(90deg, #f0b90b, #f2760b); cursor: pointer;
+}
+.btn-donate:hover { filter: brightness(1.08); }
+.about-author .author-made { margin-left: auto; }
+.donate-box { width: min(420px, 100%); }
+.donate-profile {
+  display: flex; align-items: center; gap: 12px; padding: 10px;
+  background: var(--panel2); border-radius: 10px;
+}
+.donate-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+.donate-handle { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.donate-block { text-align: center; margin-top: var(--sp-4); }
+.donate-sub { font-size: 13px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+.donate-badge { height: 40px; }
+.donate-badge:hover { opacity: .85; }
+.donate-block .hint { margin-left: 0; display: block; margin-top: 6px; }
+.donate-qr { width: 170px; height: 170px; border-radius: 10px; border: 1px solid var(--border); }
+/* bmc:end */
