@@ -636,13 +636,26 @@ summary:focus-visible {
 }
 .share-textbtns { display: flex; flex-direction: column; gap: 6px; }
 .share-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin-top: var(--sp-3); }
-.share-actions .share-social { display: inline-flex; gap: 6px; margin-left: auto; }
-.share-link {
-  display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--panel2); color: var(--text);
-  font-size: 12.5px; text-decoration: none;
+.share-actions button { display: inline-flex; align-items: center; gap: 7px; }
+.share-actions .btn-ico { width: 15px; height: 15px; flex: none; }
+/* Branded intents in a 2-up grid, like the SmartFolio extension's share sheet:
+   the platform's own colour and mark make the row readable at a glance. */
+.share-social { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: var(--sp-3); }
+.share-brand {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 10px 14px; border-radius: 8px; color: #fff;
+  font-size: 13.5px; font-weight: 600; text-decoration: none;
+  border: 1px solid transparent;
+  transition: filter .15s ease, transform .08s ease;
 }
-.share-link:hover { border-color: var(--accent); color: var(--accent); }
+.share-brand svg { width: 17px; height: 17px; fill: currentColor; flex: none; }
+.share-brand:hover { filter: brightness(1.12); }
+.share-brand:active { transform: translateY(1px); }
+.brand-x { background: #000; border-color: rgba(255,255,255,.2); }
+.brand-fb { background: #1877F2; }
+.brand-wa { background: #25D366; }
+.brand-tg { background: #229ED9; }
+@media (max-width: 620px) { .share-social { grid-template-columns: 1fr; } }
 .share-msg { margin-top: var(--sp-2); display: block; }
 
 /* ---------- asset health cards (volatility / concentration / storage) ---------- */
