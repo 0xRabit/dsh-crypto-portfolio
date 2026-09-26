@@ -174,7 +174,8 @@ run.py / fetch.py   web server / CLI snapshot
 
 ## Releasing
 
-One command from the maintainer's working tree, and the flow is deliberately split in two:
+One command from the maintainer's working tree (the release scripts live there, not in
+this published bundle), and the flow is deliberately split in two:
 
 ```sh
 scripts/sync_public.sh --push                 # publish code — the version does NOT move
