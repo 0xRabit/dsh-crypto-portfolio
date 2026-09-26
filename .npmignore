@@ -11,5 +11,6 @@ __pycache__/
 docs/
 scripts/
 .market-cache/
+.github-token
 dsh-plugin/
 *.log
