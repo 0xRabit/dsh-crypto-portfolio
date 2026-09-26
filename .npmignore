@@ -10,5 +10,6 @@ __pycache__/
 .gitignore
 docs/
 scripts/
+.market-cache/
 dsh-plugin/
 *.log

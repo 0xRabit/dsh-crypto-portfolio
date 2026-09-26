@@ -172,6 +172,28 @@ static/             web dashboard (vanilla JS, no external deps)
 run.py / fetch.py   web server / CLI snapshot
 ```
 
+## Releasing
+
+One command from the maintainer's working tree, and the flow is deliberately split in two:
+
+```sh
+scripts/sync_public.sh --push                 # publish code — the version does NOT move
+scripts/sync_public.sh --push --release       # bump + tag + prepare the market PR
+```
+
+| Action | Version | Changelog | Tag | Market listing |
+| --- | --- | --- | --- | --- |
+| `--push` | unchanged | unchanged | — | untouched |
+| `--push --release` | bumped | `[Unreleased]` stamped | `vX.Y.Z` | branch pushed, PR prepared |
+
+- **A push is not a release.** Publishing code leaves `package.json` exactly as it is, so
+  installed users see no update until a version is cut on purpose.
+- **A release also prepares the market PR.** The listing text lives here, in
+  [`market-entry.yml`](market-entry.yml), and is mirrored into the
+  [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) list, so
+  the entry always describes the version being shipped. If the entry did not change, that
+  step is a no-op instead of an empty pull request.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

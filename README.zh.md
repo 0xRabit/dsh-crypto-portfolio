@@ -163,6 +163,25 @@ static/             Web 仪表盘（原生 JS，零外部依赖）
 run.py / fetch.py   Web 服务 / 命令行快照
 ```
 
+## 发布流程
+
+维护者在工作区里只跑一条命令，流程刻意拆成两件事：
+
+```sh
+scripts/sync_public.sh --push                 # 只发布代码 —— 版本号不动
+scripts/sync_public.sh --push --release       # 升版本 + 打 tag + 准备市场 PR
+```
+
+| 操作 | 版本号 | CHANGELOG | Tag | 市场条目 |
+| --- | --- | --- | --- | --- |
+| `--push` | 不变 | 不变 | — | 不动 |
+| `--push --release` | 升一位 | 把 `[Unreleased]` 归档 | `vX.Y.Z` | 推送分支并准备 PR |
+
+- **推送不等于发版。** 发布代码时 `package.json` 原样不动，所以在你主动发版之前，已安装的用户不会看到更新。
+- **发版同时准备市场 PR。** 市场条目的文案就放在本仓库的
+  [`market-entry.yml`](market-entry.yml)，会被同步到
+  [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 列表，保证条目描述的正是刚发布的这一版；如果条目内容没变，这一步会直接跳过，不会产生空的 PR。
+
 ## 许可证
 
 MIT — 见 [LICENSE](LICENSE)。
