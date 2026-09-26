@@ -14,9 +14,27 @@ export const name = 'dsh-crypto-portfolio'
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const PYTHON = process.env.PORTFOLIO_PYTHON || 'python3'
 
-function seedConfigs() {
-  // seed the default profile (profiles/default) from the public templates
-  const dir = join(ROOT, 'profiles', 'default')
+/** Where the profiles (wallets, keys, snapshot DB) live.
+ *
+ * Inside the package by default, but an installed plugin MUST keep them outside:
+ * `dsh plugin add`/update runs pnpm, which replaces the package directory — data
+ * kept there is gone after an update. So when this file sits under node_modules and
+ * no directory was configured, fall back to the DSH home instead of silently
+ * storing a user's portfolio in a cache directory.
+ */
+function resolveDataDir(config) {
+  const configured = (config && config.dataDir) || process.env.PORTFOLIO_PROFILES_DIR
+  if (configured) return configured.replace(/^~(?=\/)/, process.env.HOME || '~')
+  if (ROOT.includes(`${'node_modules'}`)) {
+    const home = process.env.DSH_HOME || join(process.env.HOME || '.', '.dsh')
+    return join(home, 'storages', 'crypto-portfolio')
+  }
+  return join(ROOT, 'profiles')
+}
+
+function seedConfigs(dataDir) {
+  // seed the default profile (<dataDir>/default) from the public templates
+  const dir = join(dataDir, 'default')
   mkdirSync(dir, { recursive: true })
   for (const [tpl, dst] of [['portfolio_sources.json', 'sources.json'], ['portfolio_wallets.json', 'wallets.json']]) {
     const target = join(dir, dst)
@@ -34,15 +52,21 @@ export function apply(ctx, config) {
   const port = cfg.port || Number(process.env.PORTFOLIO_PORT) || 8080
   const host = cfg.host || '127.0.0.1'
 
-  seedConfigs()
+  const dataDir = resolveDataDir(cfg)
+  seedConfigs(dataDir)
 
   const child = spawn(PYTHON, [join(ROOT, 'run.py'), '--port', String(port), '--host', host], {
     cwd: ROOT,
-    env: { ...process.env, PORTFOLIO_NO_BUILTIN_WALLETS: '1' },
+    env: {
+      ...process.env,
+      PORTFOLIO_NO_BUILTIN_WALLETS: '1',
+      PORTFOLIO_PROFILES_DIR: dataDir,
+    },
     stdio: 'inherit',
   })
 
-  console.log(`[dsh-crypto-portfolio] dashboard: http://${host}:${port} (first run: click Refresh)`)
+  console.log(`[dsh-crypto-portfolio] dashboard: http://${host}:${port}`)
+  console.log(`[dsh-crypto-portfolio] profiles: ${dataDir} (first run: click Refresh)`)
   // The child is tied to this plugin's lifecycle: unloading the row stops it.
   ctx.on('dispose', () => { child.kill('SIGTERM') })
 }

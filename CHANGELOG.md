@@ -54,6 +54,13 @@ First public release.
   (including refresh) are fenced against cross-site requests — non-JSON bodies are
   refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
   is rate-limited to one run per minute.
+- **Your data can live outside the package.** Profiles (wallets, API keys, the
+  snapshot database) default to `<package>/profiles`, which is the wrong place for an
+  installed plugin: `dsh plugin add`/update replaces that directory, so a portfolio
+  kept there would be lost on the next update. Set `dataDir` in the plugin config (or
+  `PORTFOLIO_PROFILES_DIR`) and the data stays where you put it — the plugin also
+  defaults to `$DSH_HOME/storages/crypto-portfolio` when it detects it is running from
+  inside `node_modules`, instead of silently storing a portfolio in a cache directory.
 - **Binance reads every sub-account, and says why when it cannot.** A refresh once
   reported a funded account as `$0` because Binance answered a signed request with
   HTTP 400 — the body said `-1021 Timestamp for this request is outside of the

@@ -41,6 +41,39 @@ def tearDownModule():
         _TMP = None
 
 
+class ProfilesDirOverrideTest(unittest.TestCase):
+    """An installed plugin must be able to keep its data outside the package.
+
+    `dsh plugin add`/update runs pnpm, which replaces the package directory — so a
+    portfolio stored inside it would be gone after an update. The path is therefore
+    configurable, and read at import time.
+    """
+
+    def _run(self, env):
+        import subprocess
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        code = ("import sys; sys.path.insert(0, %r);"
+                "from tracker import profiles; print(profiles.PROFILES_DIR)" % root)
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                             text=True, env={**os.environ, **env}, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        return out.stdout.strip()
+
+    def test_the_default_is_the_package_directory(self):
+        got = self._run({k: v for k, v in os.environ.items()
+                         if k != "PORTFOLIO_PROFILES_DIR"})
+        self.assertTrue(got.endswith(os.path.join("crypto-portfolio-tracker", "profiles")), got)
+
+    def test_the_override_wins(self):
+        got = self._run({"PORTFOLIO_PROFILES_DIR": "/tmp/portfolio-data-probe"})
+        self.assertEqual(got, "/tmp/portfolio-data-probe")
+
+    def test_a_tilde_is_expanded(self):
+        got = self._run({"PORTFOLIO_PROFILES_DIR": "~/portfolio-data-probe"})
+        self.assertFalse(got.startswith("~"), got)
+        self.assertTrue(got.endswith("/portfolio-data-probe"), got)
+
+
 class InterruptedRefreshRecoveryTest(unittest.TestCase):
     """The scheduler switches the active profile while it refreshes, then
     switches back in a `finally`. A hard kill skips that, so startup must be

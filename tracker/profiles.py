@@ -22,7 +22,24 @@ import shutil
 from . import atomicio, config
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROFILES_DIR = os.path.join(_ROOT, "profiles")
+
+
+def _profiles_root():
+    """Where the profiles live: `<package>/profiles` unless PORTFOLIO_PROFILES_DIR
+    says otherwise.
+
+    The override matters for installed plugins: `dsh plugin add`/`update` (i.e. pnpm)
+    replaces the package directory, so profiles kept inside it would be lost on the
+    next update. Keeping the data outside the package is the difference between
+    "upgrade" and "start over".
+    """
+    override = (os.environ.get("PORTFOLIO_PROFILES_DIR") or "").strip()
+    if override:
+        return os.path.abspath(os.path.expanduser(override))
+    return os.path.join(_ROOT, "profiles")
+
+
+PROFILES_DIR = _profiles_root()
 ACTIVE_FILE = os.path.join(PROFILES_DIR, ".active")
 
 # One lock for the profile registry: the 11-byte .active pointer, the
