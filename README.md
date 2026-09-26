@@ -179,21 +179,26 @@ this published bundle), and the flow is deliberately split in two:
 
 ```sh
 scripts/sync_public.sh --push                 # publish code — the version does NOT move
-scripts/sync_public.sh --push --release       # bump + tag + prepare the market PR
+scripts/sync_public.sh --push --release       # bump + tag + refresh every market listing
 ```
 
-| Action | Version | Changelog | Tag | Market listing |
+| Action | Version | Changelog | Tag | Market listings |
 | --- | --- | --- | --- | --- |
 | `--push` | unchanged | unchanged | — | untouched |
-| `--push --release` | bumped | `[Unreleased]` stamped | `vX.Y.Z` | branch pushed, PR prepared |
+| `--push --release` | bumped | `[Unreleased]` stamped | `vX.Y.Z` | branch pushed, PR prepared per market |
 
 - **A push is not a release.** Publishing code leaves `package.json` exactly as it is, so
   installed users see no update until a version is cut on purpose.
-- **A release also prepares the market PR.** The listing text lives here, in
-  [`market-entry.yml`](market-entry.yml), and is mirrored into the
-  [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) list, so
-  the entry always describes the version being shipped. If the entry did not change, that
-  step is a no-op instead of an empty pull request.
+- **A release refreshes every listing.** The wording for each market lives here, under
+  [`market/`](market/), so it is versioned with the code it describes and always matches
+  the version being shipped. A market whose text did not change is skipped instead of
+  getting an empty pull request.
+
+| Market | How it is fed | What the release does |
+| --- | --- | --- |
+| [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) | one YAML file per plugin | [`market/awesome-dsh-plugin.yml`](market/awesome-dsh-plugin.yml) → `data/plugins/0xRabit__dsh-crypto-portfolio.yml` |
+| [awesome-deepseek-harness](https://github.com/awesome-deepseekharness/awesome-deepseek-harness) | curated bilingual tables | [`market/awesome-deepseek-harness.json`](market/awesome-deepseek-harness.json) → the row in each language's `🧩 Tools, Workflows & Presets` table |
+| [awesome-dsh-hub](https://github.com/ukinch605/awesome-dsh-hub) | hourly scrape of the `dsh-plugin` topic | nothing to submit — the release only verifies the entry is present and current |
 
 ## License
 

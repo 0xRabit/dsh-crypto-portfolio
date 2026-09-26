@@ -169,18 +169,22 @@ run.py / fetch.py   Web 服务 / 命令行快照
 
 ```sh
 scripts/sync_public.sh --push                 # 只发布代码 —— 版本号不动
-scripts/sync_public.sh --push --release       # 升版本 + 打 tag + 准备市场 PR
+scripts/sync_public.sh --push --release       # 升版本 + 打 tag + 刷新全部市场条目
 ```
 
 | 操作 | 版本号 | CHANGELOG | Tag | 市场条目 |
 | --- | --- | --- | --- | --- |
 | `--push` | 不变 | 不变 | — | 不动 |
-| `--push --release` | 升一位 | 把 `[Unreleased]` 归档 | `vX.Y.Z` | 推送分支并准备 PR |
+| `--push --release` | 升一位 | 把 `[Unreleased]` 归档 | `vX.Y.Z` | 逐市场推送分支并准备 PR |
 
 - **推送不等于发版。** 发布代码时 `package.json` 原样不动，所以在你主动发版之前，已安装的用户不会看到更新。
-- **发版同时准备市场 PR。** 市场条目的文案就放在本仓库的
-  [`market-entry.yml`](market-entry.yml)，会被同步到
-  [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 列表，保证条目描述的正是刚发布的这一版；如果条目内容没变，这一步会直接跳过，不会产生空的 PR。
+- **发版会刷新每一个市场。** 各市场的文案都放在本仓库的 [`market/`](market/) 目录里，跟它描述的代码一起版本化，因此条目永远对应刚发布的这一版；某个市场的文案没变就直接跳过，不会产生空的 PR。
+
+| 市场 | 收录方式 | 发版时做什么 |
+| --- | --- | --- |
+| [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) | 每个插件一个 YAML 文件 | [`market/awesome-dsh-plugin.yml`](market/awesome-dsh-plugin.yml) → `data/plugins/0xRabit__dsh-crypto-portfolio.yml` |
+| [awesome-deepseek-harness](https://github.com/awesome-deepseekharness/awesome-deepseek-harness) | 人工整理的双语表格 | [`market/awesome-deepseek-harness.json`](market/awesome-deepseek-harness.json) → 中英两处 `🧩 工具、工作流与预设` 表格里的同一行 |
+| [awesome-dsh-hub](https://github.com/ukinch605/awesome-dsh-hub) | 每小时抓取 `dsh-plugin` 话题 | 无需提交 —— 发版只做核验，确认条目在库且是最新版本 |
 
 ## 许可证
 

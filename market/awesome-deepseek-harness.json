@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "Copy for the curated list awesome-deepseekharness/awesome-deepseek-harness.",
+    "The list is bilingual and its CI rejects a PR that touches README.md without",
+    "README.zh.md, so both rows live here and scripts/markets.py inserts each one into",
+    "its own category table. {{stars}} is replaced with the live GitHub star count.",
+    "This file is JSON (not YAML) because the release tooling parses it with the Python",
+    "standard library only; the awesome-dsh-plugin entry stays YAML because that market's",
+    "file is copied byte for byte."
+  ],
+
+  "category_en": "### 🧩 Tools, Workflows & Presets",
+  "category_zh": "### 🧩 工具、工作流与预设",
+
+  "stars_fallback": 2,
+
+  "row_en": "| [0xRabit/dsh-crypto-portfolio](https://github.com/0xRabit/dsh-crypto-portfolio) | Self-hosted crypto portfolio dashboard for DSH — BTC, EVM (73 chains), Solana, Dogecoin, Cardano, Hyperliquid, five exchanges and tokenised equities in one view, with a shareable PNG card, a tunable asset-health report, per-source connection tests and zero-dependency trend charts (`dsh plugin --profile web add dsh-crypto-portfolio`) | {{stars}} |",
+  "row_zh": "| [0xRabit/dsh-crypto-portfolio](https://github.com/0xRabit/dsh-crypto-portfolio) | 自托管加密资产仪表盘：BTC、EVM（73 条链）、Solana、狗狗币、艾达币、Hyperliquid、五家交易所与代币化股票统一视图，含可分享 PNG 卡片、可调阈值的资产健康度报告、逐数据源连通性测试与零依赖趋势图（`dsh plugin --profile web add dsh-crypto-portfolio` 安装） | {{stars}} |",
+
+  "pr_title": "Add 0xRabit/dsh-crypto-portfolio to 🧩 Tools, Workflows & Presets",
+
+  "pr_body": [
+    "### Relation to DSH",
+    "",
+    "A DSH web plugin: it declares `dsh.bundle.patch` in `package.json`, mounts its own profile layer, and serves a self-hosted dashboard (Python standard library + vanilla JS, no CDN) that aggregates on-chain and CEX balances into one view, with daily snapshots turned into trend charts.",
+    "",
+    "### Install command (verified)",
+    "",
+    "```sh",
+    "dsh plugin --profile web add dsh-crypto-portfolio",
+    "```",
+    "",
+    "From GitHub instead: `dsh plugin --profile web add github:0xRabit/dsh-crypto-portfolio`.",
+    "",
+    "### Metadata",
+    "",
+    "- License: MIT",
+    "- `dsh-plugin` topic: yes",
+    "- Version: `v0.2.0` (GitHub tag + release)",
+    "- npm: not published yet — install from GitHub or from the tag tarball",
+    "- Requirements: Python 3.9+ (no third-party Python packages)",
+    "",
+    "### Screenshots (UI plugin)",
+    "",
+    "![Dashboard](https://raw.githubusercontent.com/0xRabit/dsh-crypto-portfolio/main/assets/screenshot-dashboard.png)",
+    "![Token details and the portfolio trend](https://raw.githubusercontent.com/0xRabit/dsh-crypto-portfolio/main/assets/screenshot-tokens.png)",
+    "![Chain distribution](https://raw.githubusercontent.com/0xRabit/dsh-crypto-portfolio/main/assets/screenshot-chains.png)",
+    "",
+    "### Duplicate check",
+    "",
+    "Searched this list for `crypto`, `portfolio` and `0xRabit` — no existing entry, and no cross-category duplicate."
+  ]
+}
