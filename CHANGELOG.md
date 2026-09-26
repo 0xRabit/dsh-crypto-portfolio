@@ -3,57 +3,24 @@
 All notable changes to this project are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] — 2026-09-19
+## [Unreleased]
 
-First public release.
+## [0.2.0] — 2026-09-26
+
+The first release after 0.1.0: two more exchanges, a health report you can
+tune, a shareable card, per-source tests, honest failure reporting — and a
+dashboard that renders ~50× faster.
 
 ### Supported sources
 
-- **Bitcoin** — P2SH / P2TR addresses via public APIs (blockchain.info, mempool.space).
-- **EVM** — every chain DeBank indexes (73 chains, ERC-20 and friends); optional
-  Hyperliquid L1 balances (staked HYPE, spot, perp equity, leader-vault equity).
-- **Solana** — native SOL, native stake accounts, and SPL tokens.
-- **Dogecoin** — via BlockCypher (no API key required).
-- **Cardano** — via Koios (no API key required); payment addresses and stake addresses.
 - **CEX** — read-only keys for Binance, Bybit, Backpack, **OKX** and **Bitget**.
   OKX reads the trading *and* funding sub-accounts (deposits sit in funding, and
   the exchange's own total adds them up); Bitget sums the spot account with the
   real USDT/USDC/coin-margined futures accounts, and deliberately ignores the
   `S*` demo products, which answer with play money on a live key.
-- **Prices** — CoinGecko → Binance → Coinbase → OKX, with automatic failover.
 
 ### Dashboard
 
-- Single-page dashboard with no framework and no CDN (Python stdlib + vanilla JS).
-- Global filters (category / wallet / chain) driving total, pie, trend, chain
-  distribution and the token table together.
-- Up to **five block explorers per wallet**: the provider this app reads from
-  comes first, the rest follow in popularity order (BTC: bitaps → mempool.space →
-  Blockstream → Blockchain.com → Blockchair; EVM: DeBank → Etherscan → Zerion →
-  Blockscout → Blockchair; SOL: Jupiter → Solscan → Solana Explorer → SolanaFM →
-  Birdeye; DOGE: 3; ADA: 4). CEX rows show the exchange mark, since an exchange
-  account has no explorer page.
-- One-click address copy on every wallet card.
-- **Each wallet card is a fixed four-row stack** — name · balance (with that
-  wallet's share of the total) · address + copy · type badge on the left and
-  block-explorer icons on the right.
-- **Layout tuned for wide screens**: the asset rail and the wallet grid sit at
-  1:3 and are exactly equal in height — the figure and the donut spread down the
-  rail's full height, both panels ending on the same line. The token table sits
-  directly under the pie + wallet row so that clicking a wallet card visibly
-  narrows the table below it.
-- **Focusing a wallet never moves the page.** Clicking a card filters every panel
-  in place; each panel below names the focused wallet in its own title, and the
-  wallet panel says up front that the cards are clickable.
-- The pie's clickable legend was dropped: it repeated figures already on the
-  wallet cards, which are the click target for focusing a wallet.
-- **Security hardening.** `GET /api/sources` masks API keys by default (a stub like
-  `cdd7…88e1`) and reveals them only on an explicit request, so a local process, a
-  log dump or a screenshot no longer exposes them; a save from the settings form is
-  merged against the stored config so a mask can never overwrite a live key. Writes
-  (including refresh) are fenced against cross-site requests — non-JSON bodies are
-  refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
-  is rate-limited to one run per minute.
 - **Your data can live outside the package.** Profiles (wallets, API keys, the
   snapshot database) default to `<package>/profiles`, which is the wrong place for an
   installed plugin: `dsh plugin add`/update replaces that directory, so a portfolio
@@ -99,6 +66,95 @@ First public release.
   own; the date list comes from the tiny `/api/snapshots`. First wallet card:
   **7.5 s → 140 ms** (measured with `performance.mark` hooks, which now exist for
   exactly this kind of profiling).
+- **Asset health report.** A panel directly above the token table grades the
+  portfolio on the three questions a reviewer actually asks, one card each:
+  **volatility risk** (💵 stablecoins · ₿ bitcoin · 🪙 everything else, scored on the
+  third bucket), **concentration** (the largest single wallet, drawn as a gauge with
+  both thresholds marked on it) and **storage security** (❄️ cold · 🔥 hot · 🏦
+  exchange custody). Every row carries its balance *and* its share, and each failing
+  check adds one plain sentence below the cards. Figures come from the
+  blacklist-filtered snapshot, so they can never disagree with the totals above; the
+  report is deliberately not filter-aware, because hiding the CEX wallets would
+  change the maths. The maths lives in `tracker/health.py`.
+- **The thresholds are yours to set.** Settings → *Health Thresholds* edits the
+  warning/danger lines for all three checks (storage is inverted: its safe line sits
+  above its warning line) and stores them per profile in `health.json`. They are
+  validated on the way in — range, ordering, junk values — and a corrupt file falls
+  back to the defaults rather than taking the report down. The volatility split is
+  computed from the token labels, so your own label rules move it too. The hot/cold
+  class follows the **live** wallet list rather than the value frozen into the
+  snapshot: marking a wallet cold moves the panel immediately instead of at the next
+  refresh (a wallet removed from the live list keeps the class its snapshots
+  recorded).
+- **Wallets know where their keys live.** Each wallet is *hot* or *cold* (Settings →
+  Wallet Management, or on creation); exchange accounts are always exchange custody.
+  Cold wallets are marked with a ❄ on their card. The class is stored with the
+  snapshot, so a historical snapshot's health report reflects what was cold at the
+  time rather than what is cold now.
+- **Share card.** A *Share* button in the header opens a dialog with a live
+  preview of a 1200×630 PNG — total, change vs the previous day, top five holdings
+  (aggregated by symbol), the asset-label donut with its legend and the three health
+  verdicts — plus **Download PNG**, **Copy image**, **Copy text** and share intents
+  for **X / Facebook / WhatsApp / Telegram**. The image is drawn by hand on a canvas:
+  no `html2canvas`, no CDN, and no address ever reaches it. The text is generated
+  from the same figures, states nothing it cannot back up, and is editable before
+  copying.
+- **Author links + a tip jar in Settings.** The footer of the settings page carries
+  the author's avatar, handle and social links (X / Discord / GitHub) plus a *Buy me a
+  coffee* button that opens a small dialog with the **tip.md** badge and a **Binance
+  Pay** QR. The badge is vendored as a local SVG rather than hot-linked, so the page
+  still makes no outbound requests of its own.
+- **Linkable pages.** `#pageSettings` opens the settings page and
+  `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
+- **No silent failures on start.** A rejected `init()` used to leave a blank
+  dashboard with nothing in the console; it is now logged and recorded on the page.
+
+## [0.1.0] — 2026-09-19
+
+First public release.
+
+### Supported sources
+
+- **Bitcoin** — P2SH / P2TR addresses via public APIs (blockchain.info, mempool.space).
+- **EVM** — every chain DeBank indexes (73 chains, ERC-20 and friends); optional
+  Hyperliquid L1 balances (staked HYPE, spot, perp equity, leader-vault equity).
+- **Solana** — native SOL, native stake accounts, and SPL tokens.
+- **Dogecoin** — via BlockCypher (no API key required).
+- **Cardano** — via Koios (no API key required); payment addresses and stake addresses.
+- **Prices** — CoinGecko → Binance → Coinbase → OKX, with automatic failover.
+
+### Dashboard
+
+- Single-page dashboard with no framework and no CDN (Python stdlib + vanilla JS).
+- Global filters (category / wallet / chain) driving total, pie, trend, chain
+  distribution and the token table together.
+- Up to **five block explorers per wallet**: the provider this app reads from
+  comes first, the rest follow in popularity order (BTC: bitaps → mempool.space →
+  Blockstream → Blockchain.com → Blockchair; EVM: DeBank → Etherscan → Zerion →
+  Blockscout → Blockchair; SOL: Jupiter → Solscan → Solana Explorer → SolanaFM →
+  Birdeye; DOGE: 3; ADA: 4). CEX rows show the exchange mark, since an exchange
+  account has no explorer page.
+- One-click address copy on every wallet card.
+- **Each wallet card is a fixed four-row stack** — name · balance (with that
+  wallet's share of the total) · address + copy · type badge on the left and
+  block-explorer icons on the right.
+- **Layout tuned for wide screens**: the asset rail and the wallet grid sit at
+  1:3 and are exactly equal in height — the figure and the donut spread down the
+  rail's full height, both panels ending on the same line. The token table sits
+  directly under the pie + wallet row so that clicking a wallet card visibly
+  narrows the table below it.
+- **Focusing a wallet never moves the page.** Clicking a card filters every panel
+  in place; each panel below names the focused wallet in its own title, and the
+  wallet panel says up front that the cards are clickable.
+- The pie's clickable legend was dropped: it repeated figures already on the
+  wallet cards, which are the click target for focusing a wallet.
+- **Security hardening.** `GET /api/sources` masks API keys by default (a stub like
+  `cdd7…88e1`) and reveals them only on an explicit request, so a local process, a
+  log dump or a screenshot no longer exposes them; a save from the settings form is
+  merged against the stored config so a mask can never overwrite a live key. Writes
+  (including refresh) are fenced against cross-site requests — non-JSON bodies are
+  refused with 415 and cross-site / foreign / opaque origins with 403 — and refresh
+  is rate-limited to one run per minute.
 - **Snapshot retention.** A profile keeps a dense 90-day window plus one snapshot per
   month for the tail (`PORTFOLIO_KEEP_DAILY_DAYS` / `PORTFOLIO_KEEP_MONTHLY`), instead
   of growing by ~0.75 MB/day forever.
@@ -152,48 +208,6 @@ First public release.
   ticker at all; their price comes from the collateral view's `assetMarkPrice`.
   A native asset whose on-chain price is unavailable now falls back to the
   exchange's own price instead of being reported as worth nothing.
-- **Asset health report.** A panel directly above the token table grades the
-  portfolio on the three questions a reviewer actually asks, one card each:
-  **volatility risk** (💵 stablecoins · ₿ bitcoin · 🪙 everything else, scored on the
-  third bucket), **concentration** (the largest single wallet, drawn as a gauge with
-  both thresholds marked on it) and **storage security** (❄️ cold · 🔥 hot · 🏦
-  exchange custody). Every row carries its balance *and* its share, and each failing
-  check adds one plain sentence below the cards. Figures come from the
-  blacklist-filtered snapshot, so they can never disagree with the totals above; the
-  report is deliberately not filter-aware, because hiding the CEX wallets would
-  change the maths. The maths lives in `tracker/health.py`.
-- **The thresholds are yours to set.** Settings → *Health Thresholds* edits the
-  warning/danger lines for all three checks (storage is inverted: its safe line sits
-  above its warning line) and stores them per profile in `health.json`. They are
-  validated on the way in — range, ordering, junk values — and a corrupt file falls
-  back to the defaults rather than taking the report down. The volatility split is
-  computed from the token labels, so your own label rules move it too. The hot/cold
-  class follows the **live** wallet list rather than the value frozen into the
-  snapshot: marking a wallet cold moves the panel immediately instead of at the next
-  refresh (a wallet removed from the live list keeps the class its snapshots
-  recorded).
-- **Wallets know where their keys live.** Each wallet is *hot* or *cold* (Settings →
-  Wallet Management, or on creation); exchange accounts are always exchange custody.
-  Cold wallets are marked with a ❄ on their card. The class is stored with the
-  snapshot, so a historical snapshot's health report reflects what was cold at the
-  time rather than what is cold now.
-- **Share card.** A *Share* button in the header opens a dialog with a live
-  preview of a 1200×630 PNG — total, change vs the previous day, top five holdings
-  (aggregated by symbol), the asset-label donut with its legend and the three health
-  verdicts — plus **Download PNG**, **Copy image**, **Copy text** and share intents
-  for **X / Facebook / WhatsApp / Telegram**. The image is drawn by hand on a canvas:
-  no `html2canvas`, no CDN, and no address ever reaches it. The text is generated
-  from the same figures, states nothing it cannot back up, and is editable before
-  copying.
-- **Author links + a tip jar in Settings.** The footer of the settings page carries
-  the author's avatar, handle and social links (X / Discord / GitHub) plus a *Buy me a
-  coffee* button that opens a small dialog with the **tip.md** badge and a **Binance
-  Pay** QR. The badge is vendored as a local SVG rather than hot-linked, so the page
-  still makes no outbound requests of its own.
-- **Linkable pages.** `#pageSettings` opens the settings page and
-  `#pageSettings/secWallets` opens that section, so a refresh stays where you were.
-- **No silent failures on start.** A rejected `init()` used to leave a blank
-  dashboard with nothing in the console; it is now logged and recorded on the page.
 - Light and dark themes; English and 中文.
 - Token blacklist with one-click blocking of phishing tokens.
 

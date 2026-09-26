@@ -1,6 +1,6 @@
 {
   "name": "dsh-crypto-portfolio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hosted crypto portfolio dashboard as a DSH plugin: Bitcoin, EVM (73 chains), Solana, Dogecoin, Cardano, Hyperliquid L1 and read-only CEX accounts in one view. Zero-dependency web UI (Python stdlib + vanilla JS).",
   "type": "module",
   "main": "index.js",
