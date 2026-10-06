@@ -384,6 +384,23 @@ button.pf-sched.open { background: var(--accent-weak); border-color: var(--accen
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
 .toolbar .chk { color: var(--muted); font-size: 12.5px; display: inline-flex; gap: 5px; align-items: center; }
+/* The sources toolbar pins itself under the header stack while its section
+   scrolls: deep in the provider list it is the only way back to Save & Apply.
+   102px clears the sticky header (54px) plus the tab bar, and the filterbar —
+   which sits lower still — is hidden on the Settings page.
+   The negative side margins let the opaque bar span the panel's full width, and
+   the top margin is zero on purpose: when the bar is pinned, its background has
+   to start exactly at `top`, or the rows scrolling underneath show through the
+   gap. The space above it comes from its padding instead. */
+.sticky-toolbar {
+  position: sticky;
+  top: 102px;
+  z-index: 7;
+  margin: 0 calc(var(--sp-5) * -1) 12px;
+  padding: 12px var(--sp-5) 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
 #search { flex: 1; min-width: 220px; }
 
 .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }

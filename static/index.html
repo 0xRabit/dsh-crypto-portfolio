@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=60">
+<link rel="stylesheet" href="/static/style.css?v=61">
 </head>
 <body>
 <header>
@@ -318,8 +318,11 @@
       </summary>
       <div class="panel-body">
       <p class="bl-desc" data-i18n="srcDesc">All APIs (URL + keys) are configured here: each source can have multiple providers, tried in order with automatic failover to the next working one. Save to apply without restart. Env vars DEBANK_API_KEY / BIRDEYE_API_KEY / COINGECKO_API_KEY / SOLANA_RPC have highest priority.</p>
-      <div id="sourcesBody"></div>
-      <div class="toolbar" style="margin-top:12px">
+      <!-- The toolbar sits ABOVE the list it acts on, not below it: a sticky box
+           is clamped to its containing block, so as the last child of .panel-body
+           it had no room to travel and never stuck. Up here it can move through
+           the whole provider list, keeping Save & Apply reachable as you scroll. -->
+      <div class="toolbar sticky-toolbar">
         <button id="btnSaveSources" data-i18n="btnSaveSrc">Save & Apply</button>
         <button id="btnRevealKeys" class="btn-ghost" data-i18n="btnShowKeys">Show keys</button>
         <span id="keysNote" class="hint"></span>
@@ -328,6 +331,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none">
         <span id="sourcesMsg" class="hint"></span>
       </div>
+      <div id="sourcesBody"></div>
       </div>
     </details>
 
@@ -432,6 +436,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=68"></script>
+<script src="/static/app.js?v=69"></script>
 </body>
 </html>

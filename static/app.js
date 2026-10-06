@@ -793,6 +793,13 @@ function bindEvents() {
       renderSources();
     } catch (e) { $("sourcesMsg").textContent = t("saveFailed") + e.message; }
   });
+  // Per-provider "Test" button. renderSources() re-creates those rows on every
+  // render, so the handler is delegated on the container rather than bound to
+  // each button. Without this, runSourceTest() was never called at all.
+  $("sourcesBody").addEventListener("click", (ev) => {
+    const tbtn = ev.target.closest("button[data-test-target]");
+    if (tbtn && !tbtn.disabled) runSourceTest(tbtn);
+  });
   $("btnExportConfig").addEventListener("click", exportConfig);
   $("btnImportConfig").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", importConfig);

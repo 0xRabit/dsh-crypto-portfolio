@@ -99,17 +99,36 @@ def test_debank(cfg):
         provs = [p for p in cfg.get("providers", []) if p.get("enabled", True)]
         if not provs:
             raise ValueError("no enabled provider")
+        # Probe the call a refresh actually makes. The Pro host answers
+        # /chain/list with 404 — only /v1/... exists there — so the old
+        # chain-list probe reported "debank-pro failed" even for a perfectly
+        # valid AccessKey. With an EVM wallet to hand, ask for one chain's token
+        # list instead: that is what the fetch does, so the verdict matches it.
+        addr = _first_wallet("evm")
         tried = []
         for p in provs:
             base = (p.get("base_url") or "").rstrip("/")
             key = (p.get("key") or "").strip()
             headers = {"AccessKey": key} if key else {}
+            pro = p.get("type") == "pro"
+            if pro:
+                url = base + ("/v1/user/token_list" if addr else "/v1/chain/list")
+                params = {"id": addr, "chain_id": "eth", "is_all": "true"} if addr else None
+            else:
+                url = base + ("/token/balance_list" if addr else "/chain/list")
+                params = {"user": addr, "chain_id": "eth", "is_all": "true"} if addr else None
             try:
-                d = http_get_json(base + "/chain/list", headers=headers, timeout=_TIMEOUT, retries=0)
-                chains = ((d or {}).get("data") or {}).get("chains") or []
-                tried.append({"provider": p["name"], "chains": len(chains), "key_used": bool(key)})
-                if not chains:
-                    raise RuntimeError("no chains in the response")
+                d = http_get_json(url, headers=headers, params=params,
+                                  timeout=_TIMEOUT, retries=0)
+                # the token list is a bare array; the keyless chain list is
+                # wrapped in {"data": {"chains": [...]}}
+                if isinstance(d, list):
+                    n = len(d)
+                else:
+                    n = len(((d or {}).get("data") or {}).get("chains") or [])
+                if not n:
+                    raise RuntimeError("empty response")
+                tried.append({"provider": p["name"], "chains": n, "key_used": bool(key)})
             except Exception as e:  # noqa: BLE001
                 tried.append({"provider": p["name"], "error": _explain(e)})
         ok = [t for t in tried if "chains" in t]

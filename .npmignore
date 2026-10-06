@@ -11,6 +11,9 @@ __pycache__/
 docs/
 scripts/
 .market-cache/
+.npm-cache/
 .github-token
+.npm-token
+npm-debug.log*
 dsh-plugin/
 *.log

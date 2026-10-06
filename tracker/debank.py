@@ -108,6 +108,19 @@ def _fetch_with_provider(provider, wallet, chains, max_workers):
                 cid, tokens = f.result()
                 results[cid] = tokens
 
+    # A provider that failed on EVERY chain is a provider-level failure, not an
+    # empty wallet. Returning an empty result here used to make try_providers()
+    # record the dead provider as a success: the public fallback never ran, and
+    # the wallet was reported as fetched with a $0 balance instead of an error.
+    ok_chains = [c for c, t in results.items()
+                 if not (isinstance(t, dict) and t.get("__error__"))]
+    if chains and not ok_chains:
+        first = next((t.get("__error__") for t in results.values()
+                      if isinstance(t, dict) and t.get("__error__")), None)
+        raise RuntimeError(
+            "provider %r failed on all %d chains%s"
+            % (provider.get("name"), len(chains), ": " + first if first else ""))
+
     rows = []
     for cid, tokens in results.items():
         if isinstance(tokens, dict) and tokens.get("__error__"):

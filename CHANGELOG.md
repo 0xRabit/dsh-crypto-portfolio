@@ -5,6 +5,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- **A DeBank provider that failed on every chain was reported as an empty
+  wallet.** Per-chain errors were captured internally, so a dead provider (bad
+  key, exhausted quota) still returned a "successful" empty result:
+  `try_providers()` recorded it as a success, the documented `debank-public`
+  fallback never ran, and the wallet showed `$0` marked as fetched instead of as
+  an error. A provider that fails on all chains now raises, so failover and the
+  error surface both behave as documented. A genuinely empty wallet is
+  unaffected — its chains answer with empty lists, not exceptions.
+- **The DeBank "Test" button reported failure for a perfectly valid AccessKey.**
+  The probe requested `{base_url}/chain/list` from both providers, but the Pro
+  host only serves `/v1/...` — that path 404s, so `debank-pro` failed no matter
+  what. It now probes the call a refresh actually makes
+  (`/v1/user/token_list`), falls back to the chain list when no EVM wallet is
+  configured, and understands both response shapes (a bare array from Pro, a
+  `{"data": {"chains": […]}}` envelope from the keyless endpoint).
+- **Every per-source "Test" button was inert.** `runSourceTest()` existed and
+  the buttons carried `data-test-target`, but nothing was ever bound to them.
+  The click is now delegated on `#sourcesBody`, because `renderSources()`
+  rebuilds those rows on every render.
+
+### Changed
+
+- **The Data Source toolbar moved above the provider list and pins itself under
+  the header stack while the section scrolls**, so Save & Apply stays reachable
+  in a nine-provider list. As the last child of `.panel-body` the toolbar had no
+  room to travel — a sticky box is clamped to its containing block — so it never
+  stuck at all.
+
 ## [0.2.0] — 2026-09-26
 
 The first release after 0.1.0: two more exchanges, a health report you can
