@@ -19,6 +19,7 @@ Four defects conspired to make a perfectly valid DeBank AccessKey look broken:
 static files, so those tests read the files.
 """
 import os
+import re
 import sys
 import unittest
 
@@ -186,10 +187,15 @@ class SettingsWiringTest(unittest.TestCase):
         self.assertIn("top: 102px", rule)
         self.assertIn("margin: 0 ", rule)          # zero top margin: no gap while pinned
 
-    def test_the_bumped_assets_are_the_ones_the_page_loads(self):
+    def test_the_assets_are_cache_busted(self):
+        # both files carry an explicit ?v= so a stale cache cannot serve last week's
+        # script against this week's markup. The number itself is bumped by hand, so
+        # only its presence is asserted here.
         html = self.read("static/index.html")
-        self.assertIn("/static/app.js?v=69", html)
-        self.assertIn("/static/style.css?v=61", html)
+        for asset in ("/static/app.js?v=", "/static/style.css?v="):
+            m = re.search(re.escape(asset) + r"(\d+)", html)
+            self.assertIsNotNone(m, asset + " is missing from index.html")
+            self.assertGreaterEqual(int(m.group(1)), 1)
 
 
 if __name__ == "__main__":

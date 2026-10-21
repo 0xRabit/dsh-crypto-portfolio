@@ -22,6 +22,8 @@ from .debank import chain_names
 from . import sourcetest, views
 from .views import view_of
 from . import health, healthconfig
+from . import manual, plan
+from . import reload as reload_mod
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _STATIC = os.path.join(os.path.dirname(_HERE), "static")
@@ -67,6 +69,9 @@ def get_chain_names():
             names["binance"] = "Binance"
             names["bybit"] = "Bybit"
             names["backpack"] = "Backpack"
+            # hand-registered positions group under this pseudo-chain, so the chain
+            # filter can select them like any other (the UI renders it translated)
+            names.setdefault("manual", "Manual")
             _chain_name_cache = names
         return _chain_name_cache
 
@@ -120,6 +125,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/health":
                 self._reply_json(self._health_view())
+            elif path == "/api/manual":
+                code, body = _json(self._manual_view())
+                self._reply(code, body, "application/json; charset=utf-8")
+            elif path == "/api/plan":
+                # the asset plan, evaluated against a snapshot (default: the newest)
+                d = qs.get("date", [None])[0] or None
+                code, body = _json(plan.analyze(d))
+                self._reply(code, body, "application/json; charset=utf-8")
             elif path == "/api/history":
                 days = int(qs.get("days", ["0"])[0] or 0) or None
                 code, body = _json(storage.get_history(days))
@@ -324,6 +337,33 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("thresholds must be a JSON object")
                 healthconfig.save(cfg)
                 self._reply_json(self._health_view())
+            elif path == "/api/manual":
+                position = (body or {}).get("position")
+                if not isinstance(position, dict):
+                    raise ValueError("position must be a JSON object")
+                manual.upsert(position)
+                self._reply_json(self._manual_view())
+            elif path == "/api/manual/remove":
+                if not manual.remove(str((body or {}).get("id") or "")):
+                    raise ValueError("unknown position id")
+                self._reply_json(self._manual_view())
+            elif path == "/api/plan":
+                # save the plan itself; the analysis is returned so the tab can
+                # re-render from one round trip
+                cfg = (body or {}).get("config")
+                if not isinstance(cfg, dict):
+                    raise ValueError("config must be a JSON object")
+                plan.save(cfg)
+                self._reply_json(plan.analyze())
+            elif path == "/api/plan/log":
+                row = plan.log_append((body or {}).get("entry") or {})
+                view = plan.analyze()
+                view["added"] = row
+                self._reply_json(view)
+            elif path == "/api/plan/log/remove":
+                if not plan.log_remove(int((body or {}).get("index", -1))):
+                    raise ValueError("invalid index")
+                self._reply_json(plan.analyze())
             elif path == "/api/refresh/cancel":
                 _refresh_cancel.set()
                 self._reply_json({"cancel_requested": True})
@@ -371,6 +411,11 @@ class Handler(BaseHTTPRequestHandler):
                     self._reply_json(self._profiles_view())
                 else:
                     raise ValueError("action must be switch/create/rename/delete")
+            elif path == "/api/restart":
+                # the dashboard is a child of the plugin; restarting it here is the
+                # same re-exec the file watcher uses, so no DSH restart is involved
+                self._reply_json({"restarting": True})
+                threading.Timer(0.35, reload_mod.restart).start()
             else:
                 self._reply_json({"error": "not found"}, 404)
         except Exception as e:  # noqa: BLE001
@@ -471,6 +516,15 @@ class Handler(BaseHTTPRequestHandler):
                         for i, e in enumerate(bl.user_entries())]
         return {"entries": config_entries + user_entries,
                 "file": bl.blacklist_file()}
+
+    def _manual_view(self):
+        """Hand-registered protocol positions + the wallets they may attach to."""
+        positions = manual.positions()
+        return {"positions": positions,
+                "wallets": manual.wallet_names(),
+                "total": manual.total(),
+                "today": __import__("datetime").date.today().isoformat(),
+                "file": manual.manual_file()}
 
     def _health_view(self):
         thresholds = healthconfig.load()

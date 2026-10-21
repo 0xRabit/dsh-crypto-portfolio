@@ -6,7 +6,7 @@ import sqlite3
 import threading
 from datetime import datetime, timedelta
 
-from . import config, profiles
+from . import config, manual, profiles
 from . import blacklist as blacklist_mod
 from .blacklist import filter_rows
 from . import assetlabels as assetlabels
@@ -266,6 +266,17 @@ def get_history(days=None):
                 else:
                     chains.setdefault(r["name"], {})[r["date"]] = r["usd"]
             totals = [totals_by_date.get(d, 0.0) for d in dates]
+            # manual registrations are part of the portfolio from their own date on,
+            # so the trend line steps up when one is registered instead of jumping
+            # retroactively across the whole history
+            extra_total = manual.totals_by_date(dates)
+            totals = [round((totals[i] or 0.0) + extra_total.get(d, 0.0), 2)
+                      for i, d in enumerate(dates)]
+            extra_wallet = manual.wallet_totals_by_date(dates)
+            for w, series in extra_wallet.items():
+                wallets.setdefault(w, {})
+                for d, usd in series.items():
+                    wallets[w][d] = round(wallets[w].get(d, 0.0) + usd, 2)
             return {
                 "dates": dates,
                 "totals": totals,
@@ -287,7 +298,14 @@ def get_tokens(date):
                 "ORDER BY usd DESC", (date,)).fetchall()
             # classification is applied at read time, so editing the rules also
             # reclassifies every historical snapshot
-            return assetlabels.annotate(filter_rows([dict(r) for r in rows]))
+            out = assetlabels.annotate(filter_rows([dict(r) for r in rows]))
+            # manually registered protocol positions ride along: same row shape, same
+            # blacklist, their own registration date (see tracker/manual.py)
+            extra = assetlabels.annotate(filter_rows(manual.rows(date)))
+            if extra:
+                out = out + extra
+                out.sort(key=lambda r: -float(r.get("usd") or 0.0))
+            return out
         finally:
             conn.close()
 

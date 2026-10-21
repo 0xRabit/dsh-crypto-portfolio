@@ -22,6 +22,24 @@ const I18N = {
     wlNamePh: "Name (e.g. evm-new)", wlTypeEvm: "EVM (DeBank + Hyperliquid)", wlTypeBtc: "BTC", wlTypeSol: "Solana",
     wlTypeDoge: "Dogecoin", wlTypeAda: "Cardano",
     wlAddrPh: "Address", btnAddWallet: "+ Add Wallet", delete: "Delete", builtin: "Built-in",
+    chainManual: "Manual",
+    manualTitle: "Manual protocol positions",
+    manualDesc: "For protocols that have no API yet (Papertrade is the example): register the position by hand and it is counted at exactly the value and date you entered. It never follows the market and a refresh never overwrites it — it keeps showing the last registration until you register it again.",
+    mpSummary: "{n} position(s) registered · {total}",
+    mpEmpty: "No manual positions yet.",
+    mpNoWallets: "add a wallet first — a position has to belong to one", 
+    mpEmptyList: "Nothing registered yet — fill the form below.",
+    mpWalletTitle: "Which wallet holds it",
+    mpProtocolPh: "Protocol (e.g. Papertrade)", mpSymbolPh: "Symbol (e.g. PT)",
+    mpNamePh: "Name (optional)", mpAmountPh: "Amount", mpValuePh: "Value (USD)",
+    mpNotePh: "Note (optional)",
+    mpDateTitle: "Registration date — the estimate and the date stay as entered",
+    btnAddManual: "+ Add position", mpCancel: "Cancel edit",
+    mpEdit: "Edit", mpSave: "Save changes", mpDeleteConfirm: "Remove this registration?",
+    mpSaved: "Position saved.", mpSaveFailed: "Could not save: ",
+    mpDeleted: "Position removed.",
+    mpBadge: "manual",
+    mpBadgeTitle: "Registered by hand: this value and date do not change until you register it again.",
     trendTitle: "Portfolio Trend",
     chainTitle: "Chain Distribution (USD)",
     tokensTitle: "Token Details", searchPh: "Search token / name / wallet / address…",
@@ -121,6 +139,16 @@ const I18N = {
     btnTest: "Test", testing: "Testing…", testFailed: "failed",
     fetchFailed: "did not update", failedTag: "failed",
     notInSnapshot: "not in the latest snapshot yet",
+    partialTag: "partial",
+    partialHint: "part of this wallet could not be read — its total is lower than reality",
+    apiStale: "the backend is still the previous build — restart DeepSeek Harness to load the new API",
+    serviceTitle: "Service",
+    serviceSummary: "restart the dashboard without restarting DSH",
+    serviceDesc: "The dashboard is a child process of this plugin, and it watches its own Python sources: editing tracker/*.py restarts it automatically within a couple of seconds, and static files are read from disk on every request anyway. A code change therefore never needs a DeepSeek Harness restart — only a change to the plugin wrapper itself (index.js or cordis.patch.yml) does, because DSH loads that. This button forces a restart if you ever need one.",
+    serviceRestart: "Restart the service",
+    serviceRestarting: "restarting…",
+    serviceRestarted: "back up — reloading the page",
+    serviceRestartFailed: "the service did not come back within 20s; check the DSH log",
     fetchFailedHint: "This wallet failed to update in the last refresh",
     healthCfgSaved: "Thresholds saved.", healthCfgReset: "Defaults restored.",
     healthCfgFailed: "Could not save: ",
@@ -171,6 +199,43 @@ const I18N = {
 
     staked: "staked", perpEquity: "Perp Equity",
     avg: "Share",
+    tabPlan: "Plan",
+    planAdviceTitle: "Today's plan", planReload: "Recompute",
+    planAdviceDesc: "Recomputed from the newest snapshot whenever you open this tab, so a refresh (or the daily schedule) updates the advice with it. Prices and balances come from the dashboard's own data — only the cash, equities and goals you declare under Plan settings are manual.",
+    planWeeklyTitle: "This week's buy", planGoalsTitle: "Goal progress",
+    planAmmoTitle: "Ammo pool", planRulesTitle: "Rules in effect",
+    planCfgTitle: "Plan settings", planCfgFile: "plan.json",
+    planCfgDesc: "Only you know these numbers: how much cash is safely spendable, what the equities are worth, and what the goals are. Everything else is computed from live data. The plan is stored per profile in plan.json, and the execution log sits next to it in plan_log.jsonl.",
+    planCfgAssets: "Manual assets (cash and equities the tracker cannot see)",
+    planCfgGoals: "Goals", planCfgAmmo: "Ammo sources (spent in priority order)",
+    planCfgStart: "Plan start (leave both empty to measure from the oldest snapshot)",
+    planAddAsset: "+ Add asset", planAddGoal: "+ Add goal", planAddAmmo: "+ Add source",
+    planSave: "Save plan", planResetCfg: "Reset to defaults",
+    planSaved: "Plan saved.", planSaveFailed: "Could not save: ", planResetDone: "Defaults restored.",
+    planLogFormTitle: "Record an execution",
+    planSideBuy: "Buy", planSideSell: "Sell", planLogAdd: "Add",
+    planLogPricePh: "Price (USD)", planLogAmountPh: "Amount (USD)", planLogNotePh: "Note (tier / reason)",
+    planLogAdded: "Execution recorded.", planLogFailed: "Could not record: ", planLogRemoved: "Entry removed.",
+    planThBucket: "Bucket", planThTier: "Tier", planThPrice: "Price", planThBase: "Tier weekly",
+    planThShare: "Share", planThAmount: "This week", planThQty: "Quantity",
+    planThPriority: "#", planThSource: "Source", planThPlanned: "Planned", planThUsed: "Used",
+    planThLeft: "Left", planThCondition: "When it may be used",
+    planThDate: "Date", planThAsset: "Asset", planThSide: "Side", planThPriceShort: "Price",
+    planThAmountShort: "Amount", planThSourceShort: "Funded by", planThNote: "Note",
+    planThGoal: "Goal", planThTarget: "Target", planThPath: "Path today", planThCagr: "Required CAGR",
+    planThCurrent: "Current CAGR", planThProgress: "Progress", planThStatus: "Status",
+    planThDeadline: "Deadline",
+    planStatusBehind: "behind", planStatusOnTrack: "on track", planStatusAhead: "ahead",
+    planGroupTakeProfit: "Take profit", planGroupRebalance: "Rebalance", planGroupDrawdown: "Drawdown",
+    planStTotal: "Total assets", planStCrypto: "Crypto", planStCore: "Core crypto",
+    planStStables: "Stablecoins", planStBtc: "In BTC", planStEth: "In ETH",
+    planStDrawdown: "Drawdown from peak", planStQuarter: "This quarter", planStAmmo: "Ammo left",
+    planStStart: "Plan start", planStSpot: "spot", planTierTitle: "Price tiers",
+    planTierHint: "Each coin is judged on its own price; HYPE+SOL follows BTC.",
+    planNoLog: "Nothing recorded yet.", planAllowed: "usable now", planBlocked: "later",
+    planLogHint: "Only buys carrying a source reduce the ammo pool; sells are kept as a record.",
+    planBasis: "based on snapshot", planGenerated: "computed",
+    planEmpty: "Nothing to advise yet — no snapshot.", 
   },
   zh: {
     brand: "Crypto Portfolio Tracker",
@@ -191,6 +256,24 @@ const I18N = {
     wlNamePh: "名称（如 evm-new）", wlTypeEvm: "EVM（DeBank + Hyperliquid）", wlTypeBtc: "BTC", wlTypeSol: "Solana",
     wlTypeDoge: "狗狗币 DOGE", wlTypeAda: "艾达币 ADA",
     wlAddrPh: "地址", btnAddWallet: "＋ 添加钱包", delete: "删除", builtin: "内置",
+    chainManual: "手动登记",
+    manualTitle: "手动协议持仓",
+    manualDesc: "给还没有 API 的协议（比如 Papertrade）手工登记持仓：填一次，就按你填的估值和登记日期计入，不会跟着行情变动，刷新也不会覆盖 —— 它会一直显示最后一次登记的内容，直到你重新登记。",
+    mpSummary: "已登记 {n} 项 · 合计 {total}",
+    mpEmpty: "还没有手动登记。",
+    mpNoWallets: "请先添加一个钱包 —— 持仓必须归属于某个钱包", 
+    mpEmptyList: "还没有登记 —— 填写下面的表单即可。",
+    mpWalletTitle: "属于哪个钱包",
+    mpProtocolPh: "协议（如 Papertrade）", mpSymbolPh: "资产符号（如 PT）",
+    mpNamePh: "名称（可选）", mpAmountPh: "数量", mpValuePh: "估值（USD）",
+    mpNotePh: "备注（可选）",
+    mpDateTitle: "登记日期 —— 估值和日期都按填写的保持不变",
+    btnAddManual: "+ 登记持仓", mpCancel: "取消编辑",
+    mpEdit: "编辑", mpSave: "保存更改", mpDeleteConfirm: "删除这条登记？",
+    mpSaved: "持仓已登记。", mpSaveFailed: "保存失败：",
+    mpDeleted: "已删除该登记。",
+    mpBadge: "手动",
+    mpBadgeTitle: "手工登记：在你重新登记之前，这个金额和日期都不会变。",
     trendTitle: "资产趋势",
     chainTitle: "网络分布（USD）",
     tokensTitle: "代币明细", searchPh: "搜索代币 / 名称 / 钱包 / 地址…",
@@ -290,6 +373,16 @@ const I18N = {
     btnTest: "测试", testing: "测试中…", testFailed: "失败",
     fetchFailed: "未更新成功", failedTag: "个失败",
     notInSnapshot: "尚未出现在最新快照中",
+    partialTag: "部分",
+    partialHint: "该钱包有部分账户读取失败 —— 它的合计比实际偏低",
+    apiStale: "后端仍是旧版本 —— 请重启 DeepSeek Harness 以加载新接口",
+    serviceTitle: "服务",
+    serviceSummary: "重启仪表盘，不用重启 DSH",
+    serviceDesc: "仪表盘是本插件的子进程，它会盯着自己的 Python 源码：改 tracker/*.py 会在几秒内自动重启，静态文件本来就是每次请求读盘。所以改代码永远不需要重启 DeepSeek Harness —— 只有改插件外壳本身（index.js 或 cordis.patch.yml）才需要，因为那部分是 DSH 加载的。需要时也可以点这个按钮强制重启。",
+    serviceRestart: "重启服务",
+    serviceRestarting: "正在重启…",
+    serviceRestarted: "已恢复 —— 正在刷新页面",
+    serviceRestartFailed: "20 秒内没有恢复，请查看 DSH 日志",
     fetchFailedHint: "该钱包在最近一次刷新中读取失败",
     healthCfgSaved: "阈值已保存。", healthCfgReset: "已恢复默认值。",
     healthCfgFailed: "保存失败：",
@@ -340,6 +433,43 @@ const I18N = {
 
     staked: "质押", perpEquity: "永续权益",
     avg: "占比",
+    tabPlan: "计划",
+    planAdviceTitle: "今日建议", planReload: "重新计算",
+    planAdviceDesc: "每次打开本页都会用最新快照重算，所以刷新（或每日定时）之后建议会跟着更新。价格与余额都来自仪表盘自己的数据；只有你在下方「计划设置」里填的现金、股票和目标是手动的。",
+    planWeeklyTitle: "本周买入", planGoalsTitle: "目标进度",
+    planAmmoTitle: "弹药池", planRulesTitle: "当前生效的规则",
+    planCfgTitle: "计划设置", planCfgFile: "plan.json",
+    planCfgDesc: "只有你知道这些数字：能安全动用的现金、股票的估值、以及目标的样子；其余都由实时数据算出。计划按 Profile 存在 plan.json，执行记录存在旁边的 plan_log.jsonl。",
+    planCfgAssets: "手工资产（追踪器看不到的现金与股票）",
+    planCfgGoals: "目标", planCfgAmmo: "弹药来源（按顺位动用）",
+    planCfgStart: "计划起点（两项都留空则从最早的快照开始算）",
+    planAddAsset: "+ 添加资产", planAddGoal: "+ 添加目标", planAddAmmo: "+ 添加来源",
+    planSave: "保存计划", planResetCfg: "恢复默认值",
+    planSaved: "计划已保存。", planSaveFailed: "保存失败：", planResetDone: "已恢复默认值。",
+    planLogFormTitle: "记录一笔执行",
+    planSideBuy: "买入", planSideSell: "卖出", planLogAdd: "记录",
+    planLogPricePh: "价格 (USD)", planLogAmountPh: "金额 (USD)", planLogNotePh: "备注（档位/理由）",
+    planLogAdded: "已记录。", planLogFailed: "记录失败：", planLogRemoved: "已删除该条记录。",
+    planThBucket: "币种", planThTier: "档位", planThPrice: "价格", planThBase: "档位周额",
+    planThShare: "分配比例", planThAmount: "本周买入", planThQty: "折合数量",
+    planThPriority: "顺位", planThSource: "来源", planThPlanned: "计划金额", planThUsed: "已动用",
+    planThLeft: "剩余", planThCondition: "动用条件",
+    planThDate: "日期", planThAsset: "资产", planThSide: "方向", planThPriceShort: "价格",
+    planThAmountShort: "金额", planThSourceShort: "资金来源", planThNote: "备注",
+    planThGoal: "目标", planThTarget: "目标金额", planThPath: "当前应到", planThCagr: "所需年化",
+    planThCurrent: "当前年化", planThProgress: "进度", planThStatus: "状态",
+    planThDeadline: "截止",
+    planStatusBehind: "落后", planStatusOnTrack: "在轨", planStatusAhead: "领先",
+    planGroupTakeProfit: "止盈", planGroupRebalance: "再平衡", planGroupDrawdown: "回撤",
+    planStTotal: "总资产", planStCrypto: "加密资产", planStCore: "核心加密",
+    planStStables: "稳定币", planStBtc: "折合 BTC", planStEth: "折合 ETH",
+    planStDrawdown: "距高点回撤", planStQuarter: "本季度", planStAmmo: "弹药剩余",
+    planStStart: "计划起点", planStSpot: "现货", planTierTitle: "价格档位",
+    planTierHint: "每种币按自身价格判档；HYPE+SOL 跟随 BTC。",
+    planNoLog: "还没有任何记录。", planAllowed: "当前可用", planBlocked: "稍后",
+    planLogHint: "只有带「资金来源」的买入会扣减弹药池；卖出仅作为留痕。",
+    planBasis: "基于快照", planGenerated: "计算于",
+    planEmpty: "还没有快照，暂时没有建议。",
   },
 };
 let theme = "dark";
@@ -412,6 +542,15 @@ function fmtAmount(v) {
   if (Math.abs(v) >= 1) return v.toLocaleString("en-US", { maximumFractionDigits: 4 });
   return v.toPrecision(4).replace(/\.?0+$/, "");
 }
+/* A missing route means the page is newer than the server behind it (a DSH that has
+   not been restarted since the feature was added). Say that instead of the bare
+   "not found" the fetch layer produces — it is the difference between a bug and a
+   restart. */
+function staleHint(err) {
+  const msg = String((err && err.message) || err || "");
+  return /not found|404/i.test(msg) ? " · " + t("apiStale") : "";
+}
+
 function fmtPct(v) {
   if (v == null || isNaN(v)) return "";
   return (v > 0 ? "+" : "") + v.toFixed(2) + "%";
@@ -444,6 +583,9 @@ const state = {
   sourcesLastOk: {},
   activeProfile: "",
   dates: [],
+  plan: null,           // /api/plan payload (advice + config + log)
+  manual: null,         // /api/manual payload (hand-registered protocol positions)
+  manualEdit: null,     // id being edited, or null when the form adds a new one
 };
 
 /* ---------------- api ---------------- */
@@ -493,8 +635,8 @@ function refreshLanguage() {
    <details> state, otherwise the restore would close the linked section again. */
 function applyHashRoute() {
   const parts = location.hash.replace(/^#/, "").split("/");
-  if (parts[0] !== "pageSettings") return;
-  const tab = document.querySelector('.tabs .tab[data-tab="pageSettings"]');
+  if (["pageSettings", "pagePlan"].indexOf(parts[0]) === -1) return;
+  const tab = document.querySelector('.tabs .tab[data-tab="' + parts[0] + '"]');
   if (tab) tab.click();
   const sec = parts[1] ? document.getElementById(parts[1]) : null;
   if (sec) { sec.open = true; sec.scrollIntoView(); }
@@ -679,10 +821,14 @@ function bindEvents() {
       btn.classList.add("active");
       const page = btn.dataset.tab;
       $("pageDashboard").classList.toggle("hidden", page !== "pageDashboard");
+      $("pagePlan").classList.toggle("hidden", page !== "pagePlan");
       $("pageSettings").classList.toggle("hidden", page !== "pageSettings");
       $("filterbar").classList.toggle("hidden", page !== "pageDashboard");
       try { history.replaceState(null, "", "#" + page); } catch (e) { /* ignore */ }
       if (page === "pageSettings") renderSettings();
+      // the plan re-reads on every visit: a refresh (or the daily schedule) may have
+      // moved the tiers, and stale advice is worse than no advice
+      if (page === "pagePlan") loadPlan(true);
     });
   });
   // profiles (schedule editing is per-profile — handled in the profileList delegate)
@@ -951,6 +1097,7 @@ function fillDateSelect(dates) {
 }
 
 function chainName(id) {
+  if (id === "manual") return t("chainManual");
   return state.chains[id] || id || "—";
 }
 
@@ -1645,8 +1792,12 @@ function renderWalletCards() {
     .filter((w) => (f.category === "all" || w.type === f.category))
     .sort((a, b) => (b.total_usd || 0) - (a.total_usd || 0));
   const failed = list.filter((w) => w.error).length;
+  // a wallet can also be *partly* unreadable: spot answers, a futures sub-account
+  // rejects the key. Its total is then lower than reality, which the card marks too.
+  const partial = list.filter((w) => !w.error && (w.notes || []).length).length;
   $("walletCount").textContent = "(" + list.length + ")" +
-    (failed ? " · " + failed + " " + t("failedTag") : "");
+    (failed ? " · " + failed + " " + t("failedTag") : "") +
+    (partial ? " · " + partial + " " + t("partialTag") : "");
   const shares = walletShares();
   list.forEach((w) => {
     const card = document.createElement("div");
@@ -1676,7 +1827,16 @@ function renderWalletCards() {
         // the row keeps the width it needs for long wallet names
         (w.storage === "cold" ? '<span class="w-cold" title="' + esc(t("storageMark")) + '">❄</span>' : "") +
         // an asterisk, not a silent $0: the wallet failed to update
-        (w.error ? '<span class="w-error" title="' + esc(t("fetchFailedHint") + ": " + w.error) + '">*</span>' : "") +
+        (function () {
+          const notes = (w.notes || []).map((n) => (n.part ? n.part + ": " : "") + (n.message || "")).join(" · ");
+          if (w.error) {
+            return '<span class="w-err-mark hard" title="' + esc(t("fetchFailedHint") + ": " + w.error) + '">!</span>';
+          }
+          if (notes) {
+            return '<span class="w-err-mark soft" title="' + esc(t("partialHint") + ": " + notes) + '">!</span>';
+          }
+          return "";
+        })() +
         "</div>" +
       // row 2 — balance, with this wallet's share of the total right after it
       '<div class="w-usd">' + fmtUsd(w.total_usd) +
@@ -1809,7 +1969,10 @@ function renderTable() {
     // writes a rule for this exact token, and the server replaces any previous
     // rule for the same target so the last choice is the one that sticks
     // a chip that opens the shared label picker: pick, create or rename
-    '<td class="op stable-col"><button type="button" class="cat-chip cat-' + esc(x.cat || "other") + '"' +
+    '<td class="op stable-col">' +
+      (x.manual ? '<span class="bl-tag config" title="' + esc(t("mpBadgeTitle")) + '">' +
+        esc(t("mpBadge")) + " " + esc(x.date || "") + "</span>" : "") +
+      '<button type="button" class="cat-chip cat-' + esc(x.cat || "other") + '"' +
       ' data-wallet="' + esc(x.wallet) + '" data-symbol="' + esc(x.symbol) + '"' +
       ' data-token-id="' + esc(x.token_id || "") + '" data-chain="' + esc(x.chain) + '"' +
       ' data-cat="' + esc(x.cat || "other") + '">' +
@@ -2632,7 +2795,8 @@ const SRC_LINKS = {
 };
 
 function chainLogo(cid) {
-  const map = { btc: "btc", eth: "eth", sol: "sol", hyperliquid: "hyperliquid",
+  const map = { manual: "manual",
+                btc: "btc", eth: "eth", sol: "sol", hyperliquid: "hyperliquid",
                 binance: "binance", bybit: "bybit", backpack: "backpack",
                 okx: "okx", bitget: "bitget",
                 doge: "doge", ada: "ada" };
@@ -2863,6 +3027,7 @@ async function renderSettings() {
   await renderBlacklist();
   await renderStablecoins();
   await renderHealthCfg();
+  await renderManual();
 }
 
 /* ---------------- config export / import ---------------- */
@@ -3019,4 +3184,602 @@ window.addEventListener("resize", () => { if (state.history) renderChart(); });
 init().catch((e) => {
   console.error("init failed:", e);
   document.body.dataset.initError = (e && e.message) || String(e);
+});
+
+/* ============================ Plan tab ============================ */
+/* The rules themselves live in tracker/plan.py — this section only turns their
+   keys and numbers into sentences, in both languages, and draws them. Keeping the
+   numbers on the Python side means the tab, the tests and any future CLI agree. */
+
+const PLAN_PCT = new Set(["pct", "core_pct", "step_pct", "keep", "deviation", "share",
+                          "max_share", "trim_to", "drawdown", "progress"]);
+const PLAN_MONEY = new Set(["btc", "eth", "btc_line", "eth_line", "btc_low", "btc_high",
+                            "btc_min", "amount", "usd", "threshold", "remaining", "ammo",
+                            "total", "hys", "left", "planned", "used", "spent", "cap",
+                            "weekly", "room", "emergency", "line", "price"]);
+const PLAN_RANGE_PCT = new Set(["lock", "core_pct", "target", "band"]);
+const PLAN_RANGE = new Set(["weeks"]);
+
+function planFmt(key, v) {
+  if (v === null || v === undefined || v === "") return "—";
+  if (Array.isArray(v)) {
+    if (v.every((x) => typeof x === "string")) return v.join(lang === "zh" ? "、" : " · ");
+    const pct = PLAN_RANGE_PCT.has(key);
+    return v.map((x) => (pct ? (Number(x) * 100).toFixed(0) + "%" : fmtAmount(x))).join("–");
+  }
+  if (typeof v === "number") {
+    if (PLAN_PCT.has(key)) return (v * 100).toFixed(1) + "%";
+    if (PLAN_MONEY.has(key)) return fmtUsd(v);
+    return fmtAmount(v);
+  }
+  return String(v);
+}
+
+function planText(tpl, params) {
+  if (!tpl) return "";
+  return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in (params || {}) ? planFmt(k, params[k]) : m));
+}
+
+/* Every advice and rule sentence, keyed exactly like tracker/plan.py emits it. */
+const PLAN_TEXT = {
+  en: {
+    advStageTakeProfit: { t: "Stage: potential bull market — take-profit window", d: "BTC above the accumulation ceiling stops new buys. Sell in batches (HYPE/SOL first, then BTC/stablecoins) and park the proceeds as the next cycle's ammo." },
+    advStageHalving: { t: "Stage: accumulation wrap-up / halving year", d: "Finish the remaining ammo by price tier, keep staking, and do not chase price around the halving." },
+    advStageRebuild: { t: "Stage: rebuild ammo / second accumulation", d: "After a drawdown, re-accumulate with rebuilt ammo according to the price tiers." },
+    advWeekly: { t: "This week: invest {total}", d: "BTC {btc} · ETH {eth} · HYPE+SOL {hys} — tiers BTC {tier_btc} / ETH {tier_eth}." },
+    advSource: { t: "Fund it from {source}", d: "{left} left of {planned} planned ({used} already used)." },
+    advNoAmmo: { t: "The ammo pool is empty", d: "No new money this week — the rules say hold and keep staking." },
+    advQuarterCap: { t: "This would exceed the quarterly cap", d: "{spent} of {cap} already invested this quarter; a full week of {weekly} does not fit — at most {room} left." },
+    advQuarterRoom: { t: "Quarterly budget is comfortable", d: "{spent} of {cap} used, {remaining} left." },
+    advRunway: { t: "At this pace the pool lasts {weeks} weeks", d: "About {months} months at tier {tier}." },
+    advStopBuying: { t: "Stop buying — BTC is in tier T1", d: "BTC {btc} is above {line}. Wait, and watch for take-profit signals." },
+    advT4Rush: { t: "Absolute floor: deploy within {weeks} weeks", d: "BTC {btc} is below the floor — the quarterly cap is cancelled and the remaining {remaining} goes in over {weeks} weeks." },
+    advColdWallet: { t: "Move idle crypto off the exchange", d: "About {usd} of BTC/ETH is sitting on exchanges (above {threshold}) — send it to cold storage." },
+    advStake: { t: "Keep new HYPE/SOL staked", d: "Staking is part of the plan; the staked positions stay where they are." },
+    advDiscipline: { t: "Weekly discipline", d: "Same day every week; spend ammo in order ({sources}); never sell more than a quarter of an equity position, and only into strength." },
+    advBottomLine: { t: "Bottom line", d: "No leverage or contracts; the {emergency} emergency fund stays untouched; the long-term equity position is not ammo." },
+    ruleP1: { t: "Take-profit watch: BTC {btc} / ETH {eth} is in T1", d: "The coin is above its accumulation ceiling ({btc_line} / {eth_line}). Stop buying it and keep the core position; watch for a take-profit signal." },
+    ruleP2: { t: "BTC {btc} has entered the {btc_low}–{btc_high} band", d: "Sell about {pct} of HYPE+SOL (≈{amount}); for every further {step_pct} rise, sell another small batch ({batches} batches in total). Proceeds: half to BTC, half to stablecoins." },
+    ruleP3: { t: "BTC {btc} is above {btc_min}", d: "Sell another {pct} of HYPE+SOL (≈{amount}) and {core_pct} of BTC/ETH; every further {step} up, trim {step_pct} more. Keep roughly {keep} of BTC as the core cage; proceeds go to stablecoins." },
+    ruleP4: { t: "Ahead of plan: {label} is {deviation} above the path", d: "Lock {lock} of total assets (≈{amount}) into stablecoins, as ammo for the next cycle." },
+    ruleP5: { t: "Long-term target reached: {label}", d: "Lock {lock} of total assets (≈{amount}) into stablecoins / low-volatility assets — protecting the gain now matters more than more upside." },
+    ruleP6: { t: "{bucket} is {share} of core crypto (limit {max_share})", d: "Trim it back to about {trim_to} — roughly {amount} — into BTC/ETH or stablecoins. Concentration risk applies in every market phase." },
+    ruleR2: { t: "{bucket} is {share} of core crypto, outside the {band} band", d: "In the accumulation phase correct this with new money: buy the laggards instead of selling the winners." },
+    ruleR3: { t: "{bucket} is {share} of core crypto, outside the {band} band, with BTC in T1", d: "Sell the overweight part in this order: HYPE/SOL → ETH → BTC; move the proceeds to BTC or stablecoins." },
+    ruleR4: { t: "Stablecoins are only {share} of total assets, with BTC in T1", d: "Top stablecoins back up to {target} from take-profit proceeds, so the next drawdown has ammo." },
+    ruleR5: { t: "About {usd} of BTC/ETH is idle on exchanges", d: "Above the {threshold} line: move it to cold storage, keep staked HYPE/SOL in place, and log the transfer." },
+    ruleD1: { t: "Drawdown {drawdown} from the peak", d: "No action — keep buying by tier. Check the ammo pool and the quarterly cap." },
+    ruleD2: { t: "Drawdown {drawdown} from the peak", d: "Follow the price tiers (usually T3); the HK equity is usable now. Never panic-sell the core position." },
+    ruleD3: { t: "BTC {btc} is below the absolute floor {line}", d: "Deploy the remaining {remaining} within {weeks} weeks — the quarterly cap is cancelled." },
+    ruleD4: { t: "Drawdown {drawdown} with the ammo exhausted ({ammo} left)", d: "Stop trading: hold and keep staking. No leverage, no borrowing, and the emergency fund and long-term equity stay untouched." },
+    ruleD5: { t: "HLP vault position: {usd}", d: "A market-making vault can lose money and withdrawals can queue. If it shows losses or the platform looks risky, evaluate exiting into spot stablecoins." },
+  },
+  zh: {
+    advStageTakeProfit: { t: "阶段：潜在牛市 —— 止盈窗口", d: "BTC 高于积累区上限后停止买入；分批卖出（先 HYPE/SOL，再 BTC/稳定币），所得作为下一轮弹药存起来。" },
+    advStageHalving: { t: "阶段：积累收尾 / 减半年", d: "剩余弹药按价格档位投完，维持质押；减半前后不追高。" },
+    advStageRebuild: { t: "阶段：重建弹药 / 第二轮积累", d: "回撤中用重建的弹药按价格档位重新积累。" },
+    advWeekly: { t: "本周投入 {total}", d: "BTC {btc} · ETH {eth} · HYPE+SOL {hys} —— 档位：BTC {tier_btc} / ETH {tier_eth}。" },
+    advSource: { t: "资金来源：{source}", d: "计划 {planned} 中剩余 {left}（已动用 {used}）。" },
+    advNoAmmo: { t: "弹药池已空", d: "本周不投入新资金 —— 按规则持有并继续质押。" },
+    advQuarterCap: { t: "本周买入会超出季度上限", d: "本季已投 {spent} / 上限 {cap}，一周 {weekly} 放不下 —— 最多还能投 {room}。" },
+    advQuarterRoom: { t: "季度额度充裕", d: "本季已投 {spent} / {cap}，剩余 {remaining}。" },
+    advRunway: { t: "按此速度弹药可支撑 {weeks} 周", d: "约 {months} 个月（当前 {tier} 档）。" },
+    advStopBuying: { t: "停止买入 —— BTC 处于 T1", d: "BTC {btc} 已高于 {line}。等待，并开始观察止盈信号。" },
+    advT4Rush: { t: "绝对底线：{weeks} 周内投完", d: "BTC {btc} 低于底线 —— 取消季度上限，剩余 {remaining} 在 {weeks} 周内投入。" },
+    advColdWallet: { t: "把闲置加密资产转出交易所", d: "约 {usd} 的 BTC/ETH 还放在交易所（阈值 {threshold}）—— 转入冷钱包。" },
+    advStake: { t: "HYPE/SOL 新增部分继续质押", d: "质押是计划的一部分，已质押仓位保持不动。" },
+    advDiscipline: { t: "执行纪律", d: "固定每周同一天；弹药严格按顺序动用（{sources}）；股票每次卖出不超过该项 1/4，且只在强势日卖。" },
+    advBottomLine: { t: "底线原则", d: "不使用杠杆与合约；{emergency} 应急金不动用；长期持有的股票不作弹药。" },
+    ruleP1: { t: "止盈观察：BTC {btc} / ETH {eth} 进入 T1", d: "该币已高于积累区上限（{btc_line} / {eth_line}）。停止买入该币、保留核心仓位，并开始观察止盈信号。" },
+    ruleP2: { t: "BTC {btc} 进入 {btc_low}–{btc_high} 区间", d: "卖出约 {pct} 的 HYPE+SOL（≈{amount}）；此后每再涨 {step_pct} 卖一小批（共 {batches} 批）。资金去向：一半换 BTC，一半转稳定币。" },
+    ruleP3: { t: "BTC {btc} 已高于 {btc_min}", d: "HYPE+SOL 再卖约 {pct}（≈{amount}），BTC/ETH 各减持 {core_pct}；BTC 每再涨 {step} 可再减 {step_pct}。保留约 {keep} 的 BTC 作为核心仓位；资金主要转稳定币。" },
+    ruleP4: { t: "提前达标：{label} 领先目标路径 {deviation}", d: "将总资产的 {lock}（≈{amount}）锁定为稳定币，作为下一周期弹药。" },
+    ruleP5: { t: "长期目标已达成：{label}", d: "将总资产的 {lock}（≈{amount}）锁定为稳定币/低波动资产 —— 此时保住收益比追求更多上涨更重要。" },
+    ruleP6: { t: "{bucket} 占核心加密 {share}（上限 {max_share}）", d: "减持至约 {trim_to} —— 大约 {amount} —— 换成 BTC/ETH 或稳定币。无论市场阶段都要控制集中风险。" },
+    ruleR2: { t: "{bucket} 占核心加密 {share}，超出 {band} 区间", d: "积累期用新增资金纠偏：多买偏低的那一类，而不是卖出超配的。" },
+    ruleR3: { t: "{bucket} 占核心加密 {share}，超出 {band} 区间，且 BTC 处于 T1", d: "卖出超配部分，顺序：HYPE/SOL → ETH → BTC；所得转为 BTC 或稳定币。" },
+    ruleR4: { t: "稳定币仅占总资产 {share}，且 BTC 处于 T1", d: "用止盈资金把稳定币补足到 {target}，为下一轮回撤准备弹药。" },
+    ruleR5: { t: "约 {usd} 的 BTC/ETH 闲置在交易所", d: "超过 {threshold}：转入冷钱包；保持质押的 HYPE/SOL 不动，并记录转账。" },
+    ruleD1: { t: "距高点回撤 {drawdown}", d: "不操作 —— 继续按档位定投；检查弹药剩余与季度上限。" },
+    ruleD2: { t: "距高点回撤 {drawdown}", d: "按价格档位执行（通常进入 T3），此时可动用港股 ETF；严禁恐慌卖出核心仓位。" },
+    ruleD3: { t: "BTC {btc} 低于绝对底线 {line}", d: "剩余 {remaining} 在 {weeks} 周内投完 —— 取消季度上限。" },
+    ruleD4: { t: "回撤 {drawdown} 且弹药已用尽（剩 {ammo}）", d: "停止操作：持有并继续质押。不加杠杆、不借贷，应急金与长期股票不动用。" },
+    ruleD5: { t: "HLP 金库持仓：{usd}", d: "做市金库可能亏损、提取可能排队。若出现明显亏损或平台风险，评估撤出并转为现货稳定币。" },
+  },
+};
+
+function planText2(key, params) {
+  const dict = PLAN_TEXT[lang] || PLAN_TEXT.en;
+  const e = dict[key] || (PLAN_TEXT.en[key]);
+  return e ? { title: planText(e.t, params), detail: planText(e.d, params) } : { title: key, detail: "" };
+}
+
+const PLAN_GROUPS = { take_profit: "planGroupTakeProfit", rebalance: "planGroupRebalance",
+                      drawdown: "planGroupDrawdown" };
+const PLAN_STATUS = { behind: "planStatusBehind", on_track: "planStatusOnTrack",
+                      ahead: "planStatusAhead" };
+
+function planSev(sev) { return sev === "act" ? "act" : (sev === "watch" ? "watch" : "info"); }
+function planTierChip(tier) {
+  return tier ? '<span class="plan-tier ' + esc(tier) + '">' + esc(tier) + "</span>"
+              : '<span class="hint">—</span>';
+}
+function planBar(ratio, cls) {
+  const pct = Math.max(0, Math.min(1, Number(ratio) || 0)) * 100;
+  return '<div class="plan-bar ' + (cls || "") + '"><span style="width:' + pct.toFixed(1) + '%"></span></div>';
+}
+
+async function loadPlan(force) {
+  if (state.plan && !force) { renderPlan(); return; }
+  $("planDate").textContent = "…";
+  try {
+    state.plan = await api("/api/plan");
+  } catch (e) {
+    state.plan = { ok: false, error: e.message + staleHint(e) };
+  }
+  renderPlan();
+}
+
+function renderPlan() {
+  const d = state.plan;
+  if (!d || !d.ok) {
+    $("planAdvice").innerHTML = '<p class="plan-empty">' + esc(t("planEmpty")) +
+      (d && d.error ? " (" + esc(d.error) + ")" : "") + "</p>";
+    $("planDate").textContent = "";
+    ["planStats", "planWeekly", "planTiers", "planGoals", "planAmmo", "planRules", "planLog"]
+      .forEach((id) => { $(id).innerHTML = ""; });
+    renderPlanCfg();
+    return;
+  }
+  $("planDate").textContent = t("planBasis") + " " + d.date +
+    (d.stale_days > 0 ? " (" + d.stale_days + "d)" : "") +
+    " · " + t("planGenerated") + " " + (d.generated_at || "").replace("T", " ").slice(5, 16);
+
+  /* advice */
+  $("planAdvice").innerHTML = d.advice.map((a) => {
+    const w = planText2(a.key, a.params);
+    return '<div class="plan-item ' + planSev(a.severity) + '">' +
+      '<div class="plan-item-title">' + w.title + "</div>" +
+      (w.detail ? '<div class="plan-item-detail">' + w.detail + "</div>" : "") + "</div>";
+  }).join("");
+
+  /* key numbers */
+  const tt = d.totals, dn = d.denominated || {};
+  const ddCls = tt.drawdown <= -0.30 ? "bad" : (tt.drawdown <= -0.15 ? "warn" : "");
+  const q = d.quarter;
+  const stats = [
+    { label: t("planStTotal"), value: fmtUsdFull(tt.total), sub: fmtUsd(tt.crypto) + " + " + fmtUsd(tt.manual) },
+    { label: t("planStCrypto"), value: fmtUsdFull(tt.crypto), sub: t("planStCore") + " " + fmtUsd(tt.core) },
+    { label: t("planStStables"), value: fmtUsd(tt.stables), sub: "HLP " + fmtUsd(tt.hlp) + " · " + t("planStSpot") + " " + fmtUsd(tt.spot_stables) },
+    { label: t("planStAmmo"), value: fmtUsd(d.ammo.remaining), sub: fmtUsd(d.ammo.used) + " / " + fmtUsd(d.ammo.planned) },
+    { label: t("planStBtc"), value: dn.btc && dn.btc.qty != null ? fmtAmount(dn.btc.qty) + " ₿" : "--",
+      sub: dn.btc && dn.btc.delta != null ? fmtPct(dn.btc.delta * 100) + " vs " + fmtAmount(dn.btc.baseline) : "" },
+    { label: t("planStEth"), value: dn.eth && dn.eth.qty != null ? fmtAmount(dn.eth.qty) + " Ξ" : "--",
+      sub: dn.eth && dn.eth.delta != null ? fmtPct(dn.eth.delta * 100) + " vs " + fmtAmount(dn.eth.baseline) : "" },
+    { label: t("planStDrawdown"), value: fmtPct(tt.drawdown * 100), cls: ddCls, sub: fmtUsd(tt.peak) },
+    { label: t("planStQuarter"), value: q.cap > 0 ? fmtUsd(q.spent) + " / " + fmtUsd(q.cap) : "—",
+      cls: q.capped ? "warn" : "", sub: q.label + " · " + (q.cap > 0 ? fmtUsd(q.remaining) + " " + t("planThLeft") : q.stage) },
+    { label: t("planStStart"), value: fmtUsd(d.start.total), sub: d.start.date + " · " + d.start.source },
+  ];
+  $("planStats").innerHTML = stats.map((s) =>
+    '<div class="plan-stat ' + (s.cls || "") + '"><div class="ps-label">' + esc(s.label) +
+    '</div><div class="ps-value">' + s.value + '</div><div class="ps-sub">' + esc(s.sub || "") +
+    "</div></div>").join("");
+
+  /* this week's buy */
+  $("planWeeklyHint").textContent = d.weekly.total > 0
+    ? fmtUsd(d.weekly.total) + (d.weekly.runway_weeks != null ? " · " + fmtAmount(d.weekly.runway_weeks) + "w" : "")
+    : t("advStopBuying");
+  $("planWeekly").innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    ["planThBucket", "planThTier", "planThPrice", "planThBase", "planThShare", "planThAmount", "planThQty"]
+      .map((k) => '<th' + (k === "planThBucket" || k === "planThTier" ? "" : ' class="num"') + ">" + esc(t(k)) + "</th>").join("") +
+    "</tr></thead><tbody>" + d.weekly.rows.map((w) =>
+      "<tr><td><b>" + esc(w.bucket) + "</b>" + (w.bucket === "HYPE+SOL" ? ' <span class="hint">← BTC</span>' : "") + "</td>" +
+      "<td>" + planTierChip(w.tier) + "</td>" +
+      '<td class="num">' + (w.price ? fmtUsdFull(w.price) : "—") + "</td>" +
+      '<td class="num">' + (w.weekly_base ? fmtUsd(w.weekly_base) : "—") + "</td>" +
+      '<td class="num">' + (w.share * 100).toFixed(0) + "%</td>" +
+      '<td class="num"><b>' + (w.amount ? fmtUsdFull(w.amount) : "—") + "</b></td>" +
+      '<td class="num">' + (w.qty ? fmtAmount(w.qty) : "—") + "</td></tr>").join("") +
+    '<tr><td colspan="5"><b>' + esc(t("planThAmount")) + "</b></td>" +
+    '<td class="num"><b>' + fmtUsdFull(d.weekly.total) + "</b></td><td></td></tr>" +
+    "</tbody></table></div>";
+
+  const tierCell = (coin, tier) => {
+    const b = d.config.tiers[coin] || {};
+    if (!b.t1_above) return "—";
+    let x;
+    if (tier === "T1") x = "> " + fmtUsd(b.t1_above);
+    else if (tier === "T2") x = fmtUsd(b.t2_floor) + " – " + fmtUsd(b.t1_above);
+    else if (tier === "T3") x = fmtUsd(b.t3_floor) + " – " + fmtUsd(b.t2_floor);
+    else x = "< " + fmtUsd(b.t3_floor);
+    const cur = (d.tiers[coin] || {}).tier === tier;
+    return esc(x) + (cur ? ' <span class="badge evm">' + esc(coin) + "</span>" : "");
+  };
+  $("planTiers").innerHTML = '<h4 class="plan-sub">' + esc(t("planTierTitle")) +
+    ' <span class="hint">' + esc(t("planTierHint")) + "</span></h4>" +
+    '<div class="table-wrap"><table><thead><tr><th>' + esc(t("planThTier")) + "</th>" +
+    '<th class="num">BTC</th><th class="num">ETH</th>' +
+    '<th class="num">' + esc(t("planThBase")) + "</th></tr></thead><tbody>" +
+    ["T1", "T2", "T3", "T4"].map((tier) =>
+      "<tr><td>" + planTierChip(tier) + '</td><td class="num">' + tierCell("BTC", tier) +
+      '</td><td class="num">' + tierCell("ETH", tier) + '</td><td class="num">' +
+      (d.config.weekly[tier] ? fmtUsd(d.config.weekly[tier]) : "—") + "</td></tr>").join("") +
+    "</tbody></table></div>";
+
+  /* goals */
+  $("planGoalsHint").textContent = fmtUsdFull(d.start.total) + " @ " + d.start.date;
+  $("planGoals").innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    ["planThGoal", "planThTarget", "planThPath", "planThCagr", "planThCurrent", "planThProgress", "planThStatus", "planThDeadline"]
+      .map((k, i) => "<th" + (i ? ' class="num"' : "") + ">" + esc(t(k)) + "</th>").join("") +
+    "</tr></thead><tbody>" + d.goals.map((g) => {
+      const cls = g.status === "behind" ? "bad" : (g.status === "ahead" ? "" : "warn");
+      return "<tr><td><b>" + esc(g.label) + "</b> <span class=\"hint\">" + g.multiple + "× / " + g.years + "y</span></td>" +
+        '<td class="num">' + fmtUsdFull(g.target) + "</td>" +
+        '<td class="num">' + fmtUsdFull(g.path) + "</td>" +
+        '<td class="num">' + (g.required_cagr * 100).toFixed(2) + "%</td>" +
+        '<td class="num">' + (g.current_cagr == null ? "—" : (g.current_cagr * 100).toFixed(2) + "%") + "</td>" +
+        '<td class="num">' + fmtPct(g.deviation * 100) + "<br>" + planBar(g.progress, g.status === "behind" ? "bad" : "good") + "</td>" +
+        "<td>" + esc(t(PLAN_STATUS[g.status] || g.status)) + "</td>" +
+        '<td class="num">' + esc(g.deadline || "—") + "</td></tr>";
+    }).join("") + "</tbody></table></div>";
+
+  /* ammo */
+  $("planAmmoHint").textContent = d.ammo.next ? t("planThSource") + ": " + d.ammo.next.label : "";
+  $("planAmmo").innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    ["planThPriority", "planThSource", "planThPlanned", "planThUsed", "planThLeft", "planThCondition", ""]
+      .map((k, i) => "<th" + (i > 0 && i < 5 ? ' class="num"' : "") + ">" + esc(t(k)) + "</th>").join("") +
+    "</tr></thead><tbody>" + d.ammo.rows.map((a) =>
+      "<tr><td>" + a.priority + "</td><td>" + esc(a.label) + "</td>" +
+      '<td class="num">' + fmtUsd(a.planned) + "</td>" +
+      '<td class="num">' + fmtUsd(a.used) + "</td>" +
+      '<td class="num"><b>' + fmtUsd(a.remaining) + "</b></td>" +
+      "<td>" + esc(a.condition || "") + " " + (a.allowed ? '<span class="badge evm">' + esc(t("planAllowed")) + "</span>"
+        : '<span class="hint">' + esc(t("planBlocked")) + "</span>") + "</td>" +
+      "<td>" + planBar(a.planned ? a.used / a.planned : 0, a.used >= a.planned ? "warn" : "good") + "</td></tr>").join("") +
+    '<tr><td colspan="2"><b>' + esc(t("planAmmoTitle")) + "</b></td>" +
+    '<td class="num"><b>' + fmtUsd(d.ammo.planned) + "</b></td>" +
+    '<td class="num"><b>' + fmtUsd(d.ammo.used) + "</b></td>" +
+    '<td class="num"><b>' + fmtUsd(d.ammo.remaining) + "</b></td><td colspan=\"2\"></td></tr>" +
+    "</tbody></table></div>";
+
+  /* rules */
+  const groups = {};
+  d.rules.forEach((r) => { (groups[r.group] = groups[r.group] || []).push(r); });
+  const order = ["take_profit", "rebalance", "drawdown"];
+  $("planRulesHint").textContent = d.rules.length + " / " + Object.keys(groups).length;
+  $("planRules").innerHTML = order.filter((g) => groups[g]).map((g) =>
+    '<div class="plan-group">' + esc(t(PLAN_GROUPS[g] || g)) + "</div>" +
+    groups[g].map((r) => {
+      const w = planText2(r.key, r.params);
+      return '<div class="plan-rule ' + planSev(r.severity) + '">' +
+        '<div class="pr-text"><span class="pr-id">' + esc(r.key.replace("rule", "")) + "</span>" + w.title + "</div>" +
+        (w.detail ? '<div class="pr-detail">' + w.detail + "</div>" : "") + "</div>";
+    }).join("")).join("") || '<p class="plan-empty">' + esc(t("planNoLog")) + "</p>";
+
+  /* log */
+  renderPlanLog(d.log);
+  renderPlanCfg();
+}
+
+function renderPlanLog(rows) {
+  if (!rows || !rows.length) {
+    $("planLog").innerHTML = '<p class="plan-empty">' + esc(t("planNoLog")) + "</p>";
+    return;
+  }
+  $("planLog").innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    ["planThDate", "planThAsset", "planThSide", "planThPriceShort", "planThAmountShort", "planThSourceShort", "planThNote", ""]
+      .map((k, i) => "<th" + (i === 3 || i === 4 ? ' class="num"' : "") + ">" + esc(t(k)) + "</th>").join("") +
+    "</tr></thead><tbody>" + rows.slice(0, 20).map((r, i) =>
+      "<tr><td>" + esc(r.date) + "</td><td><b>" + esc(r.asset) + "</b></td>" +
+      "<td>" + esc(t(r.side === "sell" ? "planSideSell" : "planSideBuy")) + "</td>" +
+      '<td class="num">' + (r.price ? fmtUsdFull(r.price) : "—") + "</td>" +
+      '<td class="num">' + fmtUsd(r.amount) + "</td>" +
+      "<td>" + esc(r.source || "—") + "</td><td>" + esc(r.note || "") + "</td>" +
+      '<td><button class="plan-rm" data-plan-log-remove="' + i + '">×</button></td></tr>').join("") +
+    "</tbody></table></div>";
+}
+
+/* ---- plan wiring ---- */
+$("btnPlanReload").addEventListener("click", () => loadPlan(true));
+$("btnSavePlan").addEventListener("click", async () => {
+  $("planCfgMsg").textContent = t("saving");
+  try {
+    state.plan = await postJSON("/api/plan", { config: readPlanCfg() });
+    renderPlan();
+    $("planCfgMsg").textContent = t("planSaved");
+  } catch (e) { $("planCfgMsg").textContent = t("planSaveFailed") + e.message + staleHint(e); }
+});
+$("btnPlanReset").addEventListener("click", async () => {
+  try {
+    state.plan = await postJSON("/api/plan", { config: {} });
+    renderPlan();
+    $("planCfgMsg").textContent = t("planResetDone");
+  } catch (e) { $("planCfgMsg").textContent = t("planSaveFailed") + e.message + staleHint(e); }
+});
+$("btnPlanLogAdd").addEventListener("click", async () => {
+  const entry = {
+    date: $("planLogDate").value || undefined,
+    asset: $("planLogAsset").value.trim(),
+    side: $("planLogSide").value,
+    price: Number($("planLogPrice").value || 0),
+    amount: Number($("planLogAmount").value || 0),
+    source: $("planLogSource").value,
+    note: $("planLogNote").value.trim(),
+  };
+  if (!entry.asset || !(entry.amount > 0)) { $("planCfgMsg").textContent = t("planLogFailed") + "asset / amount"; return; }
+  try {
+    state.plan = await postJSON("/api/plan/log", { entry });
+    $("planLogAsset").value = ""; $("planLogPrice").value = ""; $("planLogAmount").value = ""; $("planLogNote").value = "";
+    renderPlan();
+    $("planCfgMsg").textContent = t("planLogAdded");
+  } catch (e) { $("planCfgMsg").textContent = t("planLogFailed") + e.message; }
+});
+$("planLog").addEventListener("click", async (ev) => {
+  const btn = ev.target.closest("button[data-plan-log-remove]");
+  if (!btn) return;
+  try {
+    state.plan = await postJSON("/api/plan/log/remove", { index: Number(btn.dataset.planLogRemove) });
+    renderPlan();
+    $("planCfgMsg").textContent = t("planLogRemoved");
+  } catch (e) { $("planCfgMsg").textContent = t("planLogFailed") + e.message; }
+});
+/* dynamic rows: append a blank row of the right shape, then re-read on save */
+function planAddRow(kind) {
+  const cfg = (state.plan && state.plan.config) || null;
+  if (!cfg) return;
+  if (kind === "asset") cfg.manual_assets = cfg.manual_assets.concat([{ name: "", value: 0, role: "", ammo_id: "" }]);
+  if (kind === "goal") cfg.goals = cfg.goals.concat([{ label: "", years: 4, multiple: 2 }]);
+  if (kind === "ammo") cfg.ammo = cfg.ammo.concat([{ label: "", formula: "manual", amount: 0, priority: cfg.ammo.length + 1, condition: "" }]);
+  renderPlanCfg();
+}
+$("btnPlanAddAsset").addEventListener("click", () => planAddRow("asset"));
+$("btnPlanAddGoal").addEventListener("click", () => planAddRow("goal"));
+$("btnPlanAddAmmo").addEventListener("click", () => planAddRow("ammo"));
+["planCfgAssets", "planCfgGoals", "planCfgAmmo"].forEach((id) => {
+  $(id).addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-plan-remove]");
+    if (!btn) return;
+    const row = btn.closest(".plan-row");
+    const kind = btn.dataset.planRemove;
+    const idx = Array.from(row.parentElement.children).indexOf(row);
+    const cfg = (state.plan && state.plan.config) || null;
+    if (!cfg) return;
+    const key = kind === "asset" ? "manual_assets" : (kind === "goal" ? "goals" : "ammo");
+    cfg[key].splice(idx, 1);
+    renderPlanCfg();
+  });
+});
+
+/* ---- plan settings form ---- */
+function planInput(field, value, opts) {
+  opts = opts || {};
+  const attrs = ' data-field="' + field + '"' +
+    (opts.type ? ' type="' + opts.type + '"' : "") +
+    (opts.step ? ' step="' + opts.step + '"' : "") +
+    (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : "");
+  return "<input" + attrs + ' value="' + esc(value == null ? "" : value) + '">';
+}
+function planSelect(field, value, options) {
+  return '<select data-field="' + field + '">' + options.map((o) =>
+    '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(value) ? " selected" : "") + ">" +
+    esc(o[1]) + "</option>").join("") + "</select>";
+}
+
+function renderPlanCfg() {
+  const cfg = (state.plan && state.plan.config) || null;
+  if (!cfg) return;
+  $("planCfgFile").textContent = (state.plan.file || "plan.json");
+  const basic = [];
+  basic.push("<label>" + esc(t("planStTotal")) + planInput("emergency_fund", cfg.emergency_fund, { type: "number", step: "any" }) + "</label>");
+  basic.push("<label>" + esc(t("planStAmmo")) + planInput("cold_wallet_threshold", cfg.cold_wallet_threshold, { type: "number", step: "any" }) + "</label>");
+  ["BTC", "ETH", "HYPE+SOL"].forEach((k) => {
+    basic.push("<label>" + k + " %" + planInput("alloc_" + k, (cfg.allocation[k] * 100).toFixed(1), { type: "number", step: "any" }) + "</label>");
+  });
+  ["T1", "T2", "T3", "T4"].forEach((k) => {
+    basic.push("<label>" + k + " / wk" + planInput("weekly_" + k, cfg.weekly[k], { type: "number", step: "any" }) + "</label>");
+  });
+  ["BTC", "ETH"].forEach((c) => {
+    ["t1_above", "t2_floor", "t3_floor"].forEach((f) => {
+      basic.push("<label>" + c + " " + f + planInput("tier_" + c + "_" + f, cfg.tiers[c][f], { type: "number", step: "any" }) + "</label>");
+    });
+  });
+  ["date", "total"].forEach((f) => {
+    basic.push("<label>" + t("planCfgStart") + " " + f + planInput("start_" + f, cfg.start[f], { type: f === "date" ? "date" : "number", step: "any" }) + "</label>");
+  });
+  $("planCfgBasics").innerHTML = basic.join("");
+
+  const ammoOpts = [["", "—"]].concat(cfg.ammo.map((a) => [a.id, a.label]));
+  $("planCfgAssets").innerHTML = cfg.manual_assets.map((a) =>
+    '<div class="plan-row">' + planInput("name", a.name, { placeholder: "Name" }) +
+    planInput("value", a.value, { type: "number", step: "any" }) +
+    planInput("role", a.role, { placeholder: "Role" }) +
+    planSelect("ammo_id", a.ammo_id, ammoOpts) +
+    '<button class="plan-rm" data-plan-remove="asset">×</button></div>').join("");
+
+  $("planCfgGoals").innerHTML = cfg.goals.map((g) =>
+    '<div class="plan-row">' + planInput("label", g.label, { placeholder: "Label" }) +
+    planInput("years", g.years, { type: "number", step: "any" }) +
+    planInput("multiple", g.multiple, { type: "number", step: "any" }) +
+    '<button class="plan-rm" data-plan-remove="goal">×</button></div>').join("");
+
+  const formulas = [["manual", "manual"], ["stables_minus_emergency", "stables − emergency"],
+                    ["hlp_half", "HLP ÷ 2"]];
+  $("planCfgAmmo").innerHTML = cfg.ammo.map((a) =>
+    '<div class="plan-row">' + planInput("label", a.label, { placeholder: "Source" }) +
+    planSelect("formula", a.formula, formulas) +
+    planInput("amount", a.amount, { type: "number", step: "any" }) +
+    planInput("priority", a.priority, { type: "number", step: "1" }) +
+    planInput("condition", a.condition, { placeholder: "Condition" }) +
+    '<button class="plan-rm" data-plan-remove="ammo">×</button></div>').join("");
+
+  const src = $("planLogSource");
+  src.innerHTML = '<option value="">—</option>' + cfg.ammo.map((a) =>
+    '<option value="' + esc(a.id) + '">' + esc(a.label) + "</option>").join("");
+  $("planLogAssets").innerHTML = ["BTC", "ETH", "HYPE", "SOL", "USDT", "USDC"]
+    .map((s) => '<option value="' + s + '"></option>').join("");
+}
+
+function cfgRows(sel, fields) {
+  return Array.from(document.querySelectorAll(sel + " .plan-row")).map((row) => {
+    const out = {};
+    fields.forEach((f) => {
+      const el = row.querySelector('[data-field="' + f + '"]');
+      out[f] = el ? el.value : "";
+    });
+    return out;
+  });
+}
+
+function readPlanCfg() {
+  const cfg = JSON.parse(JSON.stringify((state.plan && state.plan.config) || {}));
+  const num = (id) => {
+    const el = document.querySelector('#planCfgBasics [data-field="' + id + '"]');
+    return el && el.value !== "" ? Number(el.value) : undefined;
+  };
+  if (num("emergency_fund") !== undefined) cfg.emergency_fund = num("emergency_fund");
+  if (num("cold_wallet_threshold") !== undefined) cfg.cold_wallet_threshold = num("cold_wallet_threshold");
+  ["BTC", "ETH", "HYPE+SOL"].forEach((k) => { const v = num("alloc_" + k); if (v !== undefined) cfg.allocation[k] = v / 100; });
+  ["T1", "T2", "T3", "T4"].forEach((k) => { const v = num("weekly_" + k); if (v !== undefined) cfg.weekly[k] = v; });
+  ["BTC", "ETH"].forEach((c) => {
+    ["t1_above", "t2_floor", "t3_floor"].forEach((f) => {
+      const v = num("tier_" + c + "_" + f);
+      if (v !== undefined) cfg.tiers[c][f] = v;
+    });
+  });
+  cfg.start = { date: (document.querySelector('#planCfgBasics [data-field="start_date"]') || {}).value || "",
+                total: Number((document.querySelector('#planCfgBasics [data-field="start_total"]') || {}).value || 0) };
+  cfg.manual_assets = cfgRows("#planCfgAssets", ["name", "value", "role", "ammo_id"])
+    .filter((a) => a.name.trim() && a.name !== "—")
+    .map((a) => ({ name: a.name.trim(), value: Number(a.value || 0), role: a.role, ammo_id: a.ammo_id }));
+  cfg.goals = cfgRows("#planCfgGoals", ["label", "years", "multiple"])
+    .filter((g) => g.label.trim() && g.label !== "—")
+    .map((g) => ({ label: g.label.trim(), years: Number(g.years || 4), multiple: Number(g.multiple || 2) }));
+  cfg.ammo = cfgRows("#planCfgAmmo", ["label", "formula", "amount", "priority", "condition"])
+    .filter((a) => a.label.trim() && a.label !== "—")
+    .map((a, i) => ({ id: (cfg.ammo[i] && cfg.ammo[i].id) || a.label.trim().toLowerCase().replace(/\W+/g, "_"),
+                      label: a.label.trim(), formula: a.formula, amount: Number(a.amount || 0),
+                      priority: Number(a.priority || i + 1), condition: a.condition }));
+  return cfg;
+}
+
+/* ==================== manual protocol positions ==================== */
+/* A registration is an estimate with a date, not a market fact: it is never
+   recomputed from live data, so the dashboard keeps showing the value and the date
+   you typed until you register it again (see tracker/manual.py). */
+function manualFormReset() {
+  state.manualEdit = null;
+  ["mpProtocol", "mpSymbol", "mpName", "mpAmount", "mpValue", "mpNote"].forEach((id) => { $(id).value = ""; });
+  $("mpDate").value = (state.manual && state.manual.today) || "";
+  $("btnAddManual").textContent = t("btnAddManual");
+  $("btnCancelManual").classList.add("hidden");
+  $("manualMsg").textContent = "";
+}
+
+async function renderManual() {
+  try {
+    const d = await api("/api/manual");
+    state.manual = d;
+    const fn = d.file ? d.file.split(/[\\/]/).pop() : "";
+    $("manualFile").textContent = fn ? "(" + fn + ")" : "";
+    const sel = $("mpWallet");
+    const keep = sel.value;
+    sel.innerHTML = (d.wallets || []).map((w) =>
+      '<option value="' + esc(w) + '">' + esc(w) + "</option>").join("");
+    if (keep && (d.wallets || []).indexOf(keep) >= 0) sel.value = keep;
+    const noWallets = !(d.wallets || []).length;
+    $("btnAddManual").disabled = noWallets;
+    if (noWallets) $("manualMsg").textContent = t("mpNoWallets");
+    if (!$("mpDate").value) $("mpDate").value = d.today || "";
+    $("manualSummary").textContent = (d.positions || []).length
+      ? t("mpSummary").replace("{n}", d.positions.length).replace("{total}", fmtUsd(d.total))
+      : t("mpEmpty");
+    $("manualList").innerHTML = (d.positions || []).length
+      ? d.positions.map((p) =>
+          '<div class="bl-item">' +
+            '<span class="bl-tag config">' + esc(p.date) + "</span>" +
+            '<span class="bl-sym">' + esc(p.protocol) + " · " + esc(p.symbol) + "</span>" +
+            '<span class="bl-tag evm">' + esc(p.wallet) + "</span>" +
+            '<span class="bl-meta">' + esc(p.name || "") +
+              (p.amount ? " · " + fmtAmount(p.amount) : "") + " · " + fmtUsd(p.value_usd) +
+              (p.note ? " · " + esc(p.note) : "") + "</span>" +
+            '<button class="bl-edit" data-mp-edit="' + esc(p.id) + '">' + t("mpEdit") + "</button>" +
+            '<button class="bl-del" data-mp-del="' + esc(p.id) + '">✕ ' + t("delete") + "</button>" +
+          "</div>").join("")
+      : '<div class="bl-empty">' + t("mpEmptyList") + "</div>";
+  } catch (e) { $("manualMsg").textContent = e.message + staleHint(e); }
+}
+
+async function saveManual() {
+  const entry = {
+    wallet: $("mpWallet").value,
+    protocol: $("mpProtocol").value.trim(),
+    symbol: $("mpSymbol").value.trim(),
+    name: $("mpName").value.trim(),
+    amount: Number($("mpAmount").value || 0),
+    value_usd: Number($("mpValue").value || 0),
+    date: $("mpDate").value,
+    note: $("mpNote").value.trim(),
+  };
+  if (state.manualEdit) entry.id = state.manualEdit;
+  if (!entry.protocol || !entry.symbol) { $("manualMsg").textContent = t("mpSaveFailed") + "protocol / symbol"; return; }
+  try {
+    await postJSON("/api/manual", { position: entry });
+    manualFormReset();
+    await renderManual();
+    $("manualMsg").textContent = t("mpSaved");
+    // the total changed, so the dashboard must not keep showing the old one
+    try { await loadDate(state.selectedDate); await loadHistory(); } catch (e) { /* ignore */ }
+  } catch (e) { $("manualMsg").textContent = t("mpSaveFailed") + e.message + staleHint(e); }
+}
+
+function manualEditStart(id) {
+  const p = ((state.manual || {}).positions || []).find((x) => x.id === id);
+  if (!p) return;
+  state.manualEdit = id;
+  $("mpWallet").value = p.wallet || "";
+  $("mpProtocol").value = p.protocol || "";
+  $("mpSymbol").value = p.symbol || "";
+  $("mpName").value = p.name || "";
+  $("mpAmount").value = p.amount == null ? "" : p.amount;
+  $("mpValue").value = p.value_usd == null ? "" : p.value_usd;
+  $("mpDate").value = p.date || "";
+  $("mpNote").value = p.note || "";
+  $("btnAddManual").textContent = t("mpSave");
+  $("btnCancelManual").classList.remove("hidden");
+  $("mpProtocol").focus();
+}
+
+/* the service panel: ask the process to re-exec, then wait for the API to answer */
+$("btnRestartService").addEventListener("click", async () => {
+  $("serviceMsg").textContent = t("serviceRestarting");
+  try { await postJSON("/api/restart", {}); } catch (e) { /* the connection drops mid-restart */ }
+  const started = Date.now();
+  const tick = async () => {
+    try {
+      await api("/api/status");
+      $("serviceMsg").textContent = t("serviceRestarted");
+      setTimeout(() => location.reload(), 500);
+    } catch (e) {
+      if (Date.now() - started < 20000) setTimeout(tick, 700);
+      else $("serviceMsg").textContent = t("serviceRestartFailed");
+    }
+  };
+  setTimeout(tick, 900);
+});
+
+$("btnAddManual").addEventListener("click", saveManual);
+$("btnCancelManual").addEventListener("click", manualFormReset);
+$("manualList").addEventListener("click", async (ev) => {
+  const edit = ev.target.closest("button[data-mp-edit]");
+  if (edit) { manualEditStart(edit.dataset.mpEdit); return; }
+  const del = ev.target.closest("button[data-mp-del]");
+  if (!del) return;
+  if (!confirm(t("mpDeleteConfirm"))) return;
+  try {
+    state.manual = await postJSON("/api/manual/remove", { id: del.dataset.mpDel });
+    await renderManual();
+    $("manualMsg").textContent = t("mpDeleted");
+    try { await loadDate(state.selectedDate); await loadHistory(); } catch (e) { /* ignore */ }
+  } catch (e) { $("manualMsg").textContent = t("mpSaveFailed") + e.message + staleHint(e); }
 });

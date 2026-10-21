@@ -786,7 +786,16 @@ summary:focus-visible {
 .src-testmsg.fail { color: var(--danger); font-weight: 600; word-break: break-word; }
 
 /* a wallet whose last fetch failed: an asterisk on the card, a red row in Settings */
-.card .w-error { color: var(--danger); font-weight: 700; margin-left: 4px; flex: none; }
+/* a wallet whose data is not what it looks like: "!" red when the whole wallet
+   failed, amber when only a part did (a futures sub-account rejecting the key).
+   Same glyph on purpose — the tooltip and the colour carry the severity. */
+.card .w-err-mark {
+  font-weight: 800; font-size: 11px; line-height: 1; flex: none; margin-left: 5px;
+  width: 14px; height: 14px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; border: 1px solid currentColor;
+}
+.card .w-err-mark.hard { color: var(--danger); }
+.card .w-err-mark.soft { color: var(--warning); }
 .card.has-error { border-color: rgba(248,81,73,.55); }
 .bl-item-err { border-left: 3px solid var(--danger); }
 .wl-err {
@@ -799,3 +808,71 @@ summary:focus-visible {
   color: var(--warning); font-size: 11.5px; margin-left: 6px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%;
 }
+
+/* ============================ Plan tab ============================ */
+/* The plan reads like a checklist: advice first, then the numbers behind it.
+   Severity uses the same semantic vocabulary as the health report — accent for
+   "act", warning for "watch", muted for "info" — so nothing new has to be learned. */
+.plan-advice { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.plan-item {
+  border: 1px solid var(--border); border-left-width: 3px; border-radius: 8px;
+  background: var(--panel2); padding: 9px 12px;
+}
+.plan-item .plan-item-title { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+.plan-item .plan-item-detail { color: var(--muted); font-size: 12.5px; line-height: 1.6; margin-top: 3px; }
+.plan-item.act { border-left-color: var(--accent); background: var(--accent-weak); }
+.plan-item.watch { border-left-color: var(--warning); background: rgba(210,153,34,.10); }
+.plan-item.info { border-left-color: var(--border); }
+.plan-item.done { border-left-color: var(--success); }
+.plan-empty { color: var(--muted); font-size: 12.5px; }
+
+.plan-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+.plan-stat { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--panel2); }
+.plan-stat .ps-label { color: var(--muted); font-size: 11.5px; letter-spacing: .2px; }
+.plan-stat .ps-value { font-size: 18px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.plan-stat .ps-sub { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+.plan-stat.good .ps-value { color: var(--success); }
+.plan-stat.bad .ps-value { color: var(--danger); }
+.plan-stat.warn .ps-value { color: var(--warning); }
+
+.plan-sub { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 14px 0 7px; }
+.plan-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.plan-form input, .plan-form select { min-width: 110px; }
+.plan-form label { color: var(--muted); font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+.plan-form label input { width: 92px; min-width: 0; }
+.plan-cfg-grid { gap: 10px 16px; }
+.plan-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.plan-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.plan-row input { font-size: 12px; }
+.plan-row input[data-field="name"], .plan-row input[data-field="label"] { flex: 1; min-width: 150px; }
+.plan-row input[data-field="role"], .plan-row input[data-field="condition"] { flex: 1; min-width: 150px; }
+.plan-row input[data-field="value"], .plan-row input[data-field="amount"] { width: 110px; flex: none; }
+.plan-row input[data-field="years"], .plan-row input[data-field="multiple"],
+.plan-row input[data-field="priority"] { width: 78px; flex: none; }
+.plan-rm { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+.plan-rm:hover { text-decoration: underline; }
+
+.plan-bar { position: relative; height: 8px; border-radius: 4px; background: var(--panel2);
+  border: 1px solid var(--border); overflow: hidden; min-width: 90px; }
+.plan-bar > span { display: block; height: 100%; background: var(--accent); }
+.plan-bar.good > span { background: var(--success); }
+.plan-bar.warn > span { background: var(--warning); }
+.plan-bar.bad > span { background: var(--danger); }
+
+.plan-tier { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 20px;
+  border: 1px solid var(--border); }
+.plan-tier.T1 { background: rgba(248,81,73,.14); color: var(--danger); border-color: rgba(248,81,73,.4); }
+.plan-tier.T2 { background: rgba(210,153,34,.14); color: var(--warning); border-color: rgba(210,153,34,.4); }
+.plan-tier.T3 { background: rgba(63,185,80,.14); color: var(--success); border-color: rgba(63,185,80,.4); }
+.plan-tier.T4 { background: rgba(88,166,255,.16); color: var(--accent); border-color: rgba(88,166,255,.45); }
+
+.plan-rules { display: flex; flex-direction: column; gap: 7px; }
+.plan-rule { border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; background: var(--panel2); }
+.plan-rule .pr-id { font-weight: 700; font-size: 12px; margin-right: 6px; }
+.plan-rule .pr-text { font-size: 12.5px; line-height: 1.55; }
+.plan-rule .pr-detail { color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.55; }
+.plan-rule.act { border-left: 3px solid var(--accent); }
+.plan-rule.watch { border-left: 3px solid var(--warning); }
+.plan-rule.info { border-left: 3px solid var(--border); }
+.plan-group { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 2px; }
+.plan-num { text-align: right; font-variant-numeric: tabular-nums; }

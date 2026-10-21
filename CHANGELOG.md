@@ -5,7 +5,80 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **The dashboard reloads itself when its code changes.** Python imports a module
+  once, so every edit used to mean restarting all of DSH — which is the wrong trade
+  for a plugin that owns its own process. `run.py` now watches `tracker/*.py`,
+  `run.py` and `fetch.py` and re-executes itself on a change (same PID, same argv,
+  same environment; ~2 s end to end). `profiles/` is deliberately not watched —
+  writing a snapshot must never restart the server that wrote it — and
+  `PORTFOLIO_NO_RELOAD=1` turns the watcher off for frozen installs. Settings also
+  gained a **Service** panel with a forced *Restart the service* button (backed by
+  `POST /api/restart`). Only a change to the plugin wrapper (`index.js` /
+  `cordis.patch.yml`) still needs a DSH restart, because DSH loads that part.
+
+- **Manual protocol positions.** Some protocols publish no balance API — Papertrade
+  is the example that started this — so their holdings can be registered by hand
+  under a wallet: protocol, symbol, amount, value (USD) and the date of the estimate.
+  A registration is a *dated estimate*, not a feed: it never follows the market, a
+  refresh never overwrites it, and the dashboard keeps showing the value and the date
+  you entered until you register it again (the token table tags the row `manual` with
+  that date). It counts from its own date onwards, so registering today cannot rewrite
+  last month's history, and it flows into the total, the wallet cards, the chain
+  distribution (`manual`), the health report and the trend line. Stored per profile in
+  `manual_positions.json`, managed in Settings → Manual protocol positions (add, edit,
+  delete); edits and deletions update the dashboard without a refetch.
+
+- **A Plan tab: the portfolio's operating manual, evaluated after every refresh.**
+  A third tab beside Dashboard and Settings that answers "what do I do with the next
+  dollar?" from the plan you set once per profile (`plan.json`), the newest snapshot
+  and the execution log (`plan_log.jsonl`):
+
+  - **Price tiers.** Each coin is judged on its own price (BTC >100k / 80–100k /
+    60–80k / <60k, ETH >3,000 / 2,500–3,000 / 1,800–2,500 / <1,800); the tier sets the
+    weekly budget, split BTC 40% / ETH 35% / HYPE+SOL 25%. HYPE+SOL follows BTC. T1
+    stops buying, T4 goes to 1,500 a week and cancels the quarterly cap.
+  - **Ammo pool.** Spot stablecoins (minus an emergency fund), half the HLP vault and
+    two equity ETFs, spent strictly in priority order, with the tier deciding which
+    sources are unlocked. Only buys carrying a source consume the pool, so "left to
+    deploy" stays honest; each tranche shows planned / used / left and when it may be
+    drawn.
+  - **Goals and the quarterly path.** Target, the geometric path the plan should be on
+    today, the CAGR still required (a 4-year double is 18.92%/yr, 4.43%/quarter), the
+    CAGR achieved so far, and a behind / on-track / ahead verdict that turns red past
+    −20% deviation.
+  - **Rules that fire now**, from the take-profit, rebalance and drawdown sets —
+    BTC 120–150k, BTC ≥150k, single-coin concentration, band drift, thin stablecoins in
+    T1, idle BTC/ETH on an exchange, BTC below the absolute floor, deep drawdown — each
+    with its action, destination and numbers.
+  - **Manual assets** (cash, equities) that the tracker cannot see, which join both the
+    total and the goal maths. Everything else is derived from live data: no second
+    data source, and the tab recomputes on every visit.
+  - The shipped defaults are illustrative (equities and amounts are placeholders you
+    replace), and they reproduce the worked example exactly: BTC 80,422 sits in T2 and
+    ETH 2,353 in T3, so the week costs $160 + $280 + $100.
+
+- **Bucket prices ignore worthless rows.** An airdropped token reusing a real symbol
+  (this profile carries a fake `ETH` holding 3.8e58 units) could drag a bucket's price
+  to zero and silently zero out the week's ETH buy; the largest *priced* holding now
+  sets the bucket price.
+
 ### Fixed
+
+- **A wallet whose data is only partly readable is now marked.** Binance's spot read
+  succeeds while its futures sub-account rejects the key
+  (`401 Invalid API-key, IP, or permissions`), so the wallet's total is lower than
+  reality. The card now carries an exclamation mark — red when the whole wallet failed,
+  amber when only a part did — with the reason in its tooltip, and the header counts
+  both ("3 failed · 1 partial"). Previously only a hard failure was marked at all.
+- **The plugin no longer leaves a stale server behind.** If DSH quits without running
+  the plugin's `dispose()`, the Python child was leaked, kept port 8080 and went on
+  serving the *previous* build — the page looked new while its API calls 404'd. The
+  plugin now kills its child on `exit`/signals, probes the port before spawning, and
+  retries with a backoff (12 × 5 s) while logging why; a crash also restarts it (up to
+  5 times). When the page does talk to an old backend, the error now says "restart
+  DeepSeek Harness to load the new API" instead of a bare "not found".
 
 - **A DeBank provider that failed on every chain was reported as an empty
   wallet.** Per-chain errors were captured internally, so a dead provider (bad

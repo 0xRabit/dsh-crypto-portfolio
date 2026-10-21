@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=61">
+<link rel="stylesheet" href="/static/style.css?v=64">
 </head>
 <body>
 <header>
@@ -52,6 +52,7 @@
 
 <nav class="tabs">
   <button class="tab active" data-tab="pageDashboard" data-i18n="tabDashboard">Dashboard</button>
+  <button class="tab" data-tab="pagePlan" data-i18n="tabPlan">Plan</button>
   <button class="tab" data-tab="pageSettings" data-i18n="tabSettings">Settings</button>
 </nav>
 
@@ -268,6 +269,96 @@
   </main>
 </div>
 
+<!-- ================= Plan ================= -->
+<div class="page hidden" id="pagePlan">
+  <main>
+    <section class="panel">
+      <div class="panel-title">
+        <span data-i18n="planAdviceTitle">Today's plan</span>
+        <span class="hint" id="planDate"></span>
+        <button id="btnPlanReload" class="btn-ghost" data-i18n="planReload">Recompute</button>
+      </div>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="planAdviceDesc">Recomputed from the newest snapshot every time you open this tab, so a refresh (or the daily schedule) updates the advice with it. Prices and balances come from the dashboard's own data; only the cash, equities and goals you declare below are manual.</p>
+        <div id="planAdvice" class="plan-advice"></div>
+        <div id="planStats" class="plan-stats"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="planWeeklyTitle">This week's buy</span>
+        <span class="hint" id="planWeeklyHint"></span></div>
+      <div class="panel-body">
+        <div id="planWeekly"></div>
+        <div id="planTiers"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="planGoalsTitle">Goal progress</span>
+        <span class="hint" id="planGoalsHint"></span></div>
+      <div class="panel-body"><div id="planGoals"></div></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="planAmmoTitle">Ammo pool</span>
+        <span class="hint" id="planAmmoHint"></span></div>
+      <div class="panel-body">
+        <div id="planAmmo"></div>
+        <h4 class="plan-sub" data-i18n="planLogFormTitle">Record an execution</h4>
+        <div class="plan-form">
+          <input id="planLogDate" type="date">
+          <input id="planLogAsset" placeholder="BTC / ETH / HYPE / SOL" list="planLogAssets">
+          <datalist id="planLogAssets"></datalist>
+          <select id="planLogSide">
+            <option value="buy" data-i18n="planSideBuy">Buy</option>
+            <option value="sell" data-i18n="planSideSell">Sell</option>
+          </select>
+          <input id="planLogPrice" type="number" step="any" data-i18n-ph="planLogPricePh" placeholder="Price (USD)">
+          <input id="planLogAmount" type="number" step="any" data-i18n-ph="planLogAmountPh" placeholder="Amount (USD)">
+          <select id="planLogSource"></select>
+          <input id="planLogNote" data-i18n-ph="planLogNotePh" placeholder="Note (tier / reason)">
+          <button id="btnPlanLogAdd" data-i18n="planLogAdd">Add</button>
+        </div>
+        <div id="planLog"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span data-i18n="planRulesTitle">Rules in effect</span>
+        <span class="hint" id="planRulesHint"></span></div>
+      <div class="panel-body"><div id="planRules" class="plan-rules"></div></div>
+    </section>
+
+    <details class="panel" id="secPlanConfig">
+      <summary class="panel-title"><span data-i18n="planCfgTitle">Plan settings</span>
+        <span class="hint" id="planCfgFile"></span></summary>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="planCfgDesc">Only you know these numbers: how much cash is safely spendable, what the equities are worth, and what the goals are. Everything else in the plan is computed from live data. The plan is stored per profile in plan.json; the execution log sits next to it in plan_log.jsonl.</p>
+        <div class="plan-form plan-cfg-grid" id="planCfgBasics"></div>
+
+        <h4 class="plan-sub" data-i18n="planCfgAssets">Manual assets (cash and equities the tracker cannot see)</h4>
+        <div id="planCfgAssets" class="plan-rows"></div>
+        <button id="btnPlanAddAsset" class="btn-ghost" data-i18n="planAddAsset">+ Add asset</button>
+
+        <h4 class="plan-sub" data-i18n="planCfgGoals">Goals</h4>
+        <div id="planCfgGoals" class="plan-rows"></div>
+        <button id="btnPlanAddGoal" class="btn-ghost" data-i18n="planAddGoal">+ Add goal</button>
+
+        <h4 class="plan-sub" data-i18n="planCfgAmmo">Ammo sources (spent in priority order)</h4>
+        <div id="planCfgAmmo" class="plan-rows"></div>
+        <button id="btnPlanAddAmmo" class="btn-ghost" data-i18n="planAddAmmo">+ Add source</button>
+
+        <div class="toolbar" style="margin-top:14px">
+          <button id="btnSavePlan" data-i18n="planSave">Save plan</button>
+          <button id="btnPlanReset" class="btn-ghost" data-i18n="planResetCfg">Reset to defaults</button>
+          <span id="planCfgMsg" class="hint"></span>
+        </div>
+      </div>
+    </details>
+  </main>
+</div>
+
 <!-- ================= Settings ================= -->
 <div class="page hidden" id="pageSettings">
   <main>
@@ -309,6 +400,29 @@
         <input id="wlAddress" data-i18n-placeholder="wlAddrPh" placeholder="Address" style="flex:2">
         <button id="btnAddWallet" data-i18n="btnAddWallet">+ Add Wallet</button>
       </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secManual">
+      <summary class="panel-title"><span data-i18n="manualTitle">Manual protocol positions</span>
+        <span class="hint" id="manualFile"></span></summary>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="manualDesc">For protocols that have no API yet (Papertrade is the example): register the position by hand and it is counted at exactly the value and date you entered. It never follows the market and a refresh never overwrites it — it keeps showing the last registration until you register it again.</p>
+        <div id="manualSummary" class="hint" style="margin-bottom:8px"></div>
+        <div id="manualList" class="bl-list"></div>
+        <div class="bl-form" style="margin-top:10px">
+          <select id="mpWallet" data-i18n-title="mpWalletTitle" title="Which wallet holds it"></select>
+          <input id="mpProtocol" data-i18n-placeholder="mpProtocolPh" placeholder="Protocol (e.g. Papertrade)" style="flex:1">
+          <input id="mpSymbol" data-i18n-placeholder="mpSymbolPh" placeholder="Symbol (e.g. PT)">
+          <input id="mpName" data-i18n-placeholder="mpNamePh" placeholder="Name (optional)">
+          <input id="mpAmount" type="number" step="any" data-i18n-placeholder="mpAmountPh" placeholder="Amount">
+          <input id="mpValue" type="number" step="any" data-i18n-placeholder="mpValuePh" placeholder="Value (USD)">
+          <input id="mpDate" type="date" data-i18n-title="mpDateTitle" title="Registration date — the date this estimate belongs to">
+          <input id="mpNote" data-i18n-placeholder="mpNotePh" placeholder="Note (optional)" style="flex:1">
+          <button id="btnAddManual" data-i18n="btnAddManual">+ Add position</button>
+          <button id="btnCancelManual" class="btn-ghost hidden" data-i18n="mpCancel">Cancel edit</button>
+          <span id="manualMsg" class="hint"></span>
+        </div>
       </div>
     </details>
 
@@ -415,6 +529,18 @@
       </div>
     </details>
 
+    <details class="panel" id="secService">
+      <summary class="panel-title"><span data-i18n="serviceTitle">Service</span>
+        <span class="hint" data-i18n="serviceSummary">restart the dashboard without restarting DSH</span></summary>
+      <div class="panel-body">
+        <p class="bl-desc" data-i18n="serviceDesc">The dashboard is a child process of this plugin, and it now watches its own Python sources: editing tracker/*.py restarts it automatically within a couple of seconds, and static files are read from disk on every request anyway. So a code change never needs a DeepSeek Harness restart — only a change to the plugin wrapper itself (index.js or cordis.patch.yml) does, because that is loaded by DSH. This button forces a restart if you ever need one.</p>
+        <div class="toolbar">
+          <button id="btnRestartService" data-i18n="serviceRestart">Restart the service</button>
+          <span id="serviceMsg" class="hint"></span>
+        </div>
+      </div>
+    </details>
+
     <!-- build / about line: where the version number lives now -->
     <footer class="page-footer">
       <!-- bmc:start
@@ -436,6 +562,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=69"></script>
+<script src="/static/app.js?v=74"></script>
 </body>
 </html>

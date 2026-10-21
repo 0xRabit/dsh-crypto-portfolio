@@ -210,6 +210,21 @@ def health_file():
     return os.path.join(profile_dir(active()), "health.json")
 
 
+def plan_file():
+    """Per-profile asset plan (see tracker/plan.py): goals, tiers, ammo, equities."""
+    return os.path.join(profile_dir(active()), "plan.json")
+
+
+def plan_log_file():
+    """Per-profile execution log of the plan (one JSON object per line)."""
+    return os.path.join(profile_dir(active()), "plan_log.jsonl")
+
+
+def manual_file():
+    """Per-profile manually registered protocol positions (see tracker/manual.py)."""
+    return os.path.join(profile_dir(active()), "manual_positions.json")
+
+
 def blacklist_file():
     return os.path.join(profile_dir(active()), "blacklist.json")
 

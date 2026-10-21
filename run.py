@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tracker.server import run  # noqa: E402
 from tracker import profiles, sources  # noqa: E402
+from tracker import reload as reload_mod  # noqa: E402
 
 
 def init_template():
@@ -38,6 +39,9 @@ def main():
     args = ap.parse_args()
     if args.init_template:
         init_template()
+    # Editing tracker/*.py must not mean restarting all of DSH: re-exec ourselves
+    # when the sources change (see tracker/reload.py). PORTFOLIO_NO_RELOAD=1 opts out.
+    reload_mod.start(os.path.dirname(os.path.abspath(__file__)))
     run(port=args.port, host=args.host, profile=args.profile)
 
 
