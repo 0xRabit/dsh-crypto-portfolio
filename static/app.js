@@ -88,6 +88,11 @@ const I18N = {
     labelRuleSaved: "Rule saved", labelRuleRemoved: "Rule removed", labelRuleFailed: "Rule failed: ",
     showMore: "Show", remaining: "more", showingAll: "all rows shown",
     loadingFailed: "Load failed: ", refreshFailed: "Refresh failed: ",
+    refreshWarn: "the last refresh failed",
+    refreshLater: "a refresh just ran — data is unchanged, try again in a moment.",
+    connecting: "connecting to the service…",
+    bootHint: "the dashboard service may still be starting; wait a few seconds and reload.",
+    refreshLogHint: "details: profiles/<profile>/refresh.log",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
     doneUpdating: "Done, updating view…", saving: "Saving…",
     savedOk: "Saved and applied (portfolio_sources.json). Click Refresh to fetch with the new config.",
@@ -322,6 +327,11 @@ const I18N = {
     labelRuleSaved: "规则已保存", labelRuleRemoved: "规则已删除", labelRuleFailed: "规则操作失败：",
     showMore: "再显示", remaining: "项", showingAll: "已显示全部",
     loadingFailed: "加载失败：", refreshFailed: "刷新失败：",
+    refreshWarn: "最近一次刷新失败",
+    refreshLater: "刚刚已经刷新过一次 —— 数据没有变化，请稍后再试。",
+    connecting: "正在连接服务…",
+    bootHint: "仪表盘服务可能还在启动中，请等几秒后刷新页面。",
+    refreshLogHint: "详细原因见 profiles/<profile>/refresh.log",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
     doneUpdating: "完成，正在更新视图…", saving: "保存中…",
     savedOk: "✅ 已保存并生效（portfolio_sources.json）。点「刷新数据」用新配置抓取。",
@@ -594,9 +604,24 @@ async function api(path) {
   if (!r.ok) {
     let msg = r.statusText;
     try { msg = (await r.json()).error || msg; } catch (e) { /* ignore */ }
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = r.status;          // 429 = "too soon / already running", not a failure
+    throw err;
   }
   return r.json();
+}
+
+/* A boot race with the service is normal (the plugin starts it as a child): retry a
+   few times before giving up, instead of painting an empty dashboard. */
+async function withRetry(fn, attempts = 5, delay = 2000) {
+  let last;
+  for (let i = 0; i < attempts; i += 1) {
+    try { return await fn(); } catch (e) {
+      last = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw last;
 }
 async function postJSON(path, body) {
   const r = await fetch(path, {
@@ -607,7 +632,9 @@ async function postJSON(path, body) {
   if (!r.ok) {
     let msg = r.statusText;
     try { msg = (await r.json()).error || msg; } catch (e) { /* ignore */ }
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = r.status;
+    throw err;
   }
   return r.json();
 }
@@ -692,7 +719,9 @@ async function init() {
     // First paint does NOT wait for the trend: /api/history is the heaviest call
     // (it walks every snapshot) and blocking on it left the whole dashboard blank
     // for seconds. The date list comes from /api/snapshots, which is tiny.
-    const [cfg, snapDates] = await Promise.all([api("/api/wallets"), api("/api/snapshots")]);
+    $("lastUpdated").textContent = t("connecting");
+    const [cfg, snapDates] = await withRetry(
+      () => Promise.all([api("/api/wallets"), api("/api/snapshots")]));
     state.wallets = cfg.wallets;
     state.chains = cfg.chains || {};
     const dates = snapDates.map((d) => d.date);
@@ -712,8 +741,9 @@ async function init() {
     renderProfiles();   // populate header profile dropdown
     // the trend arrives last, on its own
     loadHistory();
+    await loadStatusHint();
   } catch (e) {
-    showError(t("loadingFailed") + e.message);
+    showError(t("loadingFailed") + e.message + " · " + t("bootHint"));
   }
 }
 
@@ -3156,13 +3186,40 @@ async function refresh() {
     await loadDate(state.selectedDate);
     loadHistory();
   } catch (e) {
-    $("progressMsg").textContent = t("refreshFailed") + e.message;
+    if (e.status === 429) {
+      // the server refused *this* run (one just finished / one is running); the data
+      // on screen is intact, so this is a warning rather than a failure
+      $("progressMsg").textContent = t("refreshLater") + " " + e.message;
+      $("progressFill").style.width = "0%";
+    } else {
+      $("progressMsg").textContent = t("refreshFailed") + e.message;
+    }
     setTimeout(() => prog.classList.add("hidden"), 4000);
+    loadStatusHint();
   } finally {
     clearInterval(timer);
     setTimeout(() => { prog.classList.add("hidden"); }, 1200);
     btn.disabled = false;
   }
+}
+
+/* The server remembers the last refresh failure (see _refresh_state in server.py), so
+   the reason survives a page reload instead of vanishing with the progress panel. */
+function renderRefreshWarn(st) {
+  const el = $("refreshWarn");
+  if (!el) return;
+  if (st && st.last_error) {
+    el.textContent = t("refreshWarn") + " " + (st.last_error_at || "") + " — " +
+      st.last_error + "  (" + t("refreshLogHint") + ")";
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
+async function loadStatusHint() {
+  try { renderRefreshWarn(await api("/api/status")); } catch (e) { /* ignore */ }
 }
 
 function showEmpty() {

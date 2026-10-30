@@ -876,3 +876,6 @@ summary:focus-visible {
 .plan-rule.info { border-left: 3px solid var(--border); }
 .plan-group { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 2px; }
 .plan-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* a standing warning under the header: the last refresh failed, and why */
+.hint.warn { color: var(--warning); }

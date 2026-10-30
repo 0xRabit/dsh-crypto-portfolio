@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=64">
+<link rel="stylesheet" href="/static/style.css?v=65">
 </head>
 <body>
 <header>
@@ -160,6 +160,8 @@
             <div id="totalUsd" class="big">--</div>
             <div id="totalChange" class="change"></div>
             <div id="lastUpdated" class="sub"></div>
+            <!-- survives reloads: the last refresh failure, in the server's own words -->
+            <div id="refreshWarn" class="hint warn hidden"></div>
             <div id="historyNote" class="history-note hidden" data-i18n="viewingHistory"></div>
           </div>
           <div class="pie-block">
@@ -562,6 +564,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=74"></script>
+<script src="/static/app.js?v=76"></script>
 </body>
 </html>

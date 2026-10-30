@@ -7,6 +7,7 @@ import threading
 import time
 import urllib.parse
 from datetime import date, datetime
+import datetime as _dt         # the module: `datetime` above is the class
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import config, portfolio, storage
@@ -38,7 +39,8 @@ MIME = {
     ".json": "application/json; charset=utf-8",
 }
 
-_refresh_state = {"running": False, "stage": "", "done": 0, "total": 0, "msg": ""}
+_refresh_state = {"running": False, "stage": "", "done": 0, "total": 0, "msg": "",
+                  "last_error": "", "last_error_at": "", "last_error_stage": ""}
 _state_lock = threading.Lock()
 
 # A full fetch hits DeBank/Binance/CoinGecko and takes tens of seconds. Without a
@@ -74,6 +76,19 @@ def get_chain_names():
             names.setdefault("manual", "Manual")
             _chain_name_cache = names
         return _chain_name_cache
+
+
+def _log_refresh_failure(message):
+    """Append a refresh failure to profiles/<active>/refresh.log (best effort)."""
+    try:
+        path = os.path.join(profiles.profile_dir(profiles.active()), "refresh.log")
+        stamp = _dt.datetime.now().isoformat(timespec="seconds")
+        stage = _refresh_state.get("last_error_stage") or ""
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write("%s\t%s\t%s\t%s\n" % (stamp, stage or "-", message.replace("\n", " "),
+                                              _refresh_state.get("msg") or ""))
+    except Exception:                                        # noqa: BLE001
+        pass
 
 
 def _json(data, code=200):
@@ -614,12 +629,23 @@ class Handler(BaseHTTPRequestHandler):
                     view["change_usd"] = round(view["total_usd"] - pv["total_usd"], 2)
                     base = pv["total_usd"]
                     view["change_pct"] = round(view["change_usd"] / base * 100, 2) if base else None
+            with _state_lock:
+                _refresh_state.update(last_error="", last_error_at="", last_error_stage="")
             self._reply_json(view)
         except RefreshCancelled:
             # nothing was written: the snapshot is only saved once the fetch ends
             self._reply_json({"cancelled": True})
         except Exception as e:  # noqa: BLE001
-            self._reply_json({"error": f"{type(e).__name__}: {e}"}, 500)
+            message = f"{type(e).__name__}: {e}"
+            # "the refresh failed" with no trace anywhere was undebuggable: the reason
+            # is kept for /api/status and appended to a per-profile log the UI points at
+            with _state_lock:
+                _refresh_state.update(last_error=message,
+                                      last_error_at=_dt.datetime.now()
+                                      .isoformat(timespec="seconds"),
+                                      last_error_stage=_refresh_state.get("stage") or "")
+            _log_refresh_failure(message)
+            self._reply_json({"error": message}, 500)
         finally:
             _refresh_cancel.clear()
             with _state_lock:

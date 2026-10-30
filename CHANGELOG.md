@@ -66,6 +66,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- **A failed refresh now says why, and keeps saying it.** The progress panel used to
+  hide the reason after four seconds and the process recorded nothing, so "刷新失败"
+  was undebuggable the next morning. The server keeps the last failure in
+  `/api/status` (`last_error`, `last_error_at`, the stage it died in) and appends it to
+  `profiles/<profile>/refresh.log`; the dashboard shows it as a standing line under the
+  header that survives reloads and disappears once a refresh succeeds.
+- **A throttled refresh is no longer reported as a failure.** `POST /api/refresh`
+  answers 429 when one run just finished (60 s cooldown) or is still going; the page
+  now says "a refresh just ran — data is unchanged, try again in a moment" instead of
+  "refresh failed", because nothing actually failed.
+- **The first paint survives a starting service.** The plugin starts the dashboard as a
+  child process, so a page opened right after a restart could race it and stay empty.
+  The boot calls now retry for ~10 s ("connecting to the service…") and, if they still
+  fail, the message says the service may still be starting instead of showing a blank
+  dashboard.
+
 - **A wallet whose data is only partly readable is now marked.** Binance's spot read
   succeeds while its futures sub-account rejects the key
   (`401 Invalid API-key, IP, or permissions`), so the wallet's total is lower than
