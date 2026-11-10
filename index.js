@@ -112,8 +112,18 @@ export function apply(ctx, config) {
     child = spawn(PYTHON, [join(ROOT, 'run.py'), '--port', String(port), '--host', host], {
       cwd: ROOT,
       env,
-      stdio: 'inherit',
+      // NOT 'inherit'. The desktop shell waits for its own stdio pipes to close before
+      // it calls the app stopped, and this child (a grandchild of Electron) would hold
+      // them open — which is exactly the updater's "graceful deadline exceeded". Pipe
+      // and forward instead, so the pipes belong to this process and die with it.
+      stdio: ['ignore', 'pipe', 'pipe'],
     })
+    const forward = (stream, out) => {
+      stream?.setEncoding('utf8')
+      stream?.on('data', (chunk) => { try { out.write(chunk) } catch (e) { /* host gone */ } })
+    }
+    forward(child.stdout, process.stdout)
+    forward(child.stderr, process.stderr)
     console.log(`[dsh-crypto-portfolio] dashboard: http://${host}:${port} (pid ${child.pid})`)
     console.log(`[dsh-crypto-portfolio] profiles: ${dataDir} (first run: click Refresh)`)
     // it stayed up long enough to be considered healthy: the crash counter resets
@@ -141,10 +151,14 @@ export function apply(ctx, config) {
   // app was quit without running dispose().
   const stop = () => {
     stopped = true
-    if (child) {
-      try { child.kill('SIGTERM') } catch (e) { /* ignore */ }
-      child = null
-    }
+    const dying = child
+    child = null
+    if (!dying) return
+    try { dying.kill('SIGTERM') } catch (e) { /* ignore */ }
+    // a child that ignores SIGTERM must not keep the port (or this process) alive
+    const hard = setTimeout(() => { try { dying.kill('SIGKILL') } catch (e) { /* ignore */ } }, 2000)
+    if (typeof hard.unref === 'function') hard.unref()
+    dying.once('exit', () => clearTimeout(hard))
   }
   ctx.on('dispose', stop)
   // NOT on SIGTERM/SIGINT: this plugin runs inside the DSH host, so a process-wide
