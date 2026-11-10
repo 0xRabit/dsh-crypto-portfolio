@@ -147,8 +147,12 @@ export function apply(ctx, config) {
     }
   }
   ctx.on('dispose', stop)
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-    process.on(sig, () => { stop(); process.exit(0) })
-  }
+  // NOT on SIGTERM/SIGINT: this plugin runs inside the DSH host, so a process-wide
+  // signal handler that calls process.exit(0) force-quits the *whole app* in the
+  // middle of its own shutdown — which is exactly what the desktop updater reports as
+  // "Host did not complete graceful task teardown (exit 0, signal null, shutdown
+  // acknowledged true, graceful deadline exceeded true)". dispose() already runs on a
+  // graceful shutdown, and 'exit' is the last chance to kill the child on a hard quit.
+  // A SIGKILL still leaks the child; the port probe + retry in start() handles that.
   process.on('exit', stop)
 }
