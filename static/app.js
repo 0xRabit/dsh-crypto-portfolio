@@ -126,10 +126,10 @@ const I18N = {
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
     cexFutures: "futures",
     assetPricesTitle: "Prices for assets no market quotes",
-    apSymbolPh: "Symbol (e.g. TSLA)", apPricePh: "USD per unit",
+    apSymbolPh: "Symbol (e.g. TSLA)", apPricePh: "USD per unit — or venue:SYMBOL",
     apAdd: "Add", apEmpty: "No stated prices.",
     apNeedsBoth: "symbol and price are both required",
-    assetPricesHint: "A tokenised stock has a real quantity in the wallet but no public quote. State the price once and the row shows up (the quantity still updates on every refresh).",
+    assetPricesHint: "A tokenised stock has a real quantity in the wallet but no public quote. Either type a fixed USD price, or point at a venue that quotes the same thing — e.g. backpack:AAPL.US — and the price follows the market while the quantity keeps updating on every refresh.",
     cexFuturesHint: "also read the USD-M futures wallet — untick it if this API key has no Futures permission",
     healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
     healthVolatility: "Volatility risk", healthConcentration: "Concentration",
@@ -372,10 +372,10 @@ const I18N = {
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
     cexFutures: "合约",
     assetPricesTitle: "没有行情资产的价格",
-    apSymbolPh: "资产符号（如 TSLA）", apPricePh: "单价（USD）",
+    apSymbolPh: "资产符号（如 TSLA）", apPricePh: "单价（USD）—— 或 场所:代码",
     apAdd: "添加", apEmpty: "还没有设定价格。",
     apNeedsBoth: "符号和价格都要填",
-    assetPricesHint: "代币化股票在钱包里有真实数量，但没有公开行情。在这里填一次单价，这一行就会出现（数量仍会随每次刷新更新）。",
+    assetPricesHint: "代币化股票在钱包里有真实数量，但没有公开行情。可以填一个固定的美元单价，也可以指向一个报价该标的的场所 —— 例如 backpack:AAPL.US —— 价格就会跟着行情走，数量仍随每次刷新更新。",
     cexFuturesHint: "同时读取 USD-M 合约钱包 —— 如果这把 key 没有合约权限，取消勾选即可",
     healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
     healthVolatility: "波动性风险", healthConcentration: "集中度",
@@ -2998,13 +2998,15 @@ async function renderSources() {
       bp.innerHTML = '<div class="src-sub">' + t("assetPricesTitle") + "</div>" +
         '<div class="src-prov">' +
           '<input id="apSymbol" class="src-name" placeholder="' + t("apSymbolPh") + '">' +
-          '<input id="apPrice" type="number" step="any" class="src-name" placeholder="' + t("apPricePh") + '">' +
+          '<input id="apPrice" type="text" inputmode="decimal" class="src-name" placeholder="' + t("apPricePh") + '">' +
           '<button type="button" id="btnAddAssetPrice">+ ' + t("apAdd") + "</button>" +
         "</div>" +
         '<div class="bl-list" id="apList">' + (Object.keys(stated).length
           ? Object.keys(stated).sort().map((sym) =>
               '<div class="bl-item"><span class="bl-sym">' + esc(sym) + "</span>" +
-              '<span class="bl-tag config">' + fmtUsd(stated[sym]) + "</span>" +
+              '<span class="bl-tag config">' +
+                esc(typeof stated[sym] === "object" ? (stated[sym].source + ":" + stated[sym].symbol)
+                                                     : fmtUsd(stated[sym])) + "</span>" +
               '<button class="bl-del" data-ap-del="' + esc(sym) + '">✕ ' + t("delete") + "</button></div>").join("")
           : '<div class="bl-empty">' + t("apEmpty") + "</div>") + "</div>" +
         '<p class="bl-desc">' + t("assetPricesHint") + "</p>";

@@ -19,6 +19,53 @@ EXCHANGE_SYMBOLS = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "hyper
                     "dogecoin": "DOGE", "cardano": "ADA"}
 
 
+# Public venues that quote things Binance only holds as a receipt. Backpack lists
+# tokenised equities as `AAPL.US` (ticker is public, no key needed); Binance has no
+# pair for the same underlying, so this is how its EQ_* receipt gets a market value.
+VENUE_TTL = 900.0
+_VENUE_CACHE = {}
+
+
+def venue_price(source, symbol):
+    """USD quote for `symbol` from a public venue, 0.0 when it cannot be fetched.
+
+    Cached for VENUE_TTL: a refresh asks about the same handful of symbols, and the
+    ticker would otherwise be hit once per asset on every refresh.
+    """
+    source = str(source or "").strip().lower()
+    symbol = str(symbol or "").strip()
+    if not source or not symbol:
+        return 0.0
+    key = (source, symbol)
+    hit = _VENUE_CACHE.get(key)
+    if hit and time.time() - hit[0] < VENUE_TTL:
+        return hit[1]
+    price = 0.0
+    try:
+        if source == "backpack":
+            d = http_get_json("https://api.backpack.exchange/api/v1/ticker",
+                              params={"symbol": symbol}, timeout=12, retries=1)
+            if isinstance(d, dict):
+                price = float(d.get("lastPrice") or 0)
+    except Exception:                                        # noqa: BLE001
+        price = 0.0
+    if price > 0 and price != float("inf"):
+        _VENUE_CACHE[key] = (time.time(), price)
+        return price
+    return 0.0
+
+
+def stated_price(entry):
+    """A configured price: either a number or {"source", "symbol"} from a venue."""
+    if isinstance(entry, dict):
+        return venue_price(entry.get("source"), entry.get("symbol"))
+    try:
+        value = float(entry)
+    except (TypeError, ValueError):
+        return 0.0
+    return value if value > 0 and value != float("inf") else 0.0
+
+
 def get_native_prices(ids=NATIVE_IDS):
     """{coingecko_id: usd_price}; {} when every provider fails."""
     cfg = sources.get_source("prices")

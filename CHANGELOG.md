@@ -17,7 +17,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   keeps updating on every refresh. A market price still wins over a stated one, and a
   stablecoin stays $1 regardless of what is stated.
 
-### Fixed
+### Added
+
+- **A price can come from another venue.** The stated price for an unpriced asset is
+  now either a fixed number or `venue:SYMBOL` — e.g. `backpack:AAPL.US` — which is
+  resolved against that venue's public ticker and cached for 15 minutes. This is the
+  honest fix for tokenised equities that one exchange holds as a receipt while another
+  quotes the same underlying: Backpack's own collateral view already carries
+  `assetMarkPrice`, Binance's funding-asset row carries a zero valuation, and the
+  receipt has no pair of its own. A failed quote degrades to $0 (a note-free zero, not
+  a guessed price).
+
 
 - **A failed refresh now says why, and keeps saying it.** The progress panel used to
   hide the reason after four seconds and the process recorded nothing, so "刷新失败"

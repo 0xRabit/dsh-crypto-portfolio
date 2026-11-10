@@ -242,22 +242,31 @@ def save(cfg):
 
 
 def asset_prices():
-    """{SYMBOL: usd} — manual prices for assets the market cannot price.
+    """{SYMBOL: entry} — prices for assets no market quotes.
 
     A tokenised stock has a real quantity in the exchange wallet but no public quote,
-    so without this the holding prices at $0 and disappears behind "hide zero". The
-    quantity keeps updating on every refresh; only the price is stated once.
+    so without this the holding prices at $0 and disappears behind "hide zero". An
+    entry is either a number (a fixed estimate) or {"source", "symbol"} pointing at a
+    venue that does quote the same underlying (see prices.venue_price). The quantity
+    keeps updating on every refresh; only the price is configured.
     """
     raw = (load() or {}).get("asset_prices") or {}
     out = {}
     if isinstance(raw, dict):
         for key, value in raw.items():
             sym = str(key or "").strip().upper()
+            if not sym:
+                continue
+            if isinstance(value, dict):
+                if value.get("source") and value.get("symbol"):
+                    out[sym] = {"source": str(value["source"]).strip().lower(),
+                                "symbol": str(value["symbol"]).strip()}
+                continue
             try:
                 price = float(value)
             except (TypeError, ValueError):
                 continue
-            if sym and price > 0 and price == price and price != float("inf"):
+            if price > 0 and price == price and price != float("inf"):
                 out[sym] = price
     return out
 
@@ -270,11 +279,25 @@ def _clean_symbol(symbol):
 
 
 def set_asset_price(symbol, price):
+    """A number, or "source:symbol" for a venue quote (e.g. "backpack:AAPL.US")."""
     sym = _clean_symbol(symbol)
+    text = str(price or "").strip()
+    if ":" in text:
+        source, _, venue_symbol = text.partition(":")
+        source, venue_symbol = source.strip().lower(), venue_symbol.strip()
+        if not re.fullmatch(r"[a-z0-9_-]{2,20}", source) or not venue_symbol:
+            raise ValueError('use "source:symbol", e.g. backpack:AAPL.US')
+        value = {"source": source, "symbol": venue_symbol}
+        cfg = load() or {}
+        prices = dict(cfg.get("asset_prices") or {})
+        prices[sym] = value
+        cfg["asset_prices"] = prices
+        save(cfg)
+        return asset_prices()
     try:
-        value = float(price)
+        value = float(text)
     except (TypeError, ValueError):
-        raise ValueError("price must be a number")
+        raise ValueError("price must be a number or source:symbol")
     if not (value > 0) or value != value or value == float("inf"):
         raise ValueError("price must be greater than 0")
     cfg = load() or {}

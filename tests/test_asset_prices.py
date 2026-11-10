@@ -18,7 +18,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tracker import cex, profiles, sources  # noqa: E402
+from tracker import cex, prices as prices_mod, profiles, sources  # noqa: E402
 
 _TMP = None
 
@@ -84,6 +84,52 @@ class AssetPriceConfigTest(_Case):
         sources.set_asset_price("TSLA", 42)
         sources.load(force=True)
         self.assertEqual(sources.asset_prices(), {"TSLA": 42.0})
+
+
+class VenuePriceTest(_Case):
+    """A venue that quotes the same underlying can price the exchange's receipt."""
+
+    def test_a_venue_reference_is_stored_and_resolved(self):
+        prices = sources.set_asset_price("TSLA", "backpack:TSLA.US")
+        self.assertEqual(prices, {"TSLA": {"source": "backpack", "symbol": "TSLA.US"}})
+
+    def test_a_venue_reference_needs_both_halves(self):
+        for bad in ("backpack:", ":TSLA.US", "backpack", "a b:TSLA"):
+            with self.assertRaises(ValueError, msg=bad):
+                sources.set_asset_price("TSLA", bad)
+
+    def test_the_ticker_price_is_used(self):
+        with mock.patch.object(prices_mod, "http_get_json",
+                               return_value={"symbol": "TSLA.US", "lastPrice": "289.85"}), \
+             mock.patch.dict(prices_mod._VENUE_CACHE, {}, clear=True):
+            self.assertAlmostEqual(prices_mod.venue_price("backpack", "TSLA.US"), 289.85)
+
+    def test_a_failed_quote_is_zero_not_an_exception(self):
+        with mock.patch.object(prices_mod, "http_get_json", side_effect=RuntimeError("down")), \
+             mock.patch.dict(prices_mod._VENUE_CACHE, {}, clear=True):
+            self.assertEqual(prices_mod.venue_price("backpack", "TSLA.US"), 0.0)
+            self.assertEqual(prices_mod.venue_price("unknown", "X"), 0.0)
+
+    def test_the_quote_is_cached_for_a_while(self):
+        calls = []
+        def fake(url, **kw):
+            calls.append(url)
+            return {"lastPrice": "100"}
+        with mock.patch.object(prices_mod, "http_get_json", side_effect=fake), \
+             mock.patch.dict(prices_mod._VENUE_CACHE, {}, clear=True):
+            prices_mod.venue_price("backpack", "TSLA.US")
+            prices_mod.venue_price("backpack", "TSLA.US")
+        self.assertEqual(len(calls), 1)
+
+    def test_stated_price_handles_both_forms(self):
+        self.assertEqual(prices_mod.stated_price(150), 150.0)
+        self.assertEqual(prices_mod.stated_price("150"), 150.0)
+        self.assertEqual(prices_mod.stated_price(0), 0.0)
+        self.assertEqual(prices_mod.stated_price("nonsense"), 0.0)
+        with mock.patch.object(prices_mod, "http_get_json", return_value={"lastPrice": "42"}), \
+             mock.patch.dict(prices_mod._VENUE_CACHE, {}, clear=True):
+            self.assertAlmostEqual(
+                prices_mod.stated_price({"source": "backpack", "symbol": "X.US"}), 42.0)
 
 
 class StockSymbolTest(unittest.TestCase):

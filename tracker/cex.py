@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from . import sources
+from . import prices as prices_mod, sources
 from .api import http_get_json
 
 STABLES = {"USDT", "USDC", "BUSD", "FDUSD", "DAI", "TUSD", "USDP", "PYUSD",
@@ -688,7 +688,8 @@ def fetch_cex_accounts(accounts, native):
             for asset, amount in sorted(balances.items()):
                 if amount <= 0:
                     continue
-                price = _price_of(asset, native, ticker) or stated.get(asset.upper(), 0.0)
+                price = (_price_of(asset, native, ticker)
+                         or prices_mod.stated_price(stated.get(asset.upper())))
                 rows.append({
                     "wallet": acc["name"], "chain": ex, "symbol": asset,
                     "name": f"{ex} {asset}", "amount": amount,
