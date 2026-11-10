@@ -5,6 +5,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- **The plugin's child no longer holds the host's stdio.** A grandchild spawned with
+  `stdio: 'inherit'` keeps the parent's pipes open after the parent exits, and the
+  desktop shell waits for that pipe to close before it calls the app stopped — so an
+  in-app update failed with `Host did not complete graceful task teardown (… graceful
+  deadline exceeded true)` even though the host had exited 0. The child is now spawned
+  with its own pipes (output forwarded), plus a SIGKILL fallback two seconds after
+  dispose, so nothing outlives the app and holds the port. Measured: a grandchild on
+  inherited stdio delayed `close` by its whole lifetime (5 s); with pipes it closed in
+  ~160 ms together with the parent.
+
 ### Added
 
 - **Tokenised stocks and other assets with no public quote now show up.** An exchange
@@ -16,8 +28,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   (`asset_prices` in `portfolio_sources.json`) and the row is valued while the quantity
   keeps updating on every refresh. A market price still wins over a stated one, and a
   stablecoin stays $1 regardless of what is stated.
-
-### Added
 
 - **A price can come from another venue.** The stated price for an unpriced asset is
   now either a fixed number or `venue:SYMBOL` — e.g. `backpack:AAPL.US` — which is
