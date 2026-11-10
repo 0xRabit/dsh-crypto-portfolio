@@ -124,6 +124,8 @@ const I18N = {
     pfSchedHint: "Each profile keeps its own daily auto-refresh schedule — click the clock tag on a profile to edit it. The scheduler runs every profile independently.",
     paidBadge: "PAID", lastOk: "last ok", never: "never",
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
+    cexFutures: "futures",
+    cexFuturesHint: "also read the USD-M futures wallet — untick it if this API key has no Futures permission",
     healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
     healthVolatility: "Volatility risk", healthConcentration: "Concentration",
     healthStorage: "Storage security",
@@ -363,6 +365,8 @@ const I18N = {
     pfSchedHint: "每个 Profile 各自维护独立的每日定时刷新——点击对应 Profile 上的时钟标签即可编辑。调度器会独立运行每个 Profile 的定时任务。",
     paidBadge: "付费", lastOk: "上次成功", never: "从未",
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
+    cexFutures: "合约",
+    cexFuturesHint: "同时读取 USD-M 合约钱包 —— 如果这把 key 没有合约权限，取消勾选即可",
     healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
     healthVolatility: "波动性风险", healthConcentration: "集中度",
     healthStorage: "托管安全",
@@ -2961,6 +2965,14 @@ async function renderSources() {
           (NEEDS_PASSPHRASE[a.exchange]
             ? '<input data-path="cex.accounts.' + i + '.passphrase" value="' + esc(a.passphrase || "") +
               '" class="src-key" placeholder="' + t("cexPassPh") + '">'
+            : "") +
+          // Binance reads the spot wallet *and* the USD-M futures wallet; a key that
+          // is not allowed to see futures (-2015) would tag the wallet as partial for
+          // good, so the extra read can be switched off per account
+          (a.exchange === "binance"
+            ? '<label class="chk" title="' + esc(t("cexFuturesHint")) + '"><input type="checkbox"' +
+              ' data-path="cex.accounts.' + i + '.futures"' +
+              (a.futures !== false ? " checked" : "") + ">" + t("cexFutures") + "</label>"
             : "") +
           (SRC_LINKS[a.exchange]
             ? '<a class="src-link" href="' + esc(SRC_LINKS[a.exchange]) + '" target="_blank" rel="noopener noreferrer">' + t("getKey") + " ↗</a>"

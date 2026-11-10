@@ -67,6 +67,33 @@ class BinanceSubAccountsTest(unittest.TestCase):
     def set(self, path, reply):
         self.fake.replies[path] = reply
 
+    def test_futures_can_be_switched_off_for_an_account(self):
+        """A key without Futures permission (-2015) must not tag the wallet for good."""
+        self.set("/api/v3/account", {"balances": [
+            {"asset": "USDT", "free": "10", "locked": "0"}]})
+        self.set("/fapi/v2/balance", RuntimeError("-2015 Invalid API-key, IP, or permissions"))
+        balances, _prices, notes = cex._binance_balances(ACC)
+        self.assertAlmostEqual(balances["USDT"], 10.0)
+        # default is on, so the refusal becomes a note
+        self.assertEqual([n["part"] for n in notes], ["futures"])
+
+        before = len(self.fake.calls)
+        acc = dict(ACC, futures=False)
+        balances, _prices, notes = cex._binance_balances(acc)
+        self.assertAlmostEqual(balances["USDT"], 10.0)
+        self.assertEqual(notes, [])                      # off: no note at all
+        asked = [c for c in self.fake.calls[before:] if "/fapi/v2/balance" in c[1]]
+        self.assertEqual(asked, [])                      # and the call is skipped
+
+    def test_a_rejected_futures_call_says_which_knob_to_turn(self):
+        self.set("/api/v3/account", {"balances": []})
+        self.set("/fapi/v2/balance",
+                 RuntimeError("HTTP 401: Invalid API-key, IP, or permissions for action"))
+        _balances, _prices, notes = cex._binance_balances(ACC)
+        self.assertEqual([n["part"] for n in notes], ["futures"])
+        self.assertIn("Enable Futures", notes[0]["message"])
+        self.assertIn("untick", notes[0]["message"])
+
     def test_spot_free_and_locked_are_both_counted(self):
         self.set("/api/v3/account", {"balances": [
             {"asset": "USDT", "free": "810.65", "locked": "2826.65"},

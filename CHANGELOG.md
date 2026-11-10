@@ -7,6 +7,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Futures can be switched off per Binance account.** `-2015 Invalid API-key, IP, or
+  permissions for action` means that key may not read the futures wallet (a key without
+  "Enable Futures"); the spot side is fine, but the wallet then keeps a "partial" mark
+  and, if there really are futures positions, its total is short. Settings → Sources
+  now has a **futures** checkbox per Binance account: untick it and the extra read is
+  skipped entirely (no call, no note, no mark), which is the right answer for an
+  account that does not trade futures. The note itself now names the two knobs —
+  enable Futures on the key, or untick the box.
+
 - **The dashboard reloads itself when its code changes.** Python imports a module
   once, so every edit used to mean restarting all of DSH — which is the wrong trade
   for a plugin that owns its own process. `run.py` now watches `tracker/*.py`,

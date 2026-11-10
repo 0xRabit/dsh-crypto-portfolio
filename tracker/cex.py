@@ -52,6 +52,11 @@ def cex_accounts():
 
 BINANCE_API = "https://api.binance.com"
 BINANCE_FUTURES = "https://fapi.binance.com"
+# -2015 means "this key may not do that", not "the balance is 0": say which knob
+# fixes it, in the same message the card shows.
+FUTURES_HINT = (" — enable Futures for this API key (Binance → API Management → "
+                "Enable Futures) and open the Futures wallet once, or untick "
+                "\"futures\" for this account below")
 
 
 def _binance_signed(acc, path, params=None, host=None, method="GET", recv_window=60000):
@@ -185,20 +190,25 @@ def _binance_balances(acc):
     except Exception as e:  # noqa: BLE001
         notes.append({"part": "margin", "message": str(e)[:160]})
 
-    # USD-M futures: `balance` is the wallet balance per margin asset
-    try:
-        d = _binance_signed(acc, "/fapi/v2/balance", host=BINANCE_FUTURES)
-        for row in d if isinstance(d, list) else []:
-            asset = str(row.get("asset") or "").upper()
-            try:
-                qty = float(row.get("balance") or 0)
-            except (TypeError, ValueError):
-                qty = 0.0
-            if asset and qty > 0:
-                out[asset] = out.get(asset, 0.0) + qty
-    except Exception as e:  # noqa: BLE001
-        # the usual case: the API key has no Futures permission (-2015)
-        notes.append({"part": "futures", "message": str(e)[:160]})
+    # USD-M futures: `balance` is the wallet balance per margin asset. Off when the
+    # account says so (`futures: false`): a key without Futures permission answers
+    # -2015, and that note would otherwise sit on the wallet card forever even though
+    # the spot side is complete.
+    if acc.get("futures", True):
+        try:
+            d = _binance_signed(acc, "/fapi/v2/balance", host=BINANCE_FUTURES)
+            for row in d if isinstance(d, list) else []:
+                asset = str(row.get("asset") or "").upper()
+                try:
+                    qty = float(row.get("balance") or 0)
+                except (TypeError, ValueError):
+                    qty = 0.0
+                if asset and qty > 0:
+                    out[asset] = out.get(asset, 0.0) + qty
+        except Exception as e:  # noqa: BLE001
+            # the usual case: the API key has no Futures permission (-2015)
+            notes.append({"part": "futures",
+                          "message": str(e)[:160] + FUTURES_HINT})
 
     return out, prices, notes
 
