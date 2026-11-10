@@ -117,6 +117,22 @@ def _signed_request(url, headers, method):
     return r.json()
 
 
+STOCK_PREFIX = "EQ_"      # Binance wraps a tokenised equity as EQ_<ticker>
+
+
+def _asset_symbol(row):
+    """The readable symbol of a funding-wallet row.
+
+    A tokenised stock comes back as `EQ_<ticker>` plus `stockTicker`; keeping the
+    wrapper would show `EQ_<ticker>` in the table and find no price for it. The quantity
+    is the share count, so the symbol is what a human (and the price override) uses.
+    """
+    asset = str(row.get("asset") or "").upper()
+    if asset.startswith(STOCK_PREFIX):
+        return str(row.get("stockTicker") or asset[len(STOCK_PREFIX):]).upper()
+    return asset
+
+
 def _binance_balances(acc):
     """(balances, prices, notes) across every Binance sub-account.
 
@@ -164,7 +180,7 @@ def _binance_balances(acc):
     try:
         d = _binance_signed(acc, "/sapi/v1/asset/get-funding-asset", method="POST")
         for row in d if isinstance(d, list) else []:
-            asset = str(row.get("asset") or "").upper()
+            asset = _asset_symbol(row)          # EQ_<ticker> -> <ticker>
             qty = 0.0
             for field in ("free", "freeze", "locked", "withdrawing"):
                 try:
@@ -662,6 +678,7 @@ def fetch_cex_accounts(accounts, native):
             else:
                 raise ValueError(f"未知交易所: {ex}（支持 {'/'.join(EXCHANGES)}）")
             ticker = _ticker_map(ex, list(balances.keys()))
+            stated = sources.asset_prices()     # tokenised stocks etc.: user-stated USD
             if ex in ("backpack", "okx", "bitget"):
                 # a *_USDC lastPrice is the better price for a spot balance; the
                 # account-implied price fills in anything with no pair (OKX reports
@@ -671,7 +688,7 @@ def fetch_cex_accounts(accounts, native):
             for asset, amount in sorted(balances.items()):
                 if amount <= 0:
                     continue
-                price = _price_of(asset, native, ticker)
+                price = _price_of(asset, native, ticker) or stated.get(asset.upper(), 0.0)
                 rows.append({
                     "wallet": acc["name"], "chain": ex, "symbol": asset,
                     "name": f"{ex} {asset}", "amount": amount,

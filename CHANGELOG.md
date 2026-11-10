@@ -7,71 +7,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- **Futures can be switched off per Binance account.** `-2015 Invalid API-key, IP, or
-  permissions for action` means that key may not read the futures wallet (a key without
-  "Enable Futures"); the spot side is fine, but the wallet then keeps a "partial" mark
-  and, if there really are futures positions, its total is short. Settings → Sources
-  now has a **futures** checkbox per Binance account: untick it and the extra read is
-  skipped entirely (no call, no note, no mark), which is the right answer for an
-  account that does not trade futures. The note itself now names the two knobs —
-  enable Futures on the key, or untick the box.
-
-- **The dashboard reloads itself when its code changes.** Python imports a module
-  once, so every edit used to mean restarting all of DSH — which is the wrong trade
-  for a plugin that owns its own process. `run.py` now watches `tracker/*.py`,
-  `run.py` and `fetch.py` and re-executes itself on a change (same PID, same argv,
-  same environment; ~2 s end to end). `profiles/` is deliberately not watched —
-  writing a snapshot must never restart the server that wrote it — and
-  `PORTFOLIO_NO_RELOAD=1` turns the watcher off for frozen installs. Settings also
-  gained a **Service** panel with a forced *Restart the service* button (backed by
-  `POST /api/restart`). Only a change to the plugin wrapper (`index.js` /
-  `cordis.patch.yml`) still needs a DSH restart, because DSH loads that part.
-
-- **Manual protocol positions.** Some protocols publish no balance API — Papertrade
-  is the example that started this — so their holdings can be registered by hand
-  under a wallet: protocol, symbol, amount, value (USD) and the date of the estimate.
-  A registration is a *dated estimate*, not a feed: it never follows the market, a
-  refresh never overwrites it, and the dashboard keeps showing the value and the date
-  you entered until you register it again (the token table tags the row `manual` with
-  that date). It counts from its own date onwards, so registering today cannot rewrite
-  last month's history, and it flows into the total, the wallet cards, the chain
-  distribution (`manual`), the health report and the trend line. Stored per profile in
-  `manual_positions.json`, managed in Settings → Manual protocol positions (add, edit,
-  delete); edits and deletions update the dashboard without a refetch.
-
-- **A Plan tab: the portfolio's operating manual, evaluated after every refresh.**
-  A third tab beside Dashboard and Settings that answers "what do I do with the next
-  dollar?" from the plan you set once per profile (`plan.json`), the newest snapshot
-  and the execution log (`plan_log.jsonl`):
-
-  - **Price tiers.** Each coin is judged on its own price (BTC >100k / 80–100k /
-    60–80k / <60k, ETH >3,000 / 2,500–3,000 / 1,800–2,500 / <1,800); the tier sets the
-    weekly budget, split BTC 40% / ETH 35% / HYPE+SOL 25%. HYPE+SOL follows BTC. T1
-    stops buying, T4 goes to 1,500 a week and cancels the quarterly cap.
-  - **Ammo pool.** Spot stablecoins (minus an emergency fund), half the HLP vault and
-    two equity ETFs, spent strictly in priority order, with the tier deciding which
-    sources are unlocked. Only buys carrying a source consume the pool, so "left to
-    deploy" stays honest; each tranche shows planned / used / left and when it may be
-    drawn.
-  - **Goals and the quarterly path.** Target, the geometric path the plan should be on
-    today, the CAGR still required (a 4-year double is 18.92%/yr, 4.43%/quarter), the
-    CAGR achieved so far, and a behind / on-track / ahead verdict that turns red past
-    −20% deviation.
-  - **Rules that fire now**, from the take-profit, rebalance and drawdown sets —
-    BTC 120–150k, BTC ≥150k, single-coin concentration, band drift, thin stablecoins in
-    T1, idle BTC/ETH on an exchange, BTC below the absolute floor, deep drawdown — each
-    with its action, destination and numbers.
-  - **Manual assets** (cash, equities) that the tracker cannot see, which join both the
-    total and the goal maths. Everything else is derived from live data: no second
-    data source, and the tab recomputes on every visit.
-  - The shipped defaults are illustrative (equities and amounts are placeholders you
-    replace), and they reproduce the worked example exactly: BTC 80,422 sits in T2 and
-    ETH 2,353 in T3, so the week costs $160 + $280 + $100.
-
-- **Bucket prices ignore worthless rows.** An airdropped token reusing a real symbol
-  (this profile carries a fake `ETH` holding 3.8e58 units) could drag a bucket's price
-  to zero and silently zero out the week's ETH buy; the largest *priced* holding now
-  sets the bucket price.
+- **Tokenised stocks and other assets with no public quote now show up.** An exchange
+  can hold a tokenised equity in a wallet under a wrapped symbol (`EQ_<ticker>` plus a
+  `stockTicker` field) with a real quantity but no ticker anywhere — no pair, and the
+  payload's own valuation field is 0 — so it priced at $0 and disappeared behind "hide
+  zero". The wrapper is now stripped to the readable ticker, and Settings → Sources
+  gained **"Prices for assets no market quotes"**: state the USD price once per symbol
+  (`asset_prices` in `portfolio_sources.json`) and the row is valued while the quantity
+  keeps updating on every refresh. A market price still wins over a stated one, and a
+  stablecoin stays $1 regardless of what is stated.
 
 ### Fixed
 

@@ -108,6 +108,9 @@ _DEFAULTS = {
         "enabled": True,
         "accounts": [],
     },
+    # {SYMBOL: usd} for assets no market can quote — a tokenised stock, private
+    # equity, a receipt with no ticker. The amount still comes from the exchange.
+    "asset_prices": {},
 }
 
 _cache = {"mtime": None, "data": None}
@@ -230,8 +233,66 @@ def save(cfg):
             except Exception:  # noqa: BLE001
                 current = {}
         merged = _deep_merge(_DEFAULTS, _deep_merge(current, cfg if isinstance(cfg, dict) else {}))
+        # asset_prices is a flat map the user edits wholesale, so it REPLACES rather
+        # than merges: a deep merge would resurrect a price that was just deleted
+        if isinstance(cfg, dict) and "asset_prices" in cfg:
+            merged["asset_prices"] = dict((cfg.get("asset_prices") or {}))
         atomicio.write_json(profiles.sources_file(), merged)
         load(force=True)
+
+
+def asset_prices():
+    """{SYMBOL: usd} — manual prices for assets the market cannot price.
+
+    A tokenised stock has a real quantity in the exchange wallet but no public quote,
+    so without this the holding prices at $0 and disappears behind "hide zero". The
+    quantity keeps updating on every refresh; only the price is stated once.
+    """
+    raw = (load() or {}).get("asset_prices") or {}
+    out = {}
+    if isinstance(raw, dict):
+        for key, value in raw.items():
+            sym = str(key or "").strip().upper()
+            try:
+                price = float(value)
+            except (TypeError, ValueError):
+                continue
+            if sym and price > 0 and price == price and price != float("inf"):
+                out[sym] = price
+    return out
+
+
+def _clean_symbol(symbol):
+    sym = str(symbol or "").strip().upper()
+    if not re.fullmatch(r"[A-Z0-9._-]{1,24}", sym):
+        raise ValueError("symbol must be 1-24 characters of A-Z, 0-9, dot, dash or underscore")
+    return sym
+
+
+def set_asset_price(symbol, price):
+    sym = _clean_symbol(symbol)
+    try:
+        value = float(price)
+    except (TypeError, ValueError):
+        raise ValueError("price must be a number")
+    if not (value > 0) or value != value or value == float("inf"):
+        raise ValueError("price must be greater than 0")
+    cfg = load() or {}
+    prices = dict(cfg.get("asset_prices") or {})
+    prices[sym] = round(value, 8)
+    cfg["asset_prices"] = prices
+    save(cfg)
+    return asset_prices()
+
+
+def remove_asset_price(symbol):
+    sym = _clean_symbol(symbol)
+    cfg = load() or {}
+    prices = dict(cfg.get("asset_prices") or {})
+    prices.pop(sym, None)
+    cfg["asset_prices"] = prices
+    save(cfg)
+    return asset_prices()
 
 
 def get_source(name):

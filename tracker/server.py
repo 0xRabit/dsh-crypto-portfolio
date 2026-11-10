@@ -352,6 +352,13 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("thresholds must be a JSON object")
                 healthconfig.save(cfg)
                 self._reply_json(self._health_view())
+            elif path == "/api/asset-prices":
+                prices = sources.set_asset_price((body or {}).get("symbol"),
+                                                 (body or {}).get("price"))
+                self._reply_json({"prices": prices})
+            elif path == "/api/asset-prices/remove":
+                prices = sources.remove_asset_price((body or {}).get("symbol"))
+                self._reply_json({"prices": prices})
             elif path == "/api/manual":
                 position = (body or {}).get("position")
                 if not isinstance(position, dict):

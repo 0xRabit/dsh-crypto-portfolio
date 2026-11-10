@@ -95,7 +95,7 @@ const I18N = {
     refreshLogHint: "details: profiles/<profile>/refresh.log",
     refreshStart: "Starting refresh…", refreshing: "Refreshing…",
     doneUpdating: "Done, updating view…", saving: "Saving…",
-    savedOk: "Saved and applied (portfolio_sources.json). Click Refresh to fetch with the new config.",
+    saved: "Saved", savedOk: "Saved and applied (portfolio_sources.json). Click Refresh to fetch with the new config.",
     saveFailed: "Save failed: ", exportDone: "Configuration exported", importDone: "Configuration imported and applied",
     importFailed: "Import failed: ", exportFailed: "Export failed: ",
     confirmBl: (s, n) => 'Add "' + s + (n && n !== s ? " / " + n : "") + '" to blacklist?\nBlacklisted tokens are removed from totals, wallets, chain distribution and trends (incl. history).',
@@ -125,6 +125,11 @@ const I18N = {
     paidBadge: "PAID", lastOk: "last ok", never: "never",
     cexDefaultHint: "Enter read-only keys to enable; empty rows are skipped.",
     cexFutures: "futures",
+    assetPricesTitle: "Prices for assets no market quotes",
+    apSymbolPh: "Symbol (e.g. TSLA)", apPricePh: "USD per unit",
+    apAdd: "Add", apEmpty: "No stated prices.",
+    apNeedsBoth: "symbol and price are both required",
+    assetPricesHint: "A tokenised stock has a real quantity in the wallet but no public quote. State the price once and the row shows up (the quantity still updates on every refresh).",
     cexFuturesHint: "also read the USD-M futures wallet — untick it if this API key has no Futures permission",
     healthTitle: "Asset Health", healthScope: "whole portfolio, independent of the filters above",
     healthVolatility: "Volatility risk", healthConcentration: "Concentration",
@@ -336,7 +341,7 @@ const I18N = {
     refreshLogHint: "详细原因见 profiles/<profile>/refresh.log",
     refreshStart: "开始刷新…", refreshing: "刷新中…",
     doneUpdating: "完成，正在更新视图…", saving: "保存中…",
-    savedOk: "✅ 已保存并生效（portfolio_sources.json）。点「刷新数据」用新配置抓取。",
+    saved: "已保存", savedOk: "✅ 已保存并生效（portfolio_sources.json）。点「刷新数据」用新配置抓取。",
     saveFailed: "保存失败：", exportDone: "配置已导出", importDone: "配置已导入并生效",
     importFailed: "导入失败：", exportFailed: "导出失败：",
     confirmBl: (s, n) => '将「' + s + (n && n !== s ? " / " + n : "") + '」加入黑名单？\n黑名单代币将从总资产、各钱包、网络分布、趋势图中剔除（含历史快照）。',
@@ -366,6 +371,11 @@ const I18N = {
     paidBadge: "付费", lastOk: "上次成功", never: "从未",
     cexDefaultHint: "填入只读 key 即启用；空行自动跳过。",
     cexFutures: "合约",
+    assetPricesTitle: "没有行情资产的价格",
+    apSymbolPh: "资产符号（如 TSLA）", apPricePh: "单价（USD）",
+    apAdd: "添加", apEmpty: "还没有设定价格。",
+    apNeedsBoth: "符号和价格都要填",
+    assetPricesHint: "代币化股票在钱包里有真实数量，但没有公开行情。在这里填一次单价，这一行就会出现（数量仍会随每次刷新更新）。",
     cexFuturesHint: "同时读取 USD-M 合约钱包 —— 如果这把 key 没有合约权限，取消勾选即可",
     healthTitle: "资产健康度", healthScope: "整个资产组合，不受上方筛选影响",
     healthVolatility: "波动性风险", healthConcentration: "集中度",
@@ -2980,6 +2990,25 @@ async function renderSources() {
           "</div>");
       });
       b.insertAdjacentHTML("beforeend", '<p class="bl-desc">' + t("cexDefaultHint") + "</p>");
+
+      // assets with a real quantity but no public quote: a tokenised stock (Binance
+      // keeps EQ_<ticker>) prices at $0 without this, and $0 hides the row
+      const stated = cfg.asset_prices || {};
+      const bp = document.createElement("div");
+      bp.innerHTML = '<div class="src-sub">' + t("assetPricesTitle") + "</div>" +
+        '<div class="src-prov">' +
+          '<input id="apSymbol" class="src-name" placeholder="' + t("apSymbolPh") + '">' +
+          '<input id="apPrice" type="number" step="any" class="src-name" placeholder="' + t("apPricePh") + '">' +
+          '<button type="button" id="btnAddAssetPrice">+ ' + t("apAdd") + "</button>" +
+        "</div>" +
+        '<div class="bl-list" id="apList">' + (Object.keys(stated).length
+          ? Object.keys(stated).sort().map((sym) =>
+              '<div class="bl-item"><span class="bl-sym">' + esc(sym) + "</span>" +
+              '<span class="bl-tag config">' + fmtUsd(stated[sym]) + "</span>" +
+              '<button class="bl-del" data-ap-del="' + esc(sym) + '">✕ ' + t("delete") + "</button></div>").join("")
+          : '<div class="bl-empty">' + t("apEmpty") + "</div>") + "</div>" +
+        '<p class="bl-desc">' + t("assetPricesHint") + "</p>";
+      b.appendChild(bp);
     }
 
     if (cfg.etherscan) {
@@ -3001,6 +3030,27 @@ async function renderSources() {
         srcFieldHTML("etherscan.chains", "chains", cfg.etherscan.chains || "eth", t("chainsPh")) +
         (detailHTML || '<p class="bl-desc">' + t("lastOk") + ": " + esc(escTime) + "</p>"));
     }
+
+    const addPrice = async () => {
+      const sym = ($("apSymbol").value || "").trim();
+      const price = $("apPrice").value;
+      if (!sym || !price) { $("sourcesMsg").textContent = t("apNeedsBoth"); return; }
+      try {
+        await postJSON("/api/asset-prices", { symbol: sym, price });
+        $("sourcesMsg").textContent = t("saved");
+        await renderSources();
+      } catch (e) { $("sourcesMsg").textContent = t("saveFailed") + e.message + staleHint(e); }
+    };
+    if ($("btnAddAssetPrice")) $("btnAddAssetPrice").addEventListener("click", addPrice);
+    (document.querySelectorAll("[data-ap-del]") || []).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        try {
+          await postJSON("/api/asset-prices/remove", { symbol: btn.dataset.apDel });
+          $("sourcesMsg").textContent = t("saved");
+          await renderSources();
+        } catch (e) { $("sourcesMsg").textContent = t("saveFailed") + e.message; }
+      });
+    });
 
     body.querySelectorAll("[data-path]").forEach((el) => {
       const path = el.dataset.path;
