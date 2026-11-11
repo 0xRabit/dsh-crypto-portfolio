@@ -7,6 +7,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- **The dashboard can no longer outlive the app.** Quitting the desktop app left the
+  Python server holding 8080 when the host was force-killed: a signal never arrives in
+  that case, so the child sat there serving stale code, and the next launch had to fight
+  it for the port. `run.py` now watches for being reparented (once the process that
+  started it is gone, `getppid()` changes) and exits within a few seconds. It is opt-in
+  (`PORTFOLIO_PARENT_GUARD=1`, set by the DSH plugin), so a deliberate standalone
+  `python3 run.py` behaves exactly as before.
+
 - **The plugin's child no longer holds the host's stdio.** A grandchild spawned with
   `stdio: 'inherit'` keeps the parent's pipes open after the parent exits, and the
   desktop shell waits for that pipe to close before it calls the app stopped — so an

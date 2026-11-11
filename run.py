@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tracker.server import run  # noqa: E402
 from tracker import profiles, sources  # noqa: E402
-from tracker import reload as reload_mod  # noqa: E402
+from tracker import parentguard, reload as reload_mod  # noqa: E402
 
 
 def init_template():
@@ -42,6 +42,9 @@ def main():
     # Editing tracker/*.py must not mean restarting all of DSH: re-exec ourselves
     # when the sources change (see tracker/reload.py). PORTFOLIO_NO_RELOAD=1 opts out.
     reload_mod.start(os.path.dirname(os.path.abspath(__file__)))
+    # A killed launcher cannot tell us to stop, so watch for the reparent instead
+    # (the DSH plugin sets PORTFOLIO_PARENT_GUARD=1; standalone runs are unaffected).
+    parentguard.start()
     run(port=args.port, host=args.host, profile=args.profile)
 
 

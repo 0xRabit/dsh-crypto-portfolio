@@ -91,6 +91,9 @@ export function apply(ctx, config) {
     ...process.env,
     PORTFOLIO_NO_BUILTIN_WALLETS: '1',
     PORTFOLIO_PROFILES_DIR: dataDir,
+    // the child must not outlive this process: if the host is force-killed the python
+    // notices it was reparented and exits instead of holding the port
+    PORTFOLIO_PARENT_GUARD: '1',
   }
 
   async function start() {
