@@ -43,6 +43,8 @@ const I18N = {
     trendTitle: "Portfolio Trend",
     chainTitle: "Chain Distribution (USD)",
     tokensTitle: "Token Details", searchPh: "Search token / name / wallet / address…",
+    cfpAll: "All", cfpSearchPh: "Search…", cfpNone: "Nothing matches",
+    cfpFilter: "Filter this column", cfpActive: "Filtered — click to change",
     hideZero: "Hide USD≈0", btnBlacklist: "Blacklist",
     thSymbol: "Token", thName: "Name", thChain: "Chain", thWallet: "Wallet",
     thAmount: "Amount", thPrice: "Price (USD)", thUsd: "Balance (USD)", thOp: "Action",
@@ -289,6 +291,8 @@ const I18N = {
     trendTitle: "资产趋势",
     chainTitle: "网络分布（USD）",
     tokensTitle: "代币明细", searchPh: "搜索代币 / 名称 / 钱包 / 地址…",
+    cfpAll: "全部", cfpSearchPh: "搜索…", cfpNone: "没有匹配项",
+    cfpFilter: "按此列筛选", cfpActive: "已筛选 —— 点击修改",
     hideZero: "隐藏 USD≈0", btnBlacklist: "🛡 黑名单管理",
     thSymbol: "代币", thName: "名称", thChain: "网络", thWallet: "钱包",
     thAmount: "数量", thPrice: "单价（USD）", thUsd: "余额（USD）", thOp: "操作",
@@ -599,7 +603,7 @@ const state = {
   history: null,        // trend data (unfiltered)
   selectedDate: null,
   sortKey: "usd", sortDir: -1,
-  filters: { category: "all", wallet: "", chain: "", search: "", hideZero: true },
+  filters: { category: "all", wallet: "", chain: "", search: "", hideZero: true, label: "", symbol: "" },
   tableLimit: TABLE_PAGE,   // P1: rows rendered so far
   tableSig: "",             // P1: signature of the inputs the page belongs to
   series: {},
@@ -768,6 +772,7 @@ function saveFilters() {
     localStorage.setItem(FILTER_KEY, JSON.stringify({
       category: state.filters.category, wallet: state.filters.wallet,
       chain: state.filters.chain, hideZero: state.filters.hideZero,
+      label: state.filters.label, symbol: state.filters.symbol,
     }));
   } catch (e) { /* ignore */ }
 }
@@ -780,6 +785,8 @@ function loadFilters() {
     if (typeof f.wallet === "string") state.filters.wallet = f.wallet;
     if (typeof f.chain === "string") state.filters.chain = f.chain;
     if (typeof f.hideZero === "boolean") state.filters.hideZero = f.hideZero;
+    if (typeof f.label === "string") state.filters.label = f.label;
+    if (typeof f.symbol === "string") state.filters.symbol = f.symbol;
   } catch (e) { /* ignore */ }
 }
 
@@ -847,6 +854,33 @@ function bindEvents() {
   // table locals
   $("search").addEventListener("input", (e) => { state.filters.search = e.target.value.trim().toLowerCase(); renderTable(); });
   $("hideZero").addEventListener("change", (e) => { state.filters.hideZero = e.target.checked; saveFilters(); renderTable(); });
+  // header carets open a column filter and never trigger the sort
+  document.querySelectorAll(".th-filter").forEach((btn) => {
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const field = btn.dataset.filter;
+      const pop = $("colFilterPop");
+      if (!pop.classList.contains("hidden") && state.cfpField === field) {
+        pop.classList.add("hidden");
+        return;
+      }
+      openColFilter(field, btn);
+    });
+  });
+  $("cfpClear").addEventListener("click", () => pickColFilter(""));
+  $("cfpSearch").addEventListener("input", renderColFilterList);
+  $("cfpList").addEventListener("click", (ev) => {
+    const item = ev.target.closest("[data-cfp-value]");
+    if (item) pickColFilter(item.dataset.cfpValue);
+  });
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest("#colFilterPop") && !ev.target.closest(".th-filter")) {
+      $("colFilterPop").classList.add("hidden");
+    }
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") $("colFilterPop").classList.add("hidden");
+  });
   document.querySelectorAll("#tokenTable th").forEach((th) => {
     th.addEventListener("click", () => {
       const k = th.dataset.key;
@@ -1969,6 +2003,8 @@ function renderTable() {
     if (f.category !== "all" && !walletInCategory(x.wallet, f.category)) return false;
     if (f.wallet && x.wallet !== f.wallet) return false;
     if (f.chain && x.chain !== f.chain) return false;
+    if (f.label && (x.cat || "other") !== f.label) return false;
+    if (f.symbol && x.symbol !== f.symbol) return false;
     if (f.search) {
       const hay = (x.symbol + " " + x.name + " " + x.wallet + " " + x.chain).toLowerCase();
       if (!hay.includes(f.search)) return false;
@@ -1986,12 +2022,14 @@ function renderTable() {
   // rest arrives on demand. The page resets whenever the result set changes, which
   // is detected from a signature of every input that can change it.
   const sig = JSON.stringify([f.category, f.wallet, f.chain, f.search, f.hideZero,
+                              f.label, f.symbol,
                               state.selectedDate, state.sortKey, state.sortDir]);
   if (sig !== state.tableSig) {
     state.tableSig = sig;
     state.tableLimit = TABLE_PAGE;
   }
   const shown = rows.slice(0, state.tableLimit);
+  syncColFilterMarks();
   $("tokenCount").textContent = t("items", rows.length) +
     (rows.length > shown.length ? " · " + shown.length + "/" + rows.length : "");
   if (!rows.length) {
@@ -3284,6 +3322,105 @@ function renderRefreshWarn(st) {
 
 async function loadStatusHint() {
   try { renderRefreshWarn(await api("/api/status")); } catch (e) { /* ignore */ }
+}
+
+
+/* ==================== per-column filters (header carets) ==================== */
+/* The search box narrows everything at once; these narrow one column. The counts are
+   computed with the *other* filters applied, so they answer "what would I get if I
+   picked this?" instead of the size of the whole portfolio. */
+const COL_FILTERS = {
+  symbol: { field: "symbol", title: "thSymbol", value: (x) => x.symbol },
+  chain: { field: "chain", title: "thChain", value: (x) => x.chain },
+  wallet: { field: "wallet", title: "thWallet", value: (x) => x.wallet },
+  label: { field: "label", title: "thLabel", value: (x) => x.cat || "other" },
+};
+
+function colFilterRows(field) {
+  const f = state.filters;
+  return (state.tokens || []).filter((x) => {
+    if (f.hideZero && (x.usd || 0) === 0) return false;
+    if (f.category !== "all" && !walletInCategory(x.wallet, f.category)) return false;
+    if (field !== "wallet" && f.wallet && x.wallet !== f.wallet) return false;
+    if (field !== "chain" && f.chain && x.chain !== f.chain) return false;
+    if (field !== "label" && f.label && (x.cat || "other") !== f.label) return false;
+    if (field !== "symbol" && f.symbol && x.symbol !== f.symbol) return false;
+    if (f.search) {
+      const hay = (x.symbol + " " + x.name + " " + x.wallet + " " + x.chain).toLowerCase();
+      if (!hay.includes(f.search)) return false;
+    }
+    return true;
+  });
+}
+
+function colFilterValues(field) {
+  const counts = new Map();
+  colFilterRows(field).forEach((x) => {
+    const v = COL_FILTERS[field].value(x);
+    if (v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function colFilterLabel(field, value) {
+  if (field === "label") return labelText(value);
+  if (field === "chain") return chainName(value);
+  return value;
+}
+
+function renderColFilterList() {
+  const field = state.cfpField;
+  if (!field) return;
+  const cur = state.filters[field] || "";
+  const q = ($("cfpSearch").value || "").trim().toLowerCase();
+  const items = colFilterValues(field).filter(([v]) =>
+    !q || String(v).toLowerCase().includes(q) || colFilterLabel(field, v).toLowerCase().includes(q));
+  $("cfpList").innerHTML = items.length
+    ? items.map(([v, n]) => {
+        const dot = field === "label"
+          ? '<span class="cfp-dot" style="background:' + labelColor(v, 0) + '"></span>' : "";
+        return '<button type="button" class="cfp-item' + (v === cur ? " on" : "") +
+          '" data-cfp-value="' + esc(v) + '">' + dot +
+          '<span class="cfp-name">' + esc(colFilterLabel(field, v)) + "</span>" +
+          '<span class="cfp-count">' + n + "</span></button>";
+      }).join("")
+    : '<div class="bl-empty">' + t("cfpNone") + "</div>";
+}
+
+function openColFilter(field, anchor) {
+  state.cfpField = field;
+  $("cfpTitle").textContent = t(COL_FILTERS[field].title);
+  $("cfpSearch").value = "";
+  const pop = $("colFilterPop");
+  pop.classList.remove("hidden");
+  const r = anchor.getBoundingClientRect();
+  const width = 280;
+  pop.style.width = width + "px";
+  // fixed, not absolute: no ancestor of the table is guaranteed to be positioned
+  pop.style.left = Math.max(8, Math.min(r.left - 40,
+                                       document.documentElement.clientWidth - width - 8)) + "px";
+  pop.style.top = (r.bottom + 4) + "px";
+  renderColFilterList();
+  $("cfpSearch").focus();
+}
+
+function pickColFilter(value) {
+  const field = state.cfpField;
+  if (!field) return;
+  state.filters[field] = value;
+  saveFilters();
+  $("colFilterPop").classList.add("hidden");
+  renderAll();
+}
+
+/* a caret with an active filter stays lit, so the state is visible when the popup
+   is closed */
+function syncColFilterMarks() {
+  document.querySelectorAll(".th-filter").forEach((b) => {
+    const active = !!(state.filters[b.dataset.filter] || "");
+    b.classList.toggle("on", active);
+    b.title = active ? t("cfpActive") : t("cfpFilter");
+  });
 }
 
 function showEmpty() {

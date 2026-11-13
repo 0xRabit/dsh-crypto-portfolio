@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Portfolio Tracker</title>
 <link rel="icon" type="image/png" href="/static/logos/logo.svg">
-<link rel="stylesheet" href="/static/style.css?v=65">
+<link rel="stylesheet" href="/static/style.css?v=66">
 </head>
 <body>
 <header>
@@ -212,18 +212,23 @@
         <label class="chk"><input type="checkbox" id="hideZero" checked> <span data-i18n="hideZero">Hide USD≈0</span></label>
         <span id="tokenCount" class="hint"></span>
       </div>
+      <div id="colFilterPop" class="col-filter-pop hidden">
+        <div class="cfp-head"><span id="cfpTitle"></span><button type="button" id="cfpClear" data-i18n="cfpAll">All</button></div>
+        <input id="cfpSearch" class="cfp-search" type="search" data-i18n-placeholder="cfpSearchPh" placeholder="Search…">
+        <div id="cfpList" class="cfp-list"></div>
+      </div>
       <div class="table-wrap">
         <table id="tokenTable">
           <thead>
             <tr>
-              <th data-key="symbol" data-i18n="thSymbol">Token</th>
+              <th data-key="symbol" data-filter="symbol"><span data-i18n="thSymbol">Token</span><button type="button" class="th-filter" data-filter="symbol" title="Filter">▾</button></th>
               <th data-key="name" data-i18n="thName">Name</th>
-              <th data-key="chain" data-i18n="thChain">Chain</th>
-              <th data-key="wallet" data-i18n="thWallet">Wallet</th>
+              <th data-key="chain" data-filter="chain"><span data-i18n="thChain">Chain</span><button type="button" class="th-filter" data-filter="chain" title="Filter">▾</button></th>
+              <th data-key="wallet" data-filter="wallet"><span data-i18n="thWallet">Wallet</span><button type="button" class="th-filter" data-filter="wallet" title="Filter">▾</button></th>
               <th data-key="amount" class="num" data-i18n="thAmount">Amount</th>
               <th data-key="price" class="num" data-i18n="thPrice">Price (USD)</th>
               <th data-key="usd" class="num" data-i18n="thUsd">Balance (USD)</th>
-              <th class="op stable-col" data-i18n="thLabel">Label</th>
+              <th class="op stable-col" data-filter="label"><span data-i18n="thLabel">Label</span><button type="button" class="th-filter" data-filter="label" title="Filter">▾</button></th>
               <th class="op" data-i18n="thOp">Action</th>
             </tr>
           </thead>
@@ -564,6 +569,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=79"></script>
+<script src="/static/app.js?v=80"></script>
 </body>
 </html>

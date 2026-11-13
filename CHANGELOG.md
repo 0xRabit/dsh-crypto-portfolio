@@ -27,6 +27,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Per-column filters in the token table.** The 代币 / 网络 / 钱包 / 标签 headers now
+  carry a small ▾ that opens a value list with counts — so "every row labelled `x`" is
+  one click instead of typing into the global search. Counts are computed with the other
+  filters applied, so they answer "what would I get if I picked this?"; the caret stays
+  lit while its column is filtered, and the choice survives a reload. The list is capped
+  and scrollable with its own search box (the symbol column has hundreds of values).
+
 - **Tokenised stocks and other assets with no public quote now show up.** An exchange
   can hold a tokenised equity in a wallet under a wrapped symbol (`EQ_<ticker>` plus a
   `stockTicker` field) with a real quantity but no ticker anywhere — no pair, and the
